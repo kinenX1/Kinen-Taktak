@@ -20,9 +20,9 @@ export function RequestList({ items, hrefBase = "/dashboard/requests" }: { items
   return (
     <ul className="divide-y divide-line">
       <li aria-hidden="true" className="hidden grid-cols-12 gap-4 px-5 py-3 font-mono text-2xs uppercase tracking-[0.1em] text-fog-500 md:grid">
-        <span className="col-span-5">Project</span>
+        <span className="col-span-4">Project</span>
         <span className="col-span-2">Type</span>
-        <span className="col-span-2">Status</span>
+        <span className="col-span-3">Status</span>
         <span className="col-span-2">Updated</span>
         <span className="col-span-1" />
       </li>
@@ -32,15 +32,15 @@ export function RequestList({ items, hrefBase = "/dashboard/requests" }: { items
             href={`${hrefBase}/${r.reference}`}
             className="group grid grid-cols-1 gap-2 px-5 py-4 transition-colors hover:bg-fog-50/[0.03] md:grid-cols-12 md:items-center md:gap-4"
           >
-            <span className="min-w-0 md:col-span-5">
+            <span className="min-w-0 md:col-span-4">
               <span className="block truncate font-medium text-fog-50">{r.title}</span>
               <span className="font-mono text-2xs text-fog-500">{r.reference}</span>
             </span>
             <span className="text-sm text-fog-400 md:col-span-2">{labelFor.projectType(r.projectType)}</span>
-            <span className="md:col-span-2">
+            <span className="md:col-span-3">
               <StatusBadge status={r.status} />
             </span>
-            <span className="text-sm text-fog-500 md:col-span-2">{formatDate(r.updatedAt)}</span>
+            <span className="whitespace-nowrap text-sm text-fog-500 md:col-span-2">{formatDate(r.updatedAt)}</span>
             <span className="hidden justify-end md:col-span-1 md:flex">
               <ArrowRight size={16} className="text-fog-500 transition-transform duration-500 group-hover:translate-x-1 group-hover:text-flux" />
             </span>

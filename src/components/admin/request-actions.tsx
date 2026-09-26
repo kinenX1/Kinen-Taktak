@@ -17,7 +17,7 @@ export function StatusForm({ requestId, status }: { requestId: string; status: R
       <input type="hidden" name="requestId" value={requestId} />
       <Field id="status" label="Status" error={state.fieldErrors?.status}>
         {(a) => (
-          <Select {...a} name="status" defaultValue={status}>
+          <Select {...a} key={status} name="status" defaultValue={status}>
             {requestStatuses
               .filter((s) => s.value !== "DRAFT")
               .map((s) => (

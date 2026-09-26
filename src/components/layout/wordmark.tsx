@@ -19,7 +19,7 @@ export function Wordmark({ className, withMark = true }: { className?: string; w
       {withMark && <LogoMark />}
       <span aria-label="MovEra">
         <span aria-hidden="true">
-          MOV<span className="accent-serif px-[0.02em] text-[1.12em] font-normal text-flux">e</span>RA
+          MOV<span className="accent-serif px-[0.03em] text-[1.3em] font-normal leading-none text-flux">e</span>RA
         </span>
       </span>
     </span>

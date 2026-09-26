@@ -163,10 +163,10 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
       </StorySection>
       <div className="container-x grid gap-6 md:grid-cols-12">
         <Parallax offset={30} className="md:col-span-7">
-          <DetailFrame project={project} origin="0% 0%" />
+          <DetailFrame project={project} origin="18% 22%" />
         </Parallax>
         <Parallax offset={70} className="md:col-span-5 md:mt-24">
-          <DetailFrame project={project} origin="100% 100%" tall />
+          <DetailFrame project={project} origin="72% 50%" tall />
         </Parallax>
       </div>
 

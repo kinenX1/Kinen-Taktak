@@ -43,9 +43,9 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
 
   const isActive = (item: ShellNavItem) => (item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`));
 
-  const sidebar = (
+  const sidebar = (inDrawer = false) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center justify-between px-5">
+      <div className={cn("flex h-16 items-center justify-between px-5", inDrawer && "pr-16")}>
         <WordmarkLink className="text-lg" />
         <span className="rounded-full border border-line px-2 py-0.5 font-mono text-2xs uppercase tracking-[0.1em] text-fog-400">{area}</span>
       </div>
@@ -110,7 +110,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
 
   return (
     <div className="min-h-dvh bg-ink-950 lg:grid lg:grid-cols-[16.5rem_1fr]">
-      <aside className="sticky top-0 hidden h-dvh border-r border-line bg-ink-900/60 lg:block">{sidebar}</aside>
+      <aside className="sticky top-0 hidden h-dvh border-r border-line bg-ink-900/60 lg:block">{sidebar()}</aside>
 
       <div className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-line bg-ink-950/85 px-4 backdrop-blur-xl lg:hidden">
         <WordmarkLink className="text-lg" />
@@ -157,7 +157,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
               >
                 <Icons.Close size={18} />
               </button>
-              {sidebar}
+              {sidebar(true)}
             </motion.aside>
           </>
         )}

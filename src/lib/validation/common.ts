@@ -23,7 +23,8 @@ export const requiredText = (label: string, min: number, max: number) =>
   z
     .string({ error: `${label} is required.` })
     .trim()
-    .min(min, { error: min <= 1 ? `${label} is required.` : `${label} must be at least ${min} characters.` })
+    .min(1, { error: `${label} is required.` })
+    .min(min, { error: `${label} must be at least ${min} characters.` })
     .max(max, { error: `${label} must be ${max} characters or fewer.` });
 
 export const emailField = z

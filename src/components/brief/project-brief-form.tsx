@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, FormMessage, Input, Textarea } from "@/components/ui/field";
 import { ArrowLeft, Check } from "@/components/ui/icons";
-import { useLenis } from "@/components/motion/smooth-scroll";
 import { OptionCards } from "./option-cards";
 import { FileDrop } from "./file-drop";
 import { SuccessPanel } from "./success-panel";
@@ -47,15 +46,15 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
   const [review, setReview] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
-  const lenis = useLenis();
 
   const errors: Record<string, string[] | undefined> = { ...state.fieldErrors, ...clientErrors };
 
+  // Native scrolling uses the element's scroll-margin and stays in sync with Lenis.
   const scrollToTop = () => {
     const el = topRef.current;
-    if (!el) return;
-    if (lenis) lenis.scrollTo(el, { offset: -110, duration: 0.9 });
-    else el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!el || el.getBoundingClientRect().top >= 0) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   };
 
   // Restore unsent answers (e.g. after logging in mid-brief). Drafts from the server win.
@@ -112,7 +111,6 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
       } catch {}
     }
     if (state.fieldErrors || state.message || state.ok) scrollToTop();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   /** Validates the inputs of one step with the browser's constraint API. */
@@ -210,7 +208,7 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
 
   if (state.ok && state.reference) {
     return (
-      <div ref={topRef}>
+      <div ref={topRef} className="scroll-mt-28">
         <SuccessPanel reference={state.reference} name={review.contactName ?? defaults.contactName} />
       </div>
     );

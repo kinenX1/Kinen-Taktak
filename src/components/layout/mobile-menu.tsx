@@ -18,13 +18,17 @@ export function MobileMenu({
   isActive: (href: string) => boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLElement>("a")?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
       if (e.key !== "Tab" || !ref.current) return;
       // Keep focus inside the dialog (the toggle button stays reachable).
       const focusables = [
@@ -46,7 +50,7 @@ export function MobileMenu({
       document.removeEventListener("keydown", onKey);
       previouslyFocused?.focus();
     };
-  }, [onClose]);
+  }, []);
 
   const links = [...mainNav, { label: "Start a Project", href: "/start-project" }];
 
@@ -61,7 +65,7 @@ export function MobileMenu({
       animate={{ clipPath: "circle(150% at calc(100% - 2.5rem) 2.25rem)" }}
       exit={{ clipPath: "circle(0% at calc(100% - 2.5rem) 2.25rem)" }}
       transition={{ duration: 0.8, ease: ease.inOutQuint }}
-      className="grain fixed inset-0 z-[55] flex flex-col overflow-y-auto bg-ink-900 lg:hidden"
+      className="grain fixed inset-0 z-[45] flex flex-col overflow-y-auto bg-ink-900 lg:hidden"
     >
       <div
         aria-hidden="true"
@@ -83,8 +87,7 @@ export function MobileMenu({
                   aria-current={isActive(item.href) ? "page" : undefined}
                   className={cn(
                     "group flex items-baseline gap-4 py-1 text-[clamp(2.5rem,12vw,4.5rem)] font-medium leading-[1.02] tracking-[-0.05em]",
-                    isActive(item.href) ? "text-fog-50" : "text-fog-400",
-                    item.href === "/start-project" && "text-flux",
+                    item.href === "/start-project" ? "text-flux" : isActive(item.href) ? "text-fog-50" : "text-fog-400",
                   )}
                 >
                   <span className="font-mono text-xs tracking-normal text-fog-500">0{i + 1}</span>

@@ -11,7 +11,7 @@ import { uploadRules } from "@/config/project-brief";
  * implementation (S3, R2, GCS) keeping the same signatures.
  */
 
-const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? "./storage/uploads");
+const UPLOAD_DIR = path.resolve(/*turbopackIgnore: true*/ process.env.UPLOAD_DIR ?? "./storage/uploads");
 
 type Kind = { mime: string; exts: string[]; check: (b: Buffer) => boolean };
 
@@ -90,9 +90,9 @@ export async function validateUpload(file: File): Promise<ValidatedFile | { erro
 }
 
 export async function storeFile(file: ValidatedFile) {
-  await mkdir(UPLOAD_DIR, { recursive: true });
+  await mkdir(/*turbopackIgnore: true*/ UPLOAD_DIR, { recursive: true });
   const storedName = `${randomUUID()}${file.ext}`;
-  await writeFile(path.join(UPLOAD_DIR, storedName), file.buffer, { mode: 0o600 });
+  await writeFile(/*turbopackIgnore: true*/ path.join(UPLOAD_DIR, storedName), file.buffer, { mode: 0o600 });
   return storedName;
 }
 
@@ -103,11 +103,11 @@ function resolveStored(storedName: string) {
 }
 
 export function readStoredFile(storedName: string) {
-  return readFile(resolveStored(storedName));
+  return readFile(/*turbopackIgnore: true*/ resolveStored(storedName));
 }
 
 export async function deleteStoredFile(storedName: string) {
-  await unlink(resolveStored(storedName)).catch(() => {});
+  await unlink(/*turbopackIgnore: true*/ resolveStored(storedName)).catch(() => {});
 }
 
 export const isInlineSafe = (mime: string) =>
