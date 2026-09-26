@@ -1,0 +1,281 @@
+// MovEra data model.
+// Run `npm run db:migrate` after changing this file.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  CLIENT
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(CLIENT)
+  phone        String?
+  company      String?
+  country      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions        Session[]
+  resetTokens     PasswordResetToken[]
+  projectRequests ProjectRequest[]
+  updates         ProjectUpdate[]
+  contactMessages ContactMessage[]
+}
+
+/// Database-backed session. `id` is the SHA-256 hash of the token stored in
+/// the client's cookie, so a leaked database row cannot be replayed.
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Client platform
+// ─────────────────────────────────────────────────────────────
+
+enum RequestStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  CONTACTED
+  PROPOSAL
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectType {
+  WEBSITE
+  WEB_APP
+  MOBILE_APP
+  ECOMMERCE
+  SAAS
+  CUSTOM_SOFTWARE
+  UI_UX
+  AUTOMATION
+  AI
+  OTHER
+}
+
+/// A client's project brief. It moves through the RequestStatus lifecycle and
+/// becomes an active project once it reaches IN_PROGRESS.
+model ProjectRequest {
+  id        String        @id @default(cuid())
+  /// Human-friendly public reference, e.g. MV-7K3Q9P.
+  reference String        @unique
+  userId    String
+  status    RequestStatus @default(SUBMITTED)
+
+  title       String
+  projectType ProjectType
+  otherType   String?
+
+  // Contact snapshot at the time of submission.
+  contactName    String
+  contactEmail   String
+  contactPhone   String?
+  contactCompany String?
+  contactCountry String?
+
+  description    String
+  business       String?
+  targetUsers    String?
+  features       String?
+  /// Key from `budgetRanges` in src/config/project-brief.ts.
+  budget         String?
+  budgetCustom   String?
+  /// Key from `timelines` in src/config/project-brief.ts.
+  timeline       String?
+  inspiration    String[]
+  additionalInfo String?
+
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files   ProjectFile[]
+  updates ProjectUpdate[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+model ProjectFile {
+  id           String   @id @default(cuid())
+  requestId    String
+  originalName String
+  /// Randomised name on disk; never derived from user input.
+  storedName   String   @unique
+  mimeType     String
+  size         Int
+  createdAt    DateTime @default(now())
+
+  request ProjectRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+}
+
+enum UpdateKind {
+  STATUS_CHANGE
+  NOTE
+}
+
+enum UpdateVisibility {
+  /// Shown on the client's dashboard.
+  CLIENT
+  /// Only visible to MovEra administrators.
+  INTERNAL
+}
+
+model ProjectUpdate {
+  id         String           @id @default(cuid())
+  requestId  String
+  authorId   String?
+  kind       UpdateKind
+  visibility UpdateVisibility @default(CLIENT)
+  body       String?
+  fromStatus RequestStatus?
+  toStatus   RequestStatus?
+  createdAt  DateTime         @default(now())
+
+  request ProjectRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([requestId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Marketing content (managed from /admin)
+// ─────────────────────────────────────────────────────────────
+
+enum PortfolioCategory {
+  WEBSITE
+  APP
+  WEB_APP
+  ECOMMERCE
+  SOFTWARE
+  UI_UX
+}
+
+enum VisualVariant {
+  BROWSER
+  PHONE
+  DASHBOARD
+  COMMERCE
+  SYSTEM
+}
+
+model PortfolioProject {
+  id       String            @id @default(cuid())
+  slug     String            @unique
+  title    String
+  category PortfolioCategory
+  /// Short label for who the work was for, e.g. "Demo — Hospitality".
+  client   String
+  year     Int
+  summary  String
+  overview    String
+  challenge   String
+  solution    String
+  design      String
+  development String
+  results      String[]
+  technologies String[]
+
+  /// Brand accent used by the generated cover visual (hex colour).
+  accent        String        @default("#FF5A1F")
+  visualVariant VisualVariant @default(BROWSER)
+  /// Optional real cover image. When empty the generated visual is used.
+  coverImage    String?
+  gallery       String[]
+  videoUrl      String?
+
+  featured  Boolean @default(false)
+  published Boolean @default(true)
+  /// Marks example work created for demonstration, not real client work.
+  isDemo    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, sortOrder])
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  shortTitle   String
+  tagline      String
+  description  String
+  audience     String
+  capabilities String[]
+  benefits     String[]
+  technologies String[]
+  /// Portfolio categories used to surface related example work.
+  relatedCategories PortfolioCategory[]
+  sortOrder    Int      @default(0)
+  published    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  subject   String
+  message   String
+  status    MessageStatus @default(NEW)
+  userId    String?
+  createdAt DateTime      @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
