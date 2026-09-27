@@ -9,7 +9,7 @@ export const siteConfig = {
   description:
     "MovEra is a digital product studio. We design and engineer websites, web and mobile applications, SaaS platforms, e-commerce, automation and AI-powered products.",
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, ""),
-  email: "MoveEra.Company@gmail.com",
+  email: "MovEra.Company@gmail.com",
   /** Leave a link empty to hide it everywhere. */
   socials: [
     { label: "LinkedIn", href: "" },
