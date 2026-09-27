@@ -75,42 +75,71 @@ export default async function AdminRequestsPage({ searchParams }: PageProps<"/ad
 
       <Panel>
         {items.length ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="font-mono text-2xs uppercase tracking-[0.1em] text-fog-500">
-                <tr className="border-b border-line">
-                  <th scope="col" className="px-5 py-3 font-normal">Request</th>
-                  <th scope="col" className="px-5 py-3 font-normal">Client</th>
-                  <th scope="col" className="px-5 py-3 font-normal">Type</th>
-                  <th scope="col" className="px-5 py-3 font-normal">Budget</th>
-                  <th scope="col" className="px-5 py-3 font-normal">Status</th>
-                  <th scope="col" className="px-5 py-3 font-normal">Received</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {items.map((r) => (
-                  <tr key={r.id} className="transition-colors hover:bg-fog-50/[0.03]">
-                    <td className="px-5 py-4">
-                      <Link href={`/admin/requests/${r.reference}`} className="font-medium text-fog-50 hover:underline">
-                        {r.title}
-                      </Link>
-                      <p className="font-mono text-2xs text-fog-500">{r.reference}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="text-fog-200">{r.contactName}</p>
-                      <p className="text-xs text-fog-500">{r.contactCompany ?? r.contactEmail}</p>
-                    </td>
-                    <td className="px-5 py-4 text-fog-400">{labelFor.projectType(r.projectType)}</td>
-                    <td className="px-5 py-4 text-fog-400">{labelFor.budget(r.budget)}</td>
-                    <td className="px-5 py-4">
+          <>
+            {/* Phones: stacked rows so status stays visible without sideways scrolling. */}
+            <ul className="divide-y divide-line md:hidden">
+              {items.map((r) => (
+                <li key={r.id}>
+                  <Link
+                    href={`/admin/requests/${r.reference}`}
+                    className="flex flex-col gap-2 px-5 py-4 transition-colors active:bg-fog-50/[0.03]"
+                  >
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block font-medium text-fog-50">{r.title}</span>
+                        <span className="font-mono text-2xs text-fog-500">{r.reference}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-fog-500">{formatDate(r.createdAt)}</span>
+                    </span>
+                    <span className="text-sm text-fog-400">
+                      {r.contactName}
+                      {r.contactCompany ? ` · ${r.contactCompany}` : ""}
+                    </span>
+                    <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-fog-500">
                       <StatusBadge status={r.status} />
-                    </td>
-                    <td className="px-5 py-4 text-fog-500">{formatDate(r.createdAt)}</td>
+                      {labelFor.projectType(r.projectType)} · {labelFor.budget(r.budget)}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead className="font-mono text-2xs uppercase tracking-[0.1em] text-fog-500">
+                  <tr className="border-b border-line">
+                    <th scope="col" className="px-5 py-3 font-normal">Request</th>
+                    <th scope="col" className="px-5 py-3 font-normal">Client</th>
+                    <th scope="col" className="px-5 py-3 font-normal">Type</th>
+                    <th scope="col" className="px-5 py-3 font-normal">Budget</th>
+                    <th scope="col" className="px-5 py-3 font-normal">Status</th>
+                    <th scope="col" className="px-5 py-3 font-normal">Received</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {items.map((r) => (
+                    <tr key={r.id} className="transition-colors hover:bg-fog-50/[0.03]">
+                      <td className="px-5 py-4">
+                        <Link href={`/admin/requests/${r.reference}`} className="font-medium text-fog-50 hover:underline">
+                          {r.title}
+                        </Link>
+                        <p className="font-mono text-2xs text-fog-500">{r.reference}</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="text-fog-200">{r.contactName}</p>
+                        <p className="text-xs text-fog-500">{r.contactCompany ?? r.contactEmail}</p>
+                      </td>
+                      <td className="px-5 py-4 text-fog-400">{labelFor.projectType(r.projectType)}</td>
+                      <td className="px-5 py-4 text-fog-400">{labelFor.budget(r.budget)}</td>
+                      <td className="px-5 py-4">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-5 py-4 text-fog-500">{formatDate(r.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : (
           <EmptyState icon={<Folder size={20} />} title="No requests match">
             Try a different search or clear the filters.
