@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Motion production sources (plain browser/Node scripts, not part of the app):
+    "productions/**",
   ]),
 ]);
 

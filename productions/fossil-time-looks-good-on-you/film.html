@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FOSSIL — Time Looks Good On You</title>
+<style>
+@font-face{font-family:Montserrat;src:url(assets/Montserrat-Variable.woff2) format("woff2");font-weight:100 900}
+html,body{margin:0;background:#0d0d0f}
+</style>
+<link rel="stylesheet" href="film.css">
+</head><body>
+<div id="stage" class="fm-stage"></div>
+<script src="meta.js"></script>
+<script src="engine.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+FossilFilm.init(document.getElementById('stage'), q.get('f') || '916', +(q.get('s') || 1)).then(() => {
+  window.__seek = t => FossilFilm.render(t);
+  FossilFilm.render(+(q.get('t') || 0));
+  window.__ready = true;
+});
+</script>
+</body></html>
