@@ -5,14 +5,10 @@ Sponsorisé par MovEra.
 
 Aucune installation : `index.html`, `styles.css` et `app.js` suffisent.
 
-## Avec MovEra (recommandé)
-
-Depuis la racine du projet, `npm run dev`, puis ouvrez http://localhost:3000/learn
-
-## Voir le site seul en local
+## Voir le site en local
 
 ```bash
-cd public/learn
+cd learn
 python3 -m http.server 8000
 # puis ouvrir http://localhost:8000
 ```
@@ -20,5 +16,5 @@ python3 -m http.server 8000
 ## Mettre en ligne (Vercel)
 
 1. Sur vercel.com : **Add New › Project**, importez ce dépôt.
-2. **Root Directory** : `public/learn`. **Framework Preset** : *Other*. Pas de commande de build.
+2. **Root Directory** : `learn`. **Framework Preset** : *Other*. Pas de commande de build.
 3. Cliquez **Deploy** : le site est en ligne sur une adresse `*.vercel.app`.
