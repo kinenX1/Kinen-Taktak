@@ -1,0 +1,16 @@
+# Render Blueprint: hosts The Legend of Sephora as a free static site.
+# The MovEra app in this repo is deployed on Vercel and is not part of this Blueprint.
+services:
+  - type: web
+    name: legend-of-sephora
+    runtime: static
+    buildCommand: node games/legend-of-sephora/build.mjs
+    staticPublishPath: games/legend-of-sephora/dist
+    buildFilter:
+      paths:
+        - games/legend-of-sephora/**
+        - render.yaml
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache

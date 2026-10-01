@@ -16,11 +16,24 @@ It is plain HTML, CSS and JavaScript with no build step. The art is drawn in cod
 | `js/ui.js` | Menu, skin editor, castle and shop panels, worker chat, input |
 | `js/main.js` | Boot and game loop |
 
+## Putting it on the web (Render)
+
+`render.yaml` at the repo root tells Render how to host the game as a free static site.
+`build.mjs` wraps `index.html` in a full HTML page and copies everything into `dist/`.
+
+1. Sign in at https://render.com with GitHub.
+2. Click **New** → **Blueprint**, pick `kinenX1/Kinen-Taktak` and the branch that has `render.yaml`.
+3. Click **Deploy**. The game goes live at `https://legend-of-sephora.onrender.com`. Render picks a nearby name if that one is taken.
+
+You can also add it by hand with **New** → **Static Site**. Use the build command `node games/legend-of-sephora/build.mjs` and the publish directory `games/legend-of-sephora/dist`.
+
+Render rebuilds the site whenever this folder changes on that branch.
+
 ## Running it locally
 
 ```bash
-cd games/legend-of-sephora
-python3 -m http.server 8000   # then open http://localhost:8000
+node games/legend-of-sephora/build.mjs
+cd games/legend-of-sephora/dist && python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-Locally, workers understand the built-in commands (`/work`, `/build house`, `/eat`, `/sleep`, `/take 5 gold`, `/delete`, …). Free-form orders handled by Claude, and saves to your Claude account, only work in the published version on claude.ai.
+Locally, workers understand the built-in commands (`/work`, `/build house`, `/eat`, `/sleep`, `/take 5 gold`, `/delete`, …). Free-form orders handled by Claude, and saves to your Claude account, only work in the version published on claude.ai. On Render and other hosts the game saves in the player's browser.
