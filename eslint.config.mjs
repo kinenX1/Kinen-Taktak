@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone browser games published as artifacts, not part of the Next.js app:
+    "games/**",
   ]),
 ]);
 
