@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn — Apprendre SketchUp 2016</title>
+<meta name="description" content="Learn, le guide en français pour apprendre SketchUp 2016 : définition, interface, chaque outil expliqué, un tutoriel pas à pas et tous les raccourcis.">
+<meta name="theme-color" content="#1F4BFF">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Instrument+Sans:wght@400..700&amp;family=JetBrains+Mono:wght@400..700&amp;display=swap">
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div id="top" class="lp" style="font-family: 'Instrument Sans', system-ui, sans-serif; color: #0A1B3D; background-color: #FFFFFF">
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 76px">
+    <a href="#top" class="logo" aria-label="Learn, retour en haut" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #0A1B3D">
+      <svg width="34" height="36" viewBox="0 0 34 36" aria-hidden="true" style="overflow: visible">
+        <path d="M5 11v14l12 7V18z" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="2" stroke-linejoin="round"></path>
+        <path d="M29 11v14l-12 7V18z" fill="#DCE6FF" stroke="#0A1B3D" stroke-width="2" stroke-linejoin="round"></path>
+        <path class="lg-top" d="M17 4l12 7-12 7-12-7z" fill="#1F4BFF" stroke="#0A1B3D" stroke-width="2" stroke-linejoin="round"></path>
+      </svg>
+      <span class="disp" style="font-size: 27px; font-weight: 800; letter-spacing: -0.04em">Learn</span>
+    </a>
+    <nav class="navlinks" aria-label="Navigation principale" style="display: flex; align-items: center; gap: 28px">
+      <a class="nl" href="#decouvrir">Découvrir</a>
+      <a class="nl" href="#interface">Interface</a>
+      <a class="nl" href="#outils">Outils</a>
+      <a class="nl" href="#tutoriel">Tutoriel</a>
+      <a class="nl" href="#raccourcis">Raccourcis</a>
+      <a class="nl" href="#faq">FAQ</a>
+    </nav>
+    <a class="btn btn-p" href="#tutoriel" style="min-height: 44px; padding: 0 18px; font-size: 15px">Commencer
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+    </a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="accueil" class="sec" style="position: relative; padding: 56px 0 88px">
+  <div class="wrap g-hero" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 56px; align-items: center">
+    <div>
+      <div class="intro dl1" style="display: inline-flex; align-items: center; gap: 12px; padding: 8px 16px 8px 14px; border-radius: 999px; background-color: #EEF3FF; border: 1px solid #D6E1FF; font-size: 14px; font-weight: 600; color: #0B2A8F">
+        <span class="live"></span>Guide complet · SketchUp 2016 · en français
+      </div>
+      <h1 class="disp h1 intro dl2" style="margin-top: 26px; font-size: 80px; line-height: 0.98; letter-spacing: -0.045em; font-weight: 800; color: #0A1B3D">Apprenez SketchUp. Créez en <span class="hl">3D<svg class="hl-dim" viewBox="0 0 100 16" preserveAspectRatio="none" aria-hidden="true"><line class="draw" x1="3" y1="8" x2="97" y2="8" vector-effect="non-scaling-stroke"></line><line x1="3" y1="1" x2="3" y2="15" vector-effect="non-scaling-stroke"></line><line x1="97" y1="1" x2="97" y2="15" vector-effect="non-scaling-stroke"></line></svg></span>.</h1>
+      <p class="intro dl3" style="margin-top: 32px; max-width: 540px; font-size: 20px; line-height: 1.6; color: #3D4F75">Learn vous explique SketchUp 2016 de A à Z : ce qu’est le logiciel, chaque outil et son raccourci, un tutoriel pas à pas pour modéliser votre première maison, et les astuces pour réussir vos présentations 3D.</p>
+      <div class="intro dl4" style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px">
+        <a class="btn btn-p" href="#tutoriel">Commencer le tutoriel
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
+        <a class="btn btn-s" href="#outils">Explorer les outils</a>
+      </div>
+      <div class="intro dl5" style="display: flex; flex-wrap: wrap; gap: 36px; margin-top: 44px; padding-top: 28px; border-top: 1px solid #E3EAFF">
+        <div>
+          <div class="disp" style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; color: #1F4BFF">19</div>
+          <div style="font-size: 14px; color: #3D4F75">outils expliqués</div>
+        </div>
+        <div>
+          <div class="disp" style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; color: #1F4BFF">6</div>
+          <div style="font-size: 14px; color: #3D4F75">étapes de tutoriel</div>
+        </div>
+        <div>
+          <div class="disp" style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; color: #1F4BFF">20</div>
+          <div style="font-size: 14px; color: #3D4F75">raccourcis clavier</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hv intro dl3" role="img" aria-label="Animation : une maison se construit dans SketchUp, du rectangle au toit colorié, puis la caméra tourne autour" style="position: relative; height: 600px; border-radius: 32px; border: 1px solid #D6E1FF; background-color: #F7F9FF; overflow: hidden">
+      <div class="hv-grid"></div>
+      <div class="stage">
+        <div class="world">
+          <div class="ground"></div>
+          <div class="hshadow hx"></div>
+          <div class="ax ax-rn"></div>
+          <div class="ax ax-r"></div>
+          <div class="ax ax-gn"></div>
+          <div class="ax ax-g"></div>
+          <div class="ax-b"></div>
+          <div class="foot"><div class="foot-in hx"></div></div>
+          <div class="w3 walls hx">
+            <div class="hf hf-bk">
+              <div class="hw hx" style="left: 18px; top: 14px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 93px; top: 14px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 168px; top: 14px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 18px; top: 64px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 93px; top: 64px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 168px; top: 64px; width: 34px; height: 28px"></div>
+            </div>
+            <div class="hf hf-lt">
+              <div class="hw hx" style="left: 26px; top: 14px; width: 40px; height: 28px"></div>
+              <div class="hw hx" style="left: 94px; top: 14px; width: 40px; height: 28px"></div>
+              <div class="hw hx" style="left: 26px; top: 64px; width: 40px; height: 28px"></div>
+              <div class="hw hx" style="left: 94px; top: 64px; width: 40px; height: 28px"></div>
+            </div>
+            <div class="hf hf-rt">
+              <div class="hw hx" style="left: 26px; top: 14px; width: 40px; height: 28px"></div>
+              <div class="hw hx" style="left: 94px; top: 14px; width: 40px; height: 28px"></div>
+              <div class="hw hx" style="left: 26px; top: 64px; width: 40px; height: 28px"></div>
+              <div class="hw hx" style="left: 94px; top: 64px; width: 40px; height: 28px"></div>
+            </div>
+            <div class="hf hf-fr">
+              <div class="hw hx" style="left: 18px; top: 14px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 93px; top: 14px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 168px; top: 14px; width: 34px; height: 28px"></div>
+              <div class="hw hx" style="left: 18px; top: 64px; width: 34px; height: 28px"></div>
+              <div class="hd hx" style="left: 93px; top: 60px; width: 34px; height: 56px"></div>
+              <div class="hw hx" style="left: 168px; top: 64px; width: 34px; height: 28px"></div>
+            </div>
+            <div class="hf-tp hx"></div>
+            <div class="w3 roof hx">
+              <div class="hr hr-bk hx"></div>
+              <div class="hr hr-fr hx"></div>
+              <div class="hg hg-lt hx"><svg viewBox="0 0 160 70" aria-hidden="true"><polygon points="80,1 159,69 1,69"></polygon></svg></div>
+              <div class="hg hg-rt hx"><svg viewBox="0 0 160 70" aria-hidden="true"><polygon points="80,1 159,69 1,69"></polygon></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pal" aria-hidden="true" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 18px; background-color: #FFFFFF; border: 1px solid #D6E1FF; box-shadow: 0 20px 40px -24px rgba(14, 42, 110, 0.5)">
+        <span class="pt pt1 hx"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6" width="17" height="12" rx="1.2"></rect><circle cx="3.5" cy="18" r="1.6" fill="currentColor"></circle></svg></span>
+        <span class="pt pt2 hx"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5l9 4.5 9-4.5-9-4.5z"></path><path d="M12 13V2.5"></path><path d="M8.5 6L12 2.5 15.5 6"></path></svg></span>
+        <span class="pt pt3 hx"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"></path><path d="M9 5.5L12 2.5l3 3M9 18.5l3 3 3-3M5.5 9L2.5 12l3 3M18.5 9l3 3-3 3"></path></svg></span>
+        <span class="pt pt4 hx"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11.5L11 5l7.5 7.5L12 19z"></path><path d="M4.5 11.5h14"></path><path d="M9 3l2 2"></path><path d="M20.5 15.5s-1.5 2-1.5 3a1.5 1.5 0 0 0 3 0c0-1-1.5-3-1.5-3z"></path></svg></span>
+        <span class="pt pt5 hx"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-13.7 5.6"></path><path d="M4 12a8 8 0 0 1 13.7-5.6"></path><path d="M18 2.8v4h-4"></path><path d="M6 21.2v-4h4"></path><circle cx="12" cy="12" r="1.8"></circle></svg></span>
+      </div>
+
+      <div aria-hidden="true" style="position: absolute; right: 20px; top: 20px; width: 264px; height: 70px">
+        <div class="ph ph1 hx chipc"><span><span class="mono" style="display: block; font-size: 11px; letter-spacing: 0.08em; color: #1F4BFF">ÉTAPE 1/5</span><span style="display: block; margin-top: 2px; font-size: 16px; font-weight: 700">Rectangle</span></span><span class="kbd">R</span></div>
+        <div class="ph ph2 hx chipc"><span><span class="mono" style="display: block; font-size: 11px; letter-spacing: 0.08em; color: #1F4BFF">ÉTAPE 2/5</span><span style="display: block; margin-top: 2px; font-size: 16px; font-weight: 700">Pousser/Tirer</span></span><span class="kbd">P</span></div>
+        <div class="ph ph3 hx chipc"><span><span class="mono" style="display: block; font-size: 11px; letter-spacing: 0.08em; color: #1F4BFF">ÉTAPE 3/5</span><span style="display: block; margin-top: 2px; font-size: 16px; font-weight: 700">Ligne + Déplacer</span></span><span class="kbd">M</span></div>
+        <div class="ph ph4 hx chipc"><span><span class="mono" style="display: block; font-size: 11px; letter-spacing: 0.08em; color: #1F4BFF">ÉTAPE 4/5</span><span style="display: block; margin-top: 2px; font-size: 16px; font-weight: 700">Colorier</span></span><span class="kbd">B</span></div>
+        <div class="ph ph5 hx chipc"><span><span class="mono" style="display: block; font-size: 11px; letter-spacing: 0.08em; color: #1F4BFF">ÉTAPE 5/5</span><span style="display: block; margin-top: 2px; font-size: 16px; font-weight: 700">Orbite</span></span><span class="kbd">O</span></div>
+      </div>
+
+      <div aria-hidden="true" style="position: absolute; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 14px; background-color: #0A1B3D; color: #FFFFFF; box-shadow: 0 18px 36px -20px rgba(10, 27, 61, 0.8)">
+        <span class="mono" style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #9DB6FF">Mesures</span>
+        <span style="position: relative; display: block; width: 138px; height: 34px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.1)">
+          <span class="ph ph1 hx vcb">11m;8m</span>
+          <span class="ph ph2 hx vcb">6m</span>
+          <span class="ph ph3 hx vcb">3,5m</span>
+          <span class="ph ph4 hx vcb">Bleu cobalt</span>
+          <span class="ph ph5 hx vcb">360°</span>
+        </span>
+      </div>
+      <span class="hv-cap mono" aria-hidden="true" style="position: absolute; left: 22px; bottom: 30px; font-size: 12px; letter-spacing: 0.06em; color: #3D4F75">DÉMO EN DIRECT · 5 GESTES, 1 MAISON</span>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="mq" aria-hidden="true" style="overflow: hidden; background-color: #1F4BFF; padding: 22px 0">
+  <div class="mq-track">
+    <div class="mq-set">
+      <span class="mq-item">Ligne</span><span class="mq-item">Rectangle</span><span class="mq-item">Cercle</span><span class="mq-item">Arc</span><span class="mq-item">Pousser/Tirer</span><span class="mq-item">Suivez-moi</span><span class="mq-item">Décaler</span><span class="mq-item">Déplacer</span><span class="mq-item">Faire pivoter</span><span class="mq-item">Échelle</span><span class="mq-item">Mètre</span><span class="mq-item">Cotation</span><span class="mq-item">Colorier</span><span class="mq-item">Gomme</span><span class="mq-item">Orbite</span><span class="mq-item">Panoramique</span><span class="mq-item">Zoom</span><span class="mq-item">Scènes</span><span class="mq-item">Styles</span><span class="mq-item">Ombres</span><span class="mq-item">LayOut</span>
+    </div>
+    <div class="mq-set">
+      <span class="mq-item">Ligne</span><span class="mq-item">Rectangle</span><span class="mq-item">Cercle</span><span class="mq-item">Arc</span><span class="mq-item">Pousser/Tirer</span><span class="mq-item">Suivez-moi</span><span class="mq-item">Décaler</span><span class="mq-item">Déplacer</span><span class="mq-item">Faire pivoter</span><span class="mq-item">Échelle</span><span class="mq-item">Mètre</span><span class="mq-item">Cotation</span><span class="mq-item">Colorier</span><span class="mq-item">Gomme</span><span class="mq-item">Orbite</span><span class="mq-item">Panoramique</span><span class="mq-item">Zoom</span><span class="mq-item">Scènes</span><span class="mq-item">Styles</span><span class="mq-item">Ombres</span><span class="mq-item">LayOut</span>
+    </div>
+  </div>
+</div>
+
+<!-- 01 DÉFINITION -->
+<section id="decouvrir" class="sec" style="padding: 120px 0; background-color: #FFFFFF">
+  <div class="wrap">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow">01 — Définition</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">Qu’est-ce que SketchUp ?</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #3D4F75">SketchUp est un logiciel de modélisation 3D pensé pour être aussi intuitif qu’un crayon. On y dessine des arêtes et des faces, puis on les transforme en volumes avec l’outil Pousser/Tirer. Architectes, architectes d’intérieur, paysagistes, menuisiers et étudiants l’utilisent pour concevoir, visualiser et présenter leurs projets.</p>
+    </div>
+
+    <div class="g-3" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 64px">
+      <article class="card rv" style="padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <div class="cv">
+          <svg width="240" height="120" viewBox="0 0 240 120" aria-hidden="true">
+            <path class="dpath fill-on" d="M40 60 L120 20 L200 60 L120 100 Z" style="stroke-dasharray: 358; stroke-dashoffset: 358"></path>
+            <circle cx="40" cy="60" r="4.5" fill="#0A1B3D"></circle>
+            <circle cx="120" cy="20" r="4.5" fill="#0A1B3D"></circle>
+            <circle cx="200" cy="60" r="4.5" fill="#0A1B3D"></circle>
+            <circle cx="120" cy="100" r="4.5" fill="#0A1B3D"></circle>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Arêtes et faces</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Tout modèle SketchUp est fait de lignes (les arêtes) et de surfaces planes (les faces). Dès que des arêtes forment une boucle fermée sur un même plan, une face apparaît automatiquement.</p>
+      </article>
+      <article class="card rv" style="padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <div class="cv">
+          <svg width="240" height="130" viewBox="0 0 240 130" aria-hidden="true">
+            <line x1="120" y1="66" x2="220" y2="116" stroke="#E5484D" stroke-width="2.5"></line>
+            <line x1="120" y1="66" x2="60" y2="36" stroke="#E5484D" stroke-width="2" stroke-dasharray="4 5"></line>
+            <line x1="120" y1="66" x2="20" y2="116" stroke="#2EAE61" stroke-width="2.5"></line>
+            <line x1="120" y1="66" x2="180" y2="36" stroke="#2EAE61" stroke-width="2" stroke-dasharray="4 5"></line>
+            <line x1="120" y1="66" x2="120" y2="6" stroke="#1F4BFF" stroke-width="2.5"></line>
+            <circle cx="120" cy="66" r="4" fill="#0A1B3D"></circle>
+            <g class="inf">
+              <circle cx="160" cy="86" r="6.5" fill="#E5484D" stroke="#FFFFFF" stroke-width="2"></circle>
+              <rect x="146" y="58" width="68" height="20" rx="5" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="1"></rect>
+              <text class="svgt" x="180" y="72" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0A1B3D">Axe rouge</text>
+            </g>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Axes rouge, vert, bleu</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Trois axes guident le dessin : rouge et vert au sol, bleu vers le haut. Le moteur d’inférence vous signale en couleur quand vous êtes aligné sur l’un d’eux.</p>
+      </article>
+      <article class="card rv" style="padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <div class="cv">
+          <svg width="240" height="120" viewBox="0 0 240 120" aria-hidden="true">
+            <rect class="cmp-edit" x="28" y="24" width="64" height="66" fill="none" stroke="#1F4BFF" stroke-width="1.5" stroke-dasharray="4 4"></rect>
+            <g class="bx" transform="translate(60 30)"><polygon class="bx-l" points="-26,13 0,26 0,50 -26,37"></polygon><polygon class="bx-r" points="0,26 26,13 26,37 0,50"></polygon><polygon class="cmp-top" points="0,0 26,13 0,26 -26,13" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="1.5" stroke-linejoin="round"></polygon></g>
+            <g class="bx" transform="translate(120 30)"><polygon class="bx-l" points="-26,13 0,26 0,50 -26,37"></polygon><polygon class="bx-r" points="0,26 26,13 26,37 0,50"></polygon><polygon class="cmp-top" points="0,0 26,13 0,26 -26,13" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="1.5" stroke-linejoin="round"></polygon></g>
+            <g class="bx" transform="translate(180 30)"><polygon class="bx-l" points="-26,13 0,26 0,50 -26,37"></polygon><polygon class="bx-r" points="0,26 26,13 26,37 0,50"></polygon><polygon class="cmp-top" points="0,0 26,13 0,26 -26,13" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="1.5" stroke-linejoin="round"></polygon></g>
+            <text class="svgt" x="120" y="108" text-anchor="middle" font-size="10.5" font-weight="700" fill="#3D4F75">3 copies d’un même composant</text>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 24px; font-weight: 700; letter-spacing: -0.02em">Groupes et composants</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Regroupez la géométrie pour qu’elle ne se colle pas au reste du modèle. Un composant se répète : modifiez-en un, toutes ses copies se mettent à jour.</p>
+      </article>
+    </div>
+
+    <div class="g-disc" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 24px">
+      <div class="card rv" style="padding: 36px">
+        <span class="mono" style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #1F4BFF">Repères</span>
+        <h3 class="disp" style="margin-top: 10px; font-size: 30px; font-weight: 800; letter-spacing: -0.03em">Une histoire en quatre dates</h3>
+        <ol class="tl" style="margin-top: 30px">
+          <li><span class="tl-y disp">2000</span><p>@Last Software, à Boulder (Colorado), lance SketchUp : un modeleur 3D pensé pour les concepteurs, simple comme un crayon.</p></li>
+          <li><span class="tl-y disp">2006</span><p>Google rachète SketchUp. Google SketchUp et sa version gratuite popularisent le logiciel dans le monde entier.</p></li>
+          <li><span class="tl-y disp">2012</span><p>Trimble, spécialiste des technologies pour la construction, rachète SketchUp à Google.</p></li>
+          <li><span class="tl-y disp">2015</span><p>En novembre sort SketchUp 2016, en deux éditions : Make (gratuite) et Pro. C’est la version présentée sur Learn.</p></li>
+        </ol>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 24px">
+        <div class="card rv" style="padding: 32px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <h3 class="disp" style="font-size: 26px; font-weight: 800; letter-spacing: -0.03em">SketchUp Make 2016</h3>
+            <span class="tag">Gratuit</span>
+          </div>
+          <p style="font-size: 15.5px; line-height: 1.55; color: #3D4F75">Pour un usage personnel, éducatif et non commercial.</p>
+          <ul class="ck">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F4BFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Toute la modélisation 3D</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F4BFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Accès à la 3D Warehouse et à l’Extension Warehouse</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F4BFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Scènes, styles, ombres et export d’images</li>
+          </ul>
+        </div>
+        <div class="card rv" style="padding: 32px; display: flex; flex-direction: column; gap: 16px; background-color: #0A1F5C; border-color: #0A1F5C; color: #FFFFFF">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <h3 class="disp" style="font-size: 26px; font-weight: 800; letter-spacing: -0.03em">SketchUp Pro 2016</h3>
+            <span class="tag" style="background-color: #1F4BFF; color: #FFFFFF">Payant</span>
+          </div>
+          <p style="font-size: 15.5px; line-height: 1.55; color: #C9D6FF">Pour un usage professionnel et commercial.</p>
+          <ul class="ck">
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9DB6FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Tout ce que propose Make</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9DB6FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>LayOut : plans et documents de présentation 2D</li>
+            <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9DB6FF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>Style Builder et import/export CAO (DWG, DXF…)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 COMPARER -->
+<section id="comparer" class="sec" style="padding: 112px 0; background-color: #F3F6FF">
+  <div class="wrap">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow">02 — Comparer</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">SketchUp ou Blender ?</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #3D4F75">Les deux logiciels créent de la 3D, mais pas de la même façon. Choisissez selon ce que vous voulez construire et présenter.</p>
+    </div>
+    <div class="rv" style="margin-top: 48px; overflow-x: auto; padding-bottom: 6px">
+      <table class="cmp">
+        <thead>
+          <tr><th scope="col">Critère</th><th scope="col" class="is-su">SketchUp 2016</th><th scope="col">Blender</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Façon de modéliser</th><td class="is-su">Dessin direct : arêtes, faces et Pousser/Tirer</td><td>Maillages, modificateurs et sculpture</td></tr>
+          <tr><th scope="row">Prise en main</th><td class="is-su">Très rapide, pensée pour débuter</td><td>Plus longue, interface très riche</td></tr>
+          <tr><th scope="row">Idéal pour</th><td class="is-su">Architecture, intérieur, mobilier, paysage</td><td>Personnages, animation, effets visuels</td></tr>
+          <tr><th scope="row">Présentation</th><td class="is-su">Scènes animées, styles, ombres, LayOut (Pro)</td><td>Rendu réaliste intégré (Cycles, Eevee)</td></tr>
+          <tr><th scope="row">Prix</th><td class="is-su">Make gratuit (non commercial), Pro payant</td><td>Gratuit et open source</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tip rv" style="margin-top: 20px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"></path></svg>
+      <p><strong>Astuce :</strong> beaucoup de designers modélisent dans SketchUp pour sa rapidité, puis exportent leur modèle vers Blender pour le rendu final.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 03 INTERFACE -->
+<section id="interface" class="sec" style="padding: 120px 0; background-color: #FFFFFF">
+  <div class="wrap">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow">03 — Interface</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">L’écran de SketchUp 2016, zone par zone</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #3D4F75">Cliquez sur les numéros pour découvrir chaque partie de l’interface. La maquette reprend la version Windows en français.</p>
+    </div>
+
+    <div class="g-iface" style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 40px; margin-top: 56px; align-items: start">
+      <div class="mock-scroll rv">
+        <div class="mock">
+          <div style="display: flex; align-items: center; justify-content: center; position: relative; height: 34px; background-color: #F3F6FF; border-bottom: 1px solid #E3EAFF; font-size: 12.5px; color: #3D4F75">
+            <span>Sans titre - SketchUp Make 2016</span>
+            <span aria-hidden="true" style="position: absolute; right: 14px; top: 0; bottom: 0; display: flex; align-items: center; gap: 16px; color: #3D4F75">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 6h10"></path></svg>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="1.5" width="9" height="9"></rect></svg>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9"></path></svg>
+            </span>
+          </div>
+          <div class="zone" data-zone="1" style="display: flex; align-items: center; gap: 20px; height: 34px; padding: 0 14px; border-bottom: 1px solid #E3EAFF; font-size: 13.5px; color: #0A1B3D">
+            <span>Fichier</span><span>Édition</span><span>Affichage</span><span>Caméra</span><span>Dessiner</span><span>Outils</span><span>Fenêtre</span><span>Aide</span>
+            <button type="button" class="hs" data-spot="1" aria-label="Zone 1 : barre de menus" style="right: 14px; top: 50%; margin-top: -20px">1</button>
+          </div>
+          <div class="zone" data-zone="2" style="display: flex; align-items: center; gap: 3px; height: 50px; padding: 0 10px; border-bottom: 1px solid #E3EAFF; background-color: #FBFCFF">
+            <span class="tbi on" title="Sélectionner"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l6.5 17 2.2-7.3L21 10.5z"></path></svg></span>
+            <span class="tbi" title="Créer un composant"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.8l8 4.6v9.2l-8 4.6-8-4.6V7.4z"></path><path d="M4 7.4l8 4.6 8-4.6M12 12v9.2"></path></svg></span>
+            <span class="tbi" title="Gomme"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20h13"></path><path d="M3.6 14.6l9.8-9.8a2 2 0 0 1 2.8 0l3 3a2 2 0 0 1 0 2.8L11 18.8H7.8z"></path><path d="M8.6 9.6l5.8 5.8"></path></svg></span>
+            <span class="tsep"></span>
+            <span class="tbi" title="Ligne"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.2-4.4L16.4 4.4a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.4 18.8z"></path><path d="M14.5 6.3l3.2 3.2"></path></svg></span>
+            <span class="tbi" title="Rectangle"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="1.2"></rect><circle cx="3.5" cy="18" r="1.6" fill="currentColor"></circle></svg></span>
+            <span class="tbi" title="Cercle"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 12l6-6"></path><circle cx="12" cy="12" r="1.4" fill="currentColor"></circle></svg></span>
+            <span class="tbi" title="Arc"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17.5a8.5 8.5 0 0 1 17 0"></path><circle cx="3.5" cy="17.5" r="1.5" fill="currentColor"></circle><circle cx="20.5" cy="17.5" r="1.5" fill="currentColor"></circle></svg></span>
+            <span class="tsep"></span>
+            <span class="tbi" title="Pousser/Tirer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5l9 4.5 9-4.5-9-4.5z"></path><path d="M12 13V2.5"></path><path d="M8.5 6L12 2.5 15.5 6"></path></svg></span>
+            <span class="tbi" title="Décaler"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"></rect><rect x="7.5" y="7.5" width="9" height="9" rx="1"></rect></svg></span>
+            <span class="tbi" title="Déplacer"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"></path><path d="M9 5.5L12 2.5l3 3M9 18.5l3 3 3-3M5.5 9L2.5 12l3 3M18.5 9l3 3-3 3"></path></svg></span>
+            <span class="tbi" title="Faire pivoter"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12A8.5 8.5 0 1 1 18 6"></path><path d="M20.5 3v5h-5"></path></svg></span>
+            <span class="tbi" title="Échelle"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="10" width="11" height="11" rx="1"></rect><path d="M13 11l8-8"></path><path d="M15 3h6v6"></path></svg></span>
+            <span class="tsep"></span>
+            <span class="tbi" title="Mètre"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="13" rx="3.5"></rect><circle cx="9" cy="12.5" r="2.3"></circle><path d="M15.5 16h6v-3"></path></svg></span>
+            <span class="tbi" title="Colorier"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11.5L11 5l7.5 7.5L12 19z"></path><path d="M4.5 11.5h14"></path><path d="M20.5 15.5s-1.5 2-1.5 3a1.5 1.5 0 0 0 3 0c0-1-1.5-3-1.5-3z"></path></svg></span>
+            <span class="tsep"></span>
+            <span class="tbi" title="Orbite"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"></path><path d="M4 12a8 8 0 0 1 13.7-5.6"></path><path d="M18 2.8v4h-4"></path><path d="M6 21.2v-4h4"></path></svg></span>
+            <span class="tbi" title="Panoramique"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V5.8a1.5 1.5 0 0 1 3 0V11"></path><path d="M11 10.5V4.2a1.5 1.5 0 0 1 3 0V11"></path><path d="M14 10.8V6a1.5 1.5 0 0 1 3 0v7.5c0 4.2-2.6 7.3-6.3 7.3-2.6 0-4.2-1.1-5.6-3.2L3.6 14a1.5 1.5 0 0 1 2.4-1.8L8 15"></path></svg></span>
+            <span class="tbi" title="Zoom"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.8"></circle><path d="M15.5 15.5l5.5 5.5"></path></svg></span>
+            <span class="tbi" title="Zoom étendu"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"></path><circle cx="12" cy="12" r="3.5"></circle></svg></span>
+            <button type="button" class="hs" data-spot="2" aria-label="Zone 2 : barre d’outils" style="right: 14px; top: 50%; margin-top: -20px">2</button>
+          </div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 200px; height: 360px">
+            <div class="zone" data-zone="3" style="display: flex; align-items: center; justify-content: center; background-color: #FFFFFF; overflow: hidden">
+              <svg viewBox="0 0 400 370" width="100%" height="100%" aria-hidden="true" style="display: block; max-width: 400px">
+                <line x1="170" y1="160" x2="395" y2="290" stroke="#E5484D" stroke-width="1.4"></line>
+                <line x1="170" y1="160" x2="60" y2="96.5" stroke="#E5484D" stroke-width="1.2" stroke-dasharray="3 4"></line>
+                <line x1="170" y1="160" x2="8" y2="254" stroke="#2EAE61" stroke-width="1.4"></line>
+                <line x1="170" y1="160" x2="280" y2="96.5" stroke="#2EAE61" stroke-width="1.2" stroke-dasharray="3 4"></line>
+                <line x1="170" y1="160" x2="170" y2="4" stroke="#1F4BFF" stroke-width="1.4"></line>
+                <g stroke="#0A1B3D" stroke-width="1.4" stroke-linejoin="round">
+                  <polygon points="48.76,230 221.96,330 221.96,230 48.76,130" fill="#FFFFFF"></polygon>
+                  <polygon points="343.2,260 221.96,330 221.96,230 343.2,160" fill="#E4E9F3"></polygon>
+                  <polygon points="66.08,220 100.72,240 100.72,210 66.08,190" fill="#C9D8F5"></polygon>
+                  <polygon points="118.04,270 152.68,290 152.68,246 118.04,226" fill="#9FB3DB"></polygon>
+                  <polygon points="170,280 204.64,300 204.64,270 170,250" fill="#C9D8F5"></polygon>
+                  <polygon points="66.08,176 100.72,196 100.72,170 66.08,150" fill="#C9D8F5"></polygon>
+                  <polygon points="118.04,206 152.68,226 152.68,200 118.04,180" fill="#C9D8F5"></polygon>
+                  <polygon points="170,236 204.64,256 204.64,230 170,210" fill="#C9D8F5"></polygon>
+                  <polygon points="308.56,260 256.6,290 256.6,260 308.56,230" fill="#C9D8F5"></polygon>
+                  <polygon points="308.56,216 256.6,246 256.6,220 308.56,190" fill="#C9D8F5"></polygon>
+                  <polygon points="170,60 343.2,160 282.58,135 109.38,35" fill="#C9D4EA"></polygon>
+                  <polygon points="48.76,130 221.96,230 282.58,135 109.38,35" fill="#DCE3F2"></polygon>
+                  <polygon points="343.2,160 221.96,230 282.58,135" fill="#E4E9F3"></polygon>
+                </g>
+                <circle cx="221.96" cy="230" r="5.5" fill="#22A559" stroke="#FFFFFF" stroke-width="1.5"></circle>
+                <rect x="232" y="236" width="76" height="24" rx="4" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="1"></rect>
+                <text x="270" y="252" text-anchor="middle" font-size="12.5" font-weight="600" fill="#0A1B3D">Extrémité</text>
+                <path d="M226 214l-3 11 3.5-1.5 2.5 5 2.5-1.2-2.5-5 3.8-.4z" fill="#0A1B3D"></path>
+              </svg>
+              <button type="button" class="hs" data-spot="3" aria-label="Zone 3 : zone de dessin" style="left: 18px; top: 18px">3</button>
+            </div>
+            <div class="zone" data-zone="4" style="display: flex; flex-direction: column; background-color: #F7F9FF; border-left: 1px solid #E3EAFF; overflow: hidden">
+              <div style="display: flex; align-items: center; justify-content: space-between; height: 32px; padding: 0 12px; background-color: #EEF3FF; font-size: 12px; font-weight: 700; color: #0A1B3D">Plateau par défaut<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9"></path></svg></div>
+              <div class="trow"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg>Infos sur l’entité</div>
+              <div class="trow" style="color: #1F4BFF"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 4l4 4 4-4"></path></svg>Matières</div>
+              <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 4px 12px 12px">
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #1F4BFF"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #0A1F5C"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #8FB0FF"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #DCE6FF"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #FFFFFF; border: 1px solid #DCE5FF"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #C9D4EA"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #3D4F75"></span>
+                <span style="aspect-ratio: 1; border-radius: 5px; background-color: #B7C6E6"></span>
+              </div>
+              <div class="trow"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg>Composants</div>
+              <div class="trow"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg>Styles</div>
+              <div class="trow"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg>Calques</div>
+              <div class="trow"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg>Scènes</div>
+              <div class="trow" style="border-bottom: 1px solid #E3EAFF"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 2l4 4-4 4"></path></svg>Ombres</div>
+              <button type="button" class="hs" data-spot="4" aria-label="Zone 4 : plateau par défaut" style="right: 14px; bottom: 16px">4</button>
+            </div>
+          </div>
+          <div class="zone" data-zone="5" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 40px; padding: 0 12px; border-top: 1px solid #E3EAFF; background-color: #F3F6FF; font-size: 12px; color: #3D4F75">
+            <span style="display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg>
+              Sélectionnez des objets. Maj pour étendre la sélection. Glisser la souris pour sélectionner plusieurs objets.
+            </span>
+            <span style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-right: 48px">
+              <span>Mesures</span>
+              <span class="mono" style="display: inline-flex; align-items: center; width: 110px; height: 24px; padding: 0 8px; border-radius: 4px; background-color: #FFFFFF; border: 1px solid #C9D6FF; color: #0A1B3D">2,70 m</span>
+            </span>
+            <button type="button" class="hs" data-spot="5" aria-label="Zone 5 : barre d’état et boîte Mesures" style="right: 8px; top: 50%; margin-top: -20px">5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rv">
+        <div class="zli" data-zli="1">
+          <button type="button" class="zli-h" data-spot="1" aria-expanded="false"><span class="zli-n">1</span><span>Barre de menus</span></button>
+          <div class="zli-b"><div><p>Toutes les commandes de SketchUp. Fichier pour enregistrer, importer et exporter ; Affichage pour les barres d’outils et les styles de faces ; Caméra pour la perspective et les vues standard ; Fenêtre pour ouvrir les panneaux.</p></div></div>
+        </div>
+        <div class="zli" data-zli="2">
+          <button type="button" class="zli-h" data-spot="2" aria-expanded="false"><span class="zli-n">2</span><span>Barre d’outils</span></button>
+          <div class="zli-b"><div><p>La barre « Mise en route » réunit les outils essentiels : Sélectionner, Ligne, Rectangle, Pousser/Tirer, Déplacer, Orbite… Ajoutez-en d’autres via Affichage › Barres d’outils.</p></div></div>
+        </div>
+        <div class="zli" data-zli="3">
+          <button type="button" class="zli-h" data-spot="3" aria-expanded="false"><span class="zli-n">3</span><span>Zone de dessin</span></button>
+          <div class="zli-b"><div><p>L’espace 3D où vous modélisez. Les axes rouge, vert et bleu se croisent à l’origine. Les points et infobulles de couleur (Extrémité, Milieu, Sur l’arête) sont les inférences : elles vous aident à dessiner juste.</p></div></div>
+        </div>
+        <div class="zli" data-zli="4">
+          <button type="button" class="zli-h" data-spot="4" aria-expanded="false"><span class="zli-n">4</span><span>Plateau par défaut</span></button>
+          <div class="zli-b"><div><p>Sous Windows, les panneaux se rangent à droite : Infos sur l’entité, Matières, Composants, Styles, Calques, Scènes, Ombres. Ouvrez-les ou fermez-les depuis le menu Fenêtre.</p></div></div>
+        </div>
+        <div class="zli" data-zli="5">
+          <button type="button" class="zli-h" data-spot="5" aria-expanded="false"><span class="zli-n">5</span><span>Barre d’état et Mesures</span></button>
+          <div class="zli-b"><div><p>La barre d’état explique l’outil actif, étape par étape. La boîte Mesures, en bas à droite, affiche les dimensions : tapez une valeur puis Entrée pour dessiner avec précision, sans cliquer dedans.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 OUTILS -->
+<section id="outils" class="sec" style="padding: 120px 0; background-color: #F3F6FF">
+  <div class="wrap">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow">04 — Outils</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">La boîte à outils, expliquée</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #3D4F75">Choisissez un outil pour voir sa définition, son raccourci, une démonstration animée et la marche à suivre pour l’utiliser.</p>
+    </div>
+
+    <div class="rv" role="group" aria-label="Filtrer les outils par catégorie" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 44px">
+      <button type="button" class="chip" data-cat="all" aria-pressed="false">Tous</button>
+      <button type="button" class="chip" data-cat="principal" aria-pressed="false">Principal</button>
+      <button type="button" class="chip" data-cat="dessin" aria-pressed="false">Dessin</button>
+      <button type="button" class="chip" data-cat="modif" aria-pressed="false">Modification</button>
+      <button type="button" class="chip" data-cat="construction" aria-pressed="false">Construction</button>
+      <button type="button" class="chip" data-cat="camera" aria-pressed="false">Caméra</button>
+    </div>
+
+    <div class="g-tools" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin-top: 28px; align-items: start">
+      <div class="g-tgrid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <button type="button" class="tbtn" data-tool="select" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3l6.5 17 2.2-7.3L21 10.5z"></path></svg></span><span class="tname">Sélectionner</span><span class="kbd">Espace</span></button>
+        <button type="button" class="tbtn" data-tool="eraser" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20h13"></path><path d="M3.6 14.6l9.8-9.8a2 2 0 0 1 2.8 0l3 3a2 2 0 0 1 0 2.8L11 18.8H7.8z"></path><path d="M8.6 9.6l5.8 5.8"></path></svg></span><span class="tname">Gomme</span><span class="kbd">E</span></button>
+        <button type="button" class="tbtn" data-tool="paint" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 11.5L11 5l7.5 7.5L12 19z"></path><path d="M4.5 11.5h14"></path><path d="M9 3l2 2"></path><path d="M20.5 15.5s-1.5 2-1.5 3a1.5 1.5 0 0 0 3 0c0-1-1.5-3-1.5-3z"></path></svg></span><span class="tname">Colorier</span><span class="kbd">B</span></button>
+        <button type="button" class="tbtn" data-tool="line" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.2-4.4L16.4 4.4a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.4 18.8z"></path><path d="M14.5 6.3l3.2 3.2"></path></svg></span><span class="tname">Ligne</span><span class="kbd">L</span></button>
+        <button type="button" class="tbtn" data-tool="rect" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="1.2"></rect><circle cx="3.5" cy="18" r="1.6" fill="currentColor"></circle></svg></span><span class="tname">Rectangle</span><span class="kbd">R</span></button>
+        <button type="button" class="tbtn" data-tool="circle" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 12l6-6"></path><circle cx="12" cy="12" r="1.4" fill="currentColor"></circle></svg></span><span class="tname">Cercle</span><span class="kbd">C</span></button>
+        <button type="button" class="tbtn" data-tool="arc" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17.5a8.5 8.5 0 0 1 17 0"></path><circle cx="3.5" cy="17.5" r="1.5" fill="currentColor"></circle><circle cx="20.5" cy="17.5" r="1.5" fill="currentColor"></circle></svg></span><span class="tname">Arc</span><span class="kbd">A</span></button>
+        <button type="button" class="tbtn" data-tool="pushpull" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15.5l9 4.5 9-4.5-9-4.5z"></path><path d="M12 13V2.5"></path><path d="M8.5 6L12 2.5 15.5 6"></path></svg></span><span class="tname">Pousser/Tirer</span><span class="kbd">P</span></button>
+        <button type="button" class="tbtn" data-tool="move" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18"></path><path d="M9 5.5L12 2.5l3 3M9 18.5l3 3 3-3M5.5 9L2.5 12l3 3M18.5 9l3 3-3 3"></path></svg></span><span class="tname">Déplacer</span><span class="kbd">M</span></button>
+        <button type="button" class="tbtn" data-tool="rotate" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12A8.5 8.5 0 1 1 18 6"></path><path d="M20.5 3v5h-5"></path><circle cx="12" cy="12" r="1.4" fill="currentColor"></circle></svg></span><span class="tname">Faire pivoter</span><span class="kbd">Q</span></button>
+        <button type="button" class="tbtn" data-tool="scale" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="10" width="11" height="11" rx="1"></rect><path d="M13 11l8-8"></path><path d="M15 3h6v6"></path></svg></span><span class="tname">Échelle</span><span class="kbd">S</span></button>
+        <button type="button" class="tbtn" data-tool="offset" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5"></rect><rect x="7.5" y="7.5" width="9" height="9" rx="1"></rect></svg></span><span class="tname">Décaler</span><span class="kbd">F</span></button>
+        <button type="button" class="tbtn" data-tool="follow" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5V12a8.5 8.5 0 0 1 8.5-8.5h3"></path><path d="M15.5 1.5h6v6h-6z"></path></svg></span><span class="tname">Suivez-moi</span><span class="kbd">—</span></button>
+        <button type="button" class="tbtn" data-tool="tape" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="13" height="13" rx="3.5"></rect><circle cx="9" cy="12.5" r="2.3"></circle><path d="M15.5 16h6v-3"></path></svg></span><span class="tname">Mètre</span><span class="kbd">T</span></button>
+        <button type="button" class="tbtn" data-tool="dim" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v10M21 7v10"></path><path d="M3 12h18"></path><path d="M6 9.5L3.5 12 6 14.5M18 9.5l2.5 2.5-2.5 2.5"></path></svg></span><span class="tname">Cotation</span><span class="kbd">—</span></button>
+        <button type="button" class="tbtn" data-tool="section" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5z"></path><path d="M12 14v7"></path><path d="M9 18l3 3 3-3"></path></svg></span><span class="tname">Plan de section</span><span class="kbd">—</span></button>
+        <button type="button" class="tbtn" data-tool="orbit" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"></path><path d="M4 12a8 8 0 0 1 13.7-5.6"></path><path d="M18 2.8v4h-4"></path><path d="M6 21.2v-4h4"></path><circle cx="12" cy="12" r="1.8"></circle></svg></span><span class="tname">Orbite</span><span class="kbd">O</span></button>
+        <button type="button" class="tbtn" data-tool="pan" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V5.8a1.5 1.5 0 0 1 3 0V11"></path><path d="M11 10.5V4.2a1.5 1.5 0 0 1 3 0V11"></path><path d="M14 10.8V6a1.5 1.5 0 0 1 3 0v7.5c0 4.2-2.6 7.3-6.3 7.3-2.6 0-4.2-1.1-5.6-3.2L3.6 14a1.5 1.5 0 0 1 2.4-1.8L8 15"></path></svg></span><span class="tname">Panoramique</span><span class="kbd">H</span></button>
+        <button type="button" class="tbtn" data-tool="zoom" aria-pressed="false"><span class="tic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.8"></circle><path d="M15.5 15.5l5.5 5.5"></path><path d="M10.5 7.8v5.4M7.8 10.5h5.4"></path></svg></span><span class="tname">Zoom</span><span class="kbd">Z</span></button>
+      </div>
+
+      <div class="panel card" style="position: sticky; top: 100px; padding: 32px; display: flex; flex-direction: column; gap: 22px; box-shadow: 0 40px 80px -48px rgba(14, 42, 110, 0.45)" aria-live="polite">
+        <div class="swap-b" data-swap="tool" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px">
+          <div>
+            <span class="tag"><span id="t-catLabel"></span></span>
+            <h3 class="disp" style="margin-top: 12px; font-size: 42px; line-height: 1.02; font-weight: 800; letter-spacing: -0.035em"><span id="t-name"></span></h3>
+            <p class="mono" style="margin-top: 8px; font-size: 13px; color: #3D4F75">EN · <span id="t-en"></span></p>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0">
+            <span class="cap-lg"><span id="t-key"></span></span>
+            <span class="mono" style="font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #3D4F75"><span id="t-keyLabel"></span></span>
+          </div>
+        </div>
+
+        <div aria-hidden="true" style="position: relative; height: 230px; border-radius: 18px; background-color: #F5F8FF; border: 1px solid #DCE5FF; overflow: hidden">
+          <div class="demo-grid"></div>
+          <div id="t-draw" hidden>
+            <div style="position: absolute; left: 50%; top: 50%; width: 320px; height: 200px; margin-left: -160px; margin-top: -100px">
+              <svg width="320" height="200" viewBox="0 0 320 200" style="position: absolute; left: 0; top: 0; overflow: visible">
+                <g class="dgrid">
+                  <path d="M0 50 L300 200 M0 0 L320 160 M60 0 L320 130 M140 0 L320 90 M220 0 L320 50 M0 100 L200 200 M0 150 L100 200"></path>
+                  <path d="M320 50 L20 200 M320 0 L0 160 M260 0 L0 130 M180 0 L0 90 M100 0 L0 50 M320 100 L120 200 M320 150 L220 200"></path>
+                </g>
+                <path id="t-base" class="dbase" d=""></path>
+                <path id="t-path" class="dpath" d=""></path>
+                <text id="t-label" class="dlabel svgt" x="0" y="0"></text>
+              </svg>
+              <div id="t-cur" class="dcur"></div>
+            </div>
+          </div>
+          <div id="t-scene">
+            <div class="d3">
+              <div id="t-world" class="d-world">
+                <div class="d-ground"></div>
+                <div class="d-ghost"></div>
+                <div class="d-ring"></div>
+                <div class="d-box">
+                  <div class="dface d-b"></div>
+                  <div class="dface d-l"></div>
+                  <div class="dface d-r"></div>
+                  <div class="dface d-f"></div>
+                  <div class="dface d-t"></div>
+                </div>
+                <div class="d-sec"></div>
+              </div>
+            </div>
+          </div>
+          <span class="mono" style="position: absolute; left: 14px; bottom: 12px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #3D4F75">Aperçu animé</span>
+        </div>
+
+        <div class="swap-b" data-swap="tool" style="display: flex; flex-direction: column; gap: 18px">
+          <div>
+            <p class="mono" style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #1F4BFF">Définition</p>
+            <p style="margin-top: 8px; font-size: 17px; line-height: 1.6; color: #0A1B3D"><span id="t-def"></span></p>
+          </div>
+          <div>
+            <p class="mono" style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #1F4BFF; margin-bottom: 6px">Comment l’utiliser</p>
+            <div id="t-how"></div>
+          </div>
+          <div class="tip">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"></path></svg>
+            <p><strong>Astuce :</strong> <span id="t-tip"></span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 TUTORIEL -->
+<section id="tutoriel" class="sec" style="position: relative; padding: 120px 0; background-color: #0A1F5C; color: #FFFFFF; overflow: hidden">
+  <div class="bp-grid"></div>
+  <div class="wrap" style="position: relative">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow dk">05 — Tutoriel</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800; color: #FFFFFF">Votre première maison en 6 étapes</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #C9D6FF">Ouvrez SketchUp 2016 à côté et suivez le plan : chaque action indique l’outil et le raccourci à utiliser. Le modèle se construit sous vos yeux.</p>
+    </div>
+
+    <div class="rv" style="margin-top: 48px">
+      <div class="segs" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px">
+          <button type="button" class="seg" data-step="0"><span class="seg-n">01</span><span class="seg-l">Préparer</span></button>
+          <button type="button" class="seg" data-step="1"><span class="seg-n">02</span><span class="seg-l">Emprise</span></button>
+          <button type="button" class="seg" data-step="2"><span class="seg-n">03</span><span class="seg-l">Murs</span></button>
+          <button type="button" class="seg" data-step="3"><span class="seg-n">04</span><span class="seg-l">Ouvertures</span></button>
+          <button type="button" class="seg" data-step="4"><span class="seg-n">05</span><span class="seg-l">Toit</span></button>
+          <button type="button" class="seg" data-step="5"><span class="seg-n">06</span><span class="seg-l">Présenter</span></button>
+      </div>
+      <div class="pbar" style="margin-top: 16px"><div id="s-bar" class="pbar-in" style="width: 16.67%"></div></div>
+    </div>
+
+    <div class="g-tut" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin-top: 32px; align-items: stretch">
+      <div class="bpbox rv" style="position: relative; display: flex; align-items: center; justify-content: center; min-height: 540px; padding: 28px; border-radius: 28px; border: 1px solid rgba(255, 255, 255, 0.16); background-color: rgba(255, 255, 255, 0.03)">
+        <div id="s-tabs" class="stabs off" aria-hidden="true" style="position: absolute; left: 20px; top: 20px; display: flex; flex-wrap: wrap; gap: 6px">
+          <span class="stab">Scène 1 · Façade</span>
+          <span class="stab" style="animation-delay: 3s">Scène 2 · Aérien</span>
+          <span class="stab" style="animation-delay: 6s">Scène 3 · Jardin</span>
+        </div>
+        <svg id="s-bp" class="bp" viewBox="0 0 400 370" width="100%" role="img" aria-label="Plan de la maison à l’étape en cours" style="display: block; max-width: 520px; overflow: visible">
+          <g>
+            <line x1="170" y1="160" x2="395" y2="290" stroke="#FF8A8A" stroke-width="1.6"></line>
+            <line x1="170" y1="160" x2="118" y2="130" stroke="#FF8A8A" stroke-width="1.4" stroke-dasharray="4 5"></line>
+            <line x1="170" y1="160" x2="8" y2="254" stroke="#6BE09A" stroke-width="1.6"></line>
+            <line x1="170" y1="160" x2="222" y2="130" stroke="#6BE09A" stroke-width="1.4" stroke-dasharray="4 5"></line>
+            <line x1="170" y1="160" x2="170" y2="8" stroke="#9DB6FF" stroke-width="1.6"></line>
+            <circle cx="170" cy="160" r="3.5" fill="#FFFFFF"></circle>
+          </g>
+          <g class="lay off" data-lay="foot">
+            <polygon class="draw" points="170,160 343.2,260 221.96,330 48.76,230" fill="rgba(255,255,255,0.1)" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"></polygon>
+          </g>
+          <g class="lay off" data-lay="dimFoot">
+            <line class="dimln" x1="31.44" y1="240" x2="204.64" y2="340"></line>
+            <line class="dimln" x1="48.76" y1="230" x2="27" y2="242.5"></line>
+            <line class="dimln" x1="221.96" y1="330" x2="200.3" y2="342.5"></line>
+            <text class="dimtx svgt" x="111" y="304" text-anchor="middle" transform="rotate(30 111 304)">10 m</text>
+            <line class="dimln" x1="360.52" y1="270" x2="239.28" y2="340"></line>
+            <line class="dimln" x1="343.2" y1="260" x2="364.8" y2="272.5"></line>
+            <line class="dimln" x1="221.96" y1="330" x2="243.6" y2="342.5"></line>
+            <text class="dimtx svgt" x="309" y="319" text-anchor="middle" transform="rotate(-30 309 319)">7 m</text>
+          </g>
+          <g class="lay off" data-lay="walls">
+            <polygon class="wall draw" points="48.76,230 221.96,330 221.96,230 48.76,130"></polygon>
+            <polygon class="wall side draw" points="343.2,260 221.96,330 221.96,230 343.2,160"></polygon>
+          </g>
+          <g class="lay off" data-lay="top">
+            <polygon class="wall top draw" points="170,60 343.2,160 221.96,230 48.76,130"></polygon>
+          </g>
+          <g class="lay off" data-lay="dimWall">
+            <line class="dimln" x1="360.5" y1="270" x2="360.5" y2="170"></line>
+            <line class="dimln" x1="343.2" y1="260" x2="365" y2="272.5"></line>
+            <line class="dimln" x1="343.2" y1="160" x2="365" y2="172.5"></line>
+            <text class="dimtx svgt" x="370" y="224">5 m</text>
+          </g>
+          <g class="lay off" data-lay="open">
+            <polygon class="opening draw" points="66.08,220 100.72,240 100.72,210 66.08,190"></polygon>
+            <polygon class="opening door draw" points="118.04,270 152.68,290 152.68,246 118.04,226"></polygon>
+            <polygon class="opening draw" points="170,280 204.64,300 204.64,270 170,250"></polygon>
+            <polygon class="opening draw" points="66.08,176 100.72,196 100.72,170 66.08,150"></polygon>
+            <polygon class="opening draw" points="118.04,206 152.68,226 152.68,200 118.04,180"></polygon>
+            <polygon class="opening draw" points="170,236 204.64,256 204.64,230 170,210"></polygon>
+            <polygon class="opening draw" points="308.56,260 256.6,290 256.6,260 308.56,230"></polygon>
+            <polygon class="opening draw" points="308.56,216 256.6,246 256.6,220 308.56,190"></polygon>
+          </g>
+          <g class="lay off" data-lay="roof">
+            <polygon class="roofp roofb draw" points="170,60 343.2,160 282.58,135 109.38,35"></polygon>
+            <polygon class="roofp draw" points="48.76,130 221.96,230 282.58,135 109.38,35"></polygon>
+            <polygon class="wall side draw" points="343.2,160 221.96,230 282.58,135"></polygon>
+          </g>
+          <g class="lay off" data-lay="dimRoof">
+            <circle cx="109.38" cy="35" r="5" fill="#6FE3F2" stroke="#FFFFFF" stroke-width="1.5"></circle>
+            <text class="dimtx svgt" x="98" y="26" text-anchor="end">faîtage +3 m</text>
+          </g>
+          <g class="lay off" data-lay="scene">
+            <g transform="translate(196 196) scale(1 0.36)">
+              <circle cx="0" cy="0" r="190" fill="none" stroke="#9DB6FF" stroke-width="1.5" stroke-dasharray="6 8" vector-effect="non-scaling-stroke"></circle>
+              <g class="cam-spin">
+                <circle cx="190" cy="0" r="12" fill="#FFFFFF"></circle>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <span class="mono" aria-hidden="true" style="position: absolute; left: 20px; bottom: 18px; font-size: 11px; letter-spacing: 0.1em; color: #9DB6FF">VUE ISO · MAISON-01</span>
+        <span class="mono" aria-hidden="true" style="position: absolute; right: 20px; bottom: 18px; font-size: 11px; letter-spacing: 0.1em; color: #9DB6FF">ÉTAPE <span class="s-num">01</span> / 06</span>
+      </div>
+
+      <div class="scard rv" style="display: flex; flex-direction: column; padding: 40px; border-radius: 28px; background-color: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16)">
+        <div class="swap-b" data-swap="step" style="display: flex; flex-direction: column; gap: 18px; flex-grow: 1">
+          <p class="mono" style="font-size: 12.5px; font-weight: 700; letter-spacing: 0.1em; color: #9DB6FF">ÉTAPE <span class="s-num">01</span> / 06</p>
+          <h3 class="disp" style="font-size: 40px; line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; color: #FFFFFF"><span id="s-title"></span></h3>
+          <p style="font-size: 17px; line-height: 1.6; color: #C9D6FF"><span id="s-text"></span></p>
+          <div style="margin-top: 4px">
+            <div id="s-acts"></div>
+          </div>
+          <div class="tip dk">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"></path></svg>
+            <p><span id="s-tip"></span></p>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: 28px">
+          <button type="button" class="btn btn-g" id="s-prev" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>Précédent
+          </button>
+          <button type="button" class="btn btn-w" id="s-next"><span id="s-nextl">Étape suivante</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 RACCOURCIS -->
+<section id="raccourcis" class="sec" style="padding: 120px 0; background-color: #FFFFFF">
+  <div class="wrap">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow">06 — Raccourcis</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">Les raccourcis à connaître par cœur</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #3D4F75">Une lettre par outil : en quelques jours, vos mains trouvent seules le bon raccourci. Voici les raccourcis par défaut de SketchUp 2016 sous Windows.</p>
+    </div>
+
+    <div class="g-keys rv" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin-top: 56px">
+      <div class="key"><span class="cap" style="animation-delay: 0s">Espace</span><span class="key-t">Sélectionner</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 0.5s">L</span><span class="key-t">Ligne</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 1s">R</span><span class="key-t">Rectangle</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 1.5s">C</span><span class="key-t">Cercle</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 2s">A</span><span class="key-t">Arc 2 points</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 2.5s">P</span><span class="key-t">Pousser/Tirer</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 3s">F</span><span class="key-t">Décaler</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 3.5s">M</span><span class="key-t">Déplacer</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 4s">Q</span><span class="key-t">Faire pivoter</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 4.5s">S</span><span class="key-t">Échelle</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 5s">T</span><span class="key-t">Mètre</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 5.5s">B</span><span class="key-t">Colorier</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 6s">E</span><span class="key-t">Gomme</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 6.5s">G</span><span class="key-t">Créer un composant</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 7s">O</span><span class="key-t">Orbite</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 7.5s">H</span><span class="key-t">Panoramique</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 8s">Z</span><span class="key-t">Zoom</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 8.5s">Maj+Z</span><span class="key-t">Zoom étendu</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 9s">Ctrl+Z</span><span class="key-t">Annuler</span></div>
+      <div class="key"><span class="cap" style="animation-delay: 9.5s">Ctrl+S</span><span class="key-t">Enregistrer</span></div>
+    </div>
+
+    <div class="g-3" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px">
+      <div class="card rv" style="padding: 26px; display: flex; flex-direction: column; gap: 16px; background-color: #F3F6FF">
+        <h3 class="disp" style="font-size: 22px; font-weight: 700; letter-spacing: -0.02em">Verrouiller un axe</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 14px">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span class="mini-cap">→</span><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #E5484D"></span>Rouge</span>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span class="mini-cap">←</span><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #2EAE61"></span>Vert</span>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span class="mini-cap">↑</span><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #1F4BFF"></span>Bleu</span>
+        </div>
+        <p style="font-size: 15px; line-height: 1.55; color: #3D4F75">Pendant un tracé ou un déplacement, appuyez sur une flèche pour rester sur l’axe ; appuyez à nouveau pour le libérer.</p>
+      </div>
+      <div class="card rv" style="padding: 26px; display: flex; flex-direction: column; gap: 14px; background-color: #F3F6FF">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F4BFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="6"></rect><path d="M12 6.5v3.5"></path></svg>
+          <h3 class="disp" style="font-size: 22px; font-weight: 700; letter-spacing: -0.02em">À la souris</h3>
+        </div>
+        <ul class="ck" style="font-size: 15px; color: #24365C">
+          <li><strong style="min-width: 150px">Molette</strong>Zoom</li>
+          <li><strong style="min-width: 150px">Clic molette maintenu</strong>Orbite</li>
+          <li><strong style="min-width: 150px">Maj + clic molette</strong>Panoramique</li>
+          <li><strong style="min-width: 150px">Double-clic molette</strong>Centrer la vue</li>
+        </ul>
+      </div>
+      <div class="card rv" style="padding: 26px; display: flex; flex-direction: column; gap: 14px; background-color: #F3F6FF">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F4BFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"></rect><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"></path></svg>
+          <h3 class="disp" style="font-size: 22px; font-weight: 700; letter-spacing: -0.02em">Sur Mac</h3>
+        </div>
+        <p style="font-size: 15px; line-height: 1.6; color: #3D4F75">Les lettres des outils sont les mêmes. Cmd remplace Ctrl pour les commandes (Cmd+Z, Cmd+S) et Option remplace Ctrl dans les outils, par exemple pour copier avec Déplacer. Tous les raccourcis se personnalisent dans les Préférences.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 PRÉSENTER -->
+<section id="presenter" class="sec" style="padding: 120px 0; background-color: #F3F6FF">
+  <div class="wrap">
+    <div class="g-2" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: end">
+      <div class="rv">
+        <span class="eyebrow">07 — Présenter</span>
+        <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">Des présentations 3D qui font effet</h2>
+      </div>
+      <p class="rv" style="font-size: 19px; line-height: 1.65; color: #3D4F75">SketchUp 2016 intègre tout ce qu’il faut pour montrer votre projet : points de vue animés, rendus stylisés, ombres réalistes et coupes.</p>
+    </div>
+
+    <div class="g-3" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 56px">
+      <article class="card rv" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div class="pv" aria-hidden="true">
+          <div style="position: absolute; left: 16px; right: 16px; top: 12px">
+            <div class="sc-tabs"><span>Scène 1</span><span>Scène 2</span><span>Scène 3</span><span class="sc-ind"></span></div>
+          </div>
+          <svg width="260" height="120" viewBox="0 0 260 140" style="margin-top: 34px">
+            <g class="sc-cam bx">
+              <polygon class="bx-l" points="80,55 130,80 130,118 80,93"></polygon>
+              <polygon class="bx-r" points="130,80 180,55 180,93 130,118"></polygon>
+              <polygon class="bx-t" points="130,30 180,55 130,80 80,55"></polygon>
+            </g>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 23px; font-weight: 700; letter-spacing: -0.02em">Scènes et animation</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Enregistrez vos points de vue comme des diapositives. SketchUp passe de l’un à l’autre en douceur, et Fichier › Exporter › Animation en fait une vidéo.</p>
+      </article>
+      <article class="card rv" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div class="pv" aria-hidden="true">
+          <span class="stl stl1">Standard</span>
+          <span class="stl stl2">Esquisse</span>
+          <span class="stl stl3">Rayons X</span>
+          <svg width="260" height="140" viewBox="0 0 260 140">
+            <g class="st-box bx">
+              <polygon class="bx-l" points="80,55 130,80 130,118 80,93"></polygon>
+              <polygon class="bx-r" points="130,80 180,55 180,93 130,118"></polygon>
+              <polygon class="bx-t" points="130,30 180,55 130,80 80,55"></polygon>
+            </g>
+            <g class="st-back" fill="none" stroke="#1F4BFF" stroke-width="1.5" stroke-dasharray="4 4">
+              <line x1="130" y1="68" x2="80" y2="93"></line>
+              <line x1="130" y1="68" x2="180" y2="93"></line>
+              <line x1="130" y1="68" x2="130" y2="30"></line>
+            </g>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 23px; font-weight: 700; letter-spacing: -0.02em">Styles</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Arêtes esquissées, filaire, rayons X, arrière-plan : changez l’ambiance du modèle en un clic depuis Fenêtre › Styles.</p>
+      </article>
+      <article class="card rv" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div class="pv" aria-hidden="true">
+          <svg width="260" height="150" viewBox="0 0 260 150">
+            <g class="sh-sun">
+              <circle cx="130" cy="14" r="9" fill="#1F4BFF"></circle>
+              <circle cx="130" cy="14" r="15" fill="none" stroke="#1F4BFF" stroke-width="1.5" stroke-dasharray="3 4"></circle>
+            </g>
+            <polygon class="sh-shadow" points="130,118 180,93 232,106 182,131" fill="rgba(14,42,110,0.22)"></polygon>
+            <g class="bx">
+              <polygon class="bx-l" points="80,55 130,80 130,118 80,93"></polygon>
+              <polygon class="bx-r" points="130,80 180,55 180,93 130,118"></polygon>
+              <polygon class="bx-t" points="130,30 180,55 130,80 80,55"></polygon>
+            </g>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 23px; font-weight: 700; letter-spacing: -0.02em">Ombres</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Réglez la date et l’heure dans Fenêtre › Ombres : SketchUp calcule des ombres réalistes selon la position géographique du modèle.</p>
+      </article>
+      <article class="card rv" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div class="pv" aria-hidden="true">
+          <svg width="260" height="150" viewBox="0 0 260 150">
+            <g class="bx">
+              <polygon class="bx-l" points="80,55 130,80 130,118 80,93"></polygon>
+              <polygon class="bx-r" points="130,80 180,55 180,93 130,118"></polygon>
+              <polygon class="bx-t" points="130,30 180,55 130,80 80,55"></polygon>
+            </g>
+            <g class="sec-pl">
+              <polygon points="95.4,49 164.6,9 164.6,99 95.4,139" fill="rgba(31,75,255,0.16)" stroke="#1F4BFF" stroke-width="2" stroke-linejoin="round"></polygon>
+              <path d="M130 74l14 8M144 82l-7 0M144 82l-3.5 -6" fill="none" stroke="#1F4BFF" stroke-width="2" stroke-linecap="round"></path>
+            </g>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 23px; font-weight: 700; letter-spacing: -0.02em">Plans de section</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Coupez le bâtiment pour dévoiler l’intérieur, puis faites avancer la coupe d’une scène à l’autre pour une visite spectaculaire.</p>
+      </article>
+      <article class="card rv" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div class="pv" aria-hidden="true">
+          <svg width="260" height="150" viewBox="0 0 260 150">
+            <defs>
+              <g id="wh-cube">
+                <polygon points="-16,8 0,16 0,34 -16,26" fill="#E8EDF8" stroke="#0A1B3D" stroke-width="1.3" stroke-linejoin="round"></polygon>
+                <polygon points="0,16 16,8 16,26 0,34" fill="#D4DEF3" stroke="#0A1B3D" stroke-width="1.3" stroke-linejoin="round"></polygon>
+                <polygon points="0,0 16,8 0,16 -16,8" fill="#1F4BFF" stroke="#0A1B3D" stroke-width="1.3" stroke-linejoin="round"></polygon>
+              </g>
+            </defs>
+            <use href="#wh-cube" class="wh" x="55" y="28" style="animation-delay: 0s"></use>
+            <use href="#wh-cube" class="wh" x="105" y="28" style="animation-delay: 0.15s"></use>
+            <use href="#wh-cube" class="wh" x="155" y="28" style="animation-delay: 0.3s"></use>
+            <use href="#wh-cube" class="wh" x="205" y="28" style="animation-delay: 0.45s"></use>
+            <use href="#wh-cube" class="wh" x="55" y="84" style="animation-delay: 0.6s"></use>
+            <use href="#wh-cube" class="wh" x="105" y="84" style="animation-delay: 0.75s"></use>
+            <use href="#wh-cube" class="wh" x="155" y="84" style="animation-delay: 0.9s"></use>
+            <use href="#wh-cube" class="wh" x="205" y="84" style="animation-delay: 1.05s"></use>
+          </svg>
+        </div>
+        <h3 class="disp" style="margin-top: 6px; font-size: 23px; font-weight: 700; letter-spacing: -0.02em">3D Warehouse</h3>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Une immense bibliothèque de modèles gratuits (mobilier, végétation, personnages) à insérer directement dans votre scène.</p>
+      </article>
+      <article class="card rv" style="padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div class="pv" aria-hidden="true">
+          <svg width="260" height="150" viewBox="0 0 260 150">
+            <rect x="58" y="12" width="144" height="126" rx="4" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="1.5"></rect>
+            <rect x="70" y="24" width="120" height="76" fill="#F5F8FF" stroke="#C9D6FF" stroke-width="1"></rect>
+            <g class="bx" transform="translate(0 -4) scale(1)">
+              <polygon class="bx-l" points="110,52 130,62 130,84 110,74"></polygon>
+              <polygon class="bx-r" points="130,62 150,52 150,74 130,84"></polygon>
+              <polygon class="bx-t" points="130,42 150,52 130,62 110,52"></polygon>
+            </g>
+            <line class="lo-dim" x1="80" y1="92" x2="180" y2="92" stroke="#1F4BFF" stroke-width="1.8"></line>
+            <rect x="140" y="108" width="50" height="22" fill="#EEF3FF" stroke="#0A1B3D" stroke-width="1"></rect>
+            <line x1="70" y1="112" x2="126" y2="112" stroke="#C9D6FF" stroke-width="3" stroke-linecap="round"></line>
+            <line x1="70" y1="122" x2="110" y2="122" stroke="#C9D6FF" stroke-width="3" stroke-linecap="round"></line>
+          </svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px">
+          <h3 class="disp" style="font-size: 23px; font-weight: 700; letter-spacing: -0.02em">LayOut</h3>
+          <span class="tag">Pro</span>
+        </div>
+        <p style="font-size: 15.5px; line-height: 1.6; color: #3D4F75">Transformez vos scènes en planches cotées et en dossiers de présentation 2D, prêts à imprimer ou à envoyer en PDF.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- 08 FAQ -->
+<section id="faq" class="sec" style="padding: 120px 0; background-color: #FFFFFF">
+  <div class="wrap g-faq" style="display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 64px; align-items: start">
+    <div class="rv">
+      <span class="eyebrow">08 — FAQ</span>
+      <h2 class="disp h2" style="margin-top: 18px; font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 800">Questions fréquentes</h2>
+      <p style="margin-top: 20px; font-size: 18px; line-height: 1.65; color: #3D4F75">Les blocages les plus courants quand on débute sur SketchUp 2016, et comment s’en sortir.</p>
+    </div>
+    <div class="rv">
+      <div class="faq" data-faq="1">
+        <button type="button" class="faq-q" data-faqbtn="1" aria-expanded="false">SketchUp 2016 est-il gratuit ?<span class="faq-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span></button>
+        <div class="faq-a"><div><p>SketchUp Make 2016 est gratuit pour un usage personnel, éducatif et non commercial. SketchUp Pro 2016 est la version payante destinée aux professionnels ; elle ajoute notamment LayOut et Style Builder.</p></div></div>
+      </div>
+      <div class="faq" data-faq="2">
+        <button type="button" class="faq-q" data-faqbtn="2" aria-expanded="false">Pourquoi ma face n’apparaît-elle pas ?<span class="faq-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span></button>
+        <div class="faq-a"><div><p>Une face n’apparaît que si les arêtes forment une boucle fermée et sont toutes dans le même plan. Vérifiez qu’aucune ligne ne s’arrête juste avant un sommet, puis retracez l’arête manquante avec l’outil Ligne (L).</p></div></div>
+      </div>
+      <div class="faq" data-faq="3">
+        <button type="button" class="faq-q" data-faqbtn="3" aria-expanded="false">Groupe ou composant : que choisir ?<span class="faq-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span></button>
+        <div class="faq-a"><div><p>Utilisez un groupe pour isoler un élément unique (un mur, une dalle). Utilisez un composant pour un élément répété (fenêtre, chaise) : modifier une copie met à jour toutes les autres, et le fichier reste plus léger.</p></div></div>
+      </div>
+      <div class="faq" data-faq="4">
+        <button type="button" class="faq-q" data-faqbtn="4" aria-expanded="false">Pourquoi certaines faces sont-elles bleu-gris ?<span class="faq-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span></button>
+        <div class="faq-a"><div><p>Vous voyez l’envers de la face. Clic droit sur la face › Inverser les faces pour la retourner : c’est important pour les matières, l’export et le rendu.</p></div></div>
+      </div>
+      <div class="faq" data-faq="5">
+        <button type="button" class="faq-q" data-faqbtn="5" aria-expanded="false">Comment ajouter des meubles et des arbres ?<span class="faq-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span></button>
+        <div class="faq-a"><div><p>Ouvrez la 3D Warehouse depuis le menu Fichier ou le panneau Composants, cherchez un modèle et téléchargez-le directement dans votre scène. Placez-le ensuite avec Déplacer (M).</p></div></div>
+      </div>
+      <div class="faq" data-faq="6">
+        <button type="button" class="faq-q" data-faqbtn="6" aria-expanded="false">SketchUp ou Blender pour débuter ?<span class="faq-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span></button>
+        <div class="faq-a"><div><p>Pour l’architecture et l’aménagement, SketchUp s’apprend beaucoup plus vite. Pour l’animation de personnages, la sculpture ou le rendu photoréaliste, Blender est plus complet. Beaucoup de créateurs combinent les deux.</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="sec" style="padding: 24px 0 120px; background-color: #FFFFFF">
+  <div class="wrap">
+    <div class="rv" style="position: relative; overflow: hidden; border-radius: 36px; background-color: #1F4BFF; perspective: 900px">
+      <div class="cube" aria-hidden="true" style="left: 6%; top: 16%; animation-duration: 16s"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="cube" aria-hidden="true" style="left: 86%; top: 12%; animation-duration: 12s; animation-direction: reverse"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="cube opt" aria-hidden="true" style="left: 12%; top: 70%; animation-duration: 20s; animation-direction: reverse"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="cube opt" aria-hidden="true" style="left: 80%; top: 68%; animation-duration: 14s"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="cta-in" style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 96px 48px; text-align: center">
+        <h2 class="disp h2" style="max-width: 780px; font-size: 64px; line-height: 1; letter-spacing: -0.04em; font-weight: 800; color: #FFFFFF">Prêt à construire votre premier modèle ?</h2>
+        <p style="max-width: 560px; font-size: 19px; line-height: 1.6; color: #DCE6FF">Ouvrez SketchUp 2016, suivez les six étapes du tutoriel et présentez votre maison en 3D dès aujourd’hui.</p>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 8px">
+          <a class="btn btn-w" href="#tutoriel">Commencer le tutoriel
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          </a>
+          <a class="btn btn-g" href="#raccourcis">Voir les raccourcis</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="border-top: 1px solid #E3EAFF; background-color: #FFFFFF">
+  <div class="wrap g-ft" style="display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(0, 1fr)); gap: 40px; padding-top: 64px; padding-bottom: 48px">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <a href="#top" class="logo" aria-label="Learn, retour en haut" style="display: flex; align-items: center; gap: 12px; text-decoration: none; color: #0A1B3D">
+        <svg width="34" height="36" viewBox="0 0 34 36" aria-hidden="true" style="overflow: visible">
+          <path d="M5 11v14l12 7V18z" fill="#FFFFFF" stroke="#0A1B3D" stroke-width="2" stroke-linejoin="round"></path>
+          <path d="M29 11v14l-12 7V18z" fill="#DCE6FF" stroke="#0A1B3D" stroke-width="2" stroke-linejoin="round"></path>
+          <path class="lg-top" d="M17 4l12 7-12 7-12-7z" fill="#1F4BFF" stroke="#0A1B3D" stroke-width="2" stroke-linejoin="round"></path>
+        </svg>
+        <span class="disp" style="font-size: 27px; font-weight: 800; letter-spacing: -0.04em">Learn</span>
+      </a>
+      <p style="max-width: 360px; font-size: 15.5px; line-height: 1.6; color: #3D4F75">Le guide en français pour apprendre SketchUp 2016 : définition, outils, tutoriel et présentations 3D.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <p class="mono" style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0A1B3D">Apprendre</p>
+      <a class="flink" href="#decouvrir">Définition</a>
+      <a class="flink" href="#interface">Interface</a>
+      <a class="flink" href="#outils">Outils</a>
+      <a class="flink" href="#tutoriel">Tutoriel</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <p class="mono" style="font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #0A1B3D">Pratique</p>
+      <a class="flink" href="#comparer">SketchUp ou Blender</a>
+      <a class="flink" href="#raccourcis">Raccourcis</a>
+      <a class="flink" href="#presenter">Présenter</a>
+      <a class="flink" href="#faq">FAQ</a>
+    </div>
+  </div>
+  <div class="wrap" style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 22px; padding-bottom: 22px; border-top: 1px solid #E3EAFF; font-size: 13.5px; color: #3D4F75">
+    <p>© 2026 Learn · Site d’apprentissage indépendant.</p>
+    <p>SketchUp est une marque de Trimble Inc.</p>
+  </div>
+  <div style="padding: 28px 16px 44px; text-align: center; border-top: 1px solid #E3EAFF">
+    <p class="mono" style="font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #3D4F75">Sponsorisé par</p>
+    <p class="disp sponsor" style="margin-top: 6px; font-size: 36px; font-weight: 800; letter-spacing: -0.03em">MovEra</p>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
