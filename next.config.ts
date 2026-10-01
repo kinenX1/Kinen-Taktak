@@ -26,6 +26,13 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  async rewrites() {
+    // Learn (the SketchUp 2016 guide) is a static site in public/learn.
+    return [
+      { source: "/learn", destination: "/learn/index.html" },
+      { source: "/learn/", destination: "/learn/index.html" },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
