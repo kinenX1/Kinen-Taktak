@@ -1,0 +1,238 @@
+// NovaWear data model.
+// Run `npm run db:migrate` after changing this file.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  phone        String?
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions    Session[]
+  resetTokens PasswordResetToken[]
+  orders      Order[]
+}
+
+/// Database-backed session. `id` is the SHA-256 hash of the token stored in
+/// the customer's cookie, so a leaked database row cannot be replayed.
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Catalogue (managed from /admin/products)
+// ─────────────────────────────────────────────────────────────
+
+enum Category {
+  TSHIRT
+  PANTS
+  HOODIE
+  PYJAMA
+  SHORTS
+  JACKET
+}
+
+enum Availability {
+  /// Ships now.
+  IN_STOCK
+  /// Customers reserve their size; ships when the drop lands.
+  PRE_ORDER
+  /// Visible in the shop but cannot be ordered.
+  SOLD_OUT
+}
+
+model Product {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  name        String
+  description String
+  /// One detail per line, shown as a list on the product page.
+  details     String       @default("")
+  category    Category
+  /// Price in minor units (1/100 of the shop currency).
+  price       Int
+  availability Availability @default(IN_STOCK)
+  /// Free text shown on pre-order products, e.g. "Ships mid-November".
+  preorderNote String?
+  sizes       String[]
+  published   Boolean      @default(true)
+  featured    Boolean      @default(false)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  colors ProductColor[]
+  images ProductImage[]
+
+  @@index([published, category, sortOrder])
+}
+
+model ProductColor {
+  id        String @id @default(cuid())
+  productId String
+  name      String
+  /// Hex value, e.g. #151514.
+  hex       String
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, position])
+}
+
+/// Product photos are stored in the database so the shop runs on any host
+/// (including serverless) with nothing but PostgreSQL. The admin uploader
+/// resizes photos in the browser first, so rows stay small.
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  data      Bytes
+  mimeType  String
+  width     Int
+  height    Int
+  alt       String   @default("")
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, position])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Orders
+// ─────────────────────────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  /// Human-friendly public reference, e.g. NW-7K3Q9P.
+  reference String      @unique
+  userId    String
+  status    OrderStatus @default(PENDING)
+
+  // Delivery snapshot at the time of ordering.
+  fullName   String
+  phone      String
+  email      String
+  address    String
+  city       String
+  postalCode String?
+  note       String?
+
+  paymentMethod PaymentMethod @default(CASH_ON_DELIVERY)
+  /// All amounts in minor units.
+  subtotal      Int
+  deliveryFee   Int?
+  total         Int
+  /// True when at least one line is a pre-order.
+  hasPreorder   Boolean       @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  OrderItem[]
+  events OrderEvent[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  /// Kept nullable so orders survive a product being deleted.
+  productId String?
+  // Snapshot of what was bought.
+  name      String
+  slug      String
+  category  Category
+  colorName String
+  colorHex  String
+  size      String
+  unitPrice Int
+  quantity  Int
+  preorder  Boolean @default(false)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+/// Status history shown to the customer as a timeline.
+model OrderEvent {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  /// Optional message from the shop, visible to the customer.
+  note      String?
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Newsletter
+// ─────────────────────────────────────────────────────────────
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
