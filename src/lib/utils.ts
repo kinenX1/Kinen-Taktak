@@ -3,8 +3,8 @@ export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function formatDate(date: Date | string, opts: Intl.DateTimeFormatOptions = {}) {
-  return new Intl.DateTimeFormat("en", {
+export function formatDate(date: Date | string, opts: Intl.DateTimeFormatOptions = {}, locale = "en") {
+  return new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -12,8 +12,8 @@ export function formatDate(date: Date | string, opts: Intl.DateTimeFormatOptions
   }).format(new Date(date));
 }
 
-export function formatDateTime(date: Date | string) {
-  return formatDate(date, { hour: "2-digit", minute: "2-digit" });
+export function formatDateTime(date: Date | string, locale = "en") {
+  return formatDate(date, { hour: "2-digit", minute: "2-digit" }, locale);
 }
 
 export function formatBytes(bytes: number) {

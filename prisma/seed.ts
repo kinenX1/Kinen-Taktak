@@ -1,5 +1,5 @@
 /**
- * Seeds services, demo portfolio projects and the initial administrator.
+ * Seeds services, demo portfolio projects, job openings and the initial administrator.
  * Safe to run repeatedly — existing rows are updated, not duplicated.
  *   npm run db:seed
  */
@@ -7,6 +7,7 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
 import { serviceSeeds } from "../src/content/services";
 import { portfolioSeeds } from "../src/content/portfolio";
+import { openingSeeds } from "../src/content/careers";
 
 const db = new PrismaClient();
 
@@ -28,6 +29,15 @@ async function main() {
     });
   }
   console.log(`✓ ${portfolioSeeds.length} demo portfolio projects`);
+
+  for (const [i, o] of openingSeeds.entries()) {
+    await db.jobOpening.upsert({
+      where: { slug: o.slug },
+      create: { ...o, sortOrder: i * 10 },
+      update: {},
+    });
+  }
+  console.log(`✓ ${openingSeeds.length} job openings`);
 
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;

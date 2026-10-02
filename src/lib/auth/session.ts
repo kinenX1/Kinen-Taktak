@@ -5,12 +5,8 @@ import { db } from "@/lib/db";
 import { generateToken, hashToken } from "./tokens";
 
 export const SESSION_COOKIE = "movera_session";
-/**
- * Non-sensitive UI hint so statically rendered pages can show "Client Portal"
- * instead of "Login". It grants nothing — every protected route validates the
- * real httpOnly session cookie on the server.
- */
-export const SIGNED_IN_HINT_COOKIE = "movera_signed_in";
+/** UI hint cookie set by earlier versions; now only cleared on sign-out. */
+const SIGNED_IN_HINT_COOKIE = "movera_signed_in";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const RENEW_THRESHOLD_MS = 15 * 24 * 60 * 60 * 1000; // renew when < 15 days left
 
@@ -29,7 +25,6 @@ async function setSessionCookie(token: string, expiresAt: Date) {
   const store = await cookies();
   const secure = process.env.NODE_ENV === "production";
   store.set(SESSION_COOKIE, token, { httpOnly: true, secure, sameSite: "lax", path: "/", expires: expiresAt });
-  store.set(SIGNED_IN_HINT_COOKIE, "1", { httpOnly: false, secure, sameSite: "lax", path: "/", expires: expiresAt });
 }
 
 /**
@@ -43,7 +38,7 @@ export const getCurrentSession = cache(async () => {
   const session = await db.session.findUnique({
     where: { id: hashToken(token) },
     include: {
-      user: { select: { id: true, email: true, name: true, role: true } },
+      user: { select: { id: true, email: true, name: true, role: true, locale: true, avatarAt: true } },
     },
   });
   if (!session) return null;

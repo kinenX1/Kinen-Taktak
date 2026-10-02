@@ -12,10 +12,12 @@ import { SectionLabel } from "@/components/ui/section-label";
 import { SplitReveal } from "@/components/motion/split-reveal";
 import { Reveal } from "@/components/motion/reveal";
 import { ServiceGlyph } from "@/components/visuals/service-glyph";
+import { useT } from "@/i18n/client";
 
 type Service = Pick<ServiceItem, "slug" | "shortTitle" | "tagline" | "capabilities">;
 
 export function ServicesSection({ services }: { services: Service[] }) {
+  const t = useT().home.services;
   const [active, setActive] = useState(0);
   const current = services[active];
 
@@ -25,16 +27,15 @@ export function ServicesSection({ services }: { services: Service[] }) {
         <div className="mb-14 grid gap-8 md:mb-20 md:grid-cols-12 md:items-end">
           <div className="md:col-span-8">
             <SectionLabel index="01" className="mb-6">
-              Services
+              {t.label}
             </SectionLabel>
             <h2 id="services-title" className="text-display-lg font-medium">
-              <SplitReveal lines={["Everything your product", { text: "needs to move.", className: "accent-serif text-flux" }]} />
+              <SplitReveal lines={[t.title1, { text: t.title2, className: "accent-serif text-flux" }]} />
             </h2>
           </div>
           <Reveal className="md:col-span-4" delay={0.2}>
             <p className="leading-relaxed text-fog-400">
-              One team from first sketch to production — and beyond. Pick a single discipline or bring us the whole
-              product.
+              {t.intro}
             </p>
           </Reveal>
         </div>
@@ -125,7 +126,7 @@ export function ServicesSection({ services }: { services: Service[] }) {
               </div>
               <div className="mt-6 flex justify-end">
                 <ButtonLink href="/services" variant="secondary" arrow>
-                  All services
+                  {t.all}
                 </ButtonLink>
               </div>
             </div>
@@ -134,7 +135,7 @@ export function ServicesSection({ services }: { services: Service[] }) {
 
         <div className="mt-10 lg:hidden">
           <ButtonLink href="/services" variant="secondary" arrow>
-            All services
+            {t.all}
           </ButtonLink>
         </div>
       </div>

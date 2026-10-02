@@ -42,7 +42,7 @@ export function getUserRequest(userId: string, reference: string) {
 }
 
 export async function getUserOverview(userId: string) {
-  const [grouped, latestUpdates] = await Promise.all([
+  const [grouped, latestUpdates, unread] = await Promise.all([
     db.projectRequest.groupBy({ by: ["status"], where: { userId }, _count: true }),
     db.projectUpdate.findMany({
       where: { visibility: "CLIENT", request: { userId } },
@@ -50,15 +50,35 @@ export async function getUserOverview(userId: string) {
       take: 6,
       include: { request: { select: { reference: true, title: true } } },
     }),
+    db.projectMessage.count({ where: { fromStaff: true, readAt: null, request: { userId } } }),
   ]);
   const counts = Object.fromEntries(grouped.map((g) => [g.status, g._count])) as Record<string, number>;
-  return { counts, latestUpdates };
+  return { counts, latestUpdates, unread };
+}
+
+/** One conversation per submitted request, newest activity first. */
+export async function getUserConversations(userId: string) {
+  const requests = await db.projectRequest.findMany({
+    where: { userId, status: { not: "DRAFT" } },
+    select: {
+      id: true,
+      reference: true,
+      title: true,
+      status: true,
+      updatedAt: true,
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { body: true, createdAt: true, fromStaff: true } },
+      _count: { select: { messages: { where: { fromStaff: true, readAt: null } } } },
+    },
+  });
+  return requests
+    .map((r) => ({ ...r, last: r.messages[0] ?? null, unread: r._count.messages }))
+    .sort((a, b) => +(b.last?.createdAt ?? b.updatedAt) - +(a.last?.createdAt ?? a.updatedAt));
 }
 
 export function getUserProfile(userId: string) {
   return db.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { id: true, name: true, email: true, phone: true, company: true, country: true, createdAt: true, role: true },
+    select: { id: true, name: true, email: true, phone: true, company: true, country: true, createdAt: true, role: true, locale: true, avatarAt: true },
   });
 }
 

@@ -7,8 +7,11 @@ import { initialFormState } from "@/lib/validation/common";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, FieldError, FormMessage, Input } from "@/components/ui/field";
 import { PasswordInput } from "./password-input";
+import { useT } from "@/i18n/client";
 
 export function RegisterForm({ next }: { next?: string }) {
+  const dict = useT();
+  const t = dict.auth;
   const [state, action, pending] = useActionState(registerAction, initialFormState);
   const e = state.fieldErrors ?? {};
   const v = state.values ?? {};
@@ -16,13 +19,13 @@ export function RegisterForm({ next }: { next?: string }) {
     <form action={action} className="space-y-6" noValidate>
       {state.message && <FormMessage>{state.message}</FormMessage>}
       {next && <input type="hidden" name="next" value={next} />}
-      <Field id="name" label="Full name" error={e.name}>
+      <Field id="name" label={t.fullName} error={e.name}>
         {(a) => <Input {...a} name="name" autoComplete="name" required maxLength={80} defaultValue={v.name} autoFocus />}
       </Field>
-      <Field id="email" label="Email" error={e.email}>
+      <Field id="email" label={t.email} error={e.email}>
         {(a) => <Input {...a} name="email" type="email" autoComplete="email" required defaultValue={v.email} />}
       </Field>
-      <Field id="password" label="Password" hint="At least 10 characters. A short phrase works well." error={e.password}>
+      <Field id="password" label={t.password} hint={t.passwordHint} error={e.password}>
         {(a) => <PasswordInput {...a} name="password" autoComplete="new-password" required minLength={10} maxLength={128} />}
       </Field>
       <div>
@@ -34,13 +37,13 @@ export function RegisterForm({ next }: { next?: string }) {
           aria-describedby={e.terms ? "terms-error" : undefined}
           label={
             <>
-              I agree to the{" "}
+              {t.agree}{" "}
               <Link href="/terms" className="text-fog-50 underline underline-offset-2">
-                Terms of Service
+                {t.termsLink}
               </Link>{" "}
-              and{" "}
+              {dict.common.and}{" "}
               <Link href="/privacy" className="text-fog-50 underline underline-offset-2">
-                Privacy Policy
+                {t.privacyLink}
               </Link>
               .
             </>
@@ -51,7 +54,7 @@ export function RegisterForm({ next }: { next?: string }) {
         </div>
       </div>
       <Button type="submit" size="lg" className="w-full" pending={pending} arrow>
-        {pending ? "Creating account" : "Create account"}
+        {pending ? t.creating : t.createAccount}
       </Button>
     </form>
   );

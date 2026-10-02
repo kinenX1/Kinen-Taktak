@@ -1,28 +1,28 @@
-import { pillars } from "@/content/company";
 import { ButtonLink } from "@/components/ui/button";
+import type { Dictionary } from "@/i18n/dictionaries";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Reveal } from "@/components/motion/reveal";
 import { ScrollText } from "@/components/motion/scroll-text";
 
-export function AboutSection() {
+export function AboutSection({ t, pillars }: { t: Dictionary["home"]["about"]; pillars: Dictionary["company"]["pillars"] }) {
   return (
     <section aria-labelledby="about-title" className="relative py-24 md:py-36">
       <div className="container-x">
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-3">
-            <SectionLabel index="04">About MovEra</SectionLabel>
+            <SectionLabel index="04">{t.label}</SectionLabel>
             <h2 id="about-title" className="sr-only">
-              About MovEra
+              {t.label}
             </h2>
           </div>
           <div className="lg:col-span-9">
             <ScrollText
               className="text-[clamp(1.6rem,3.3vw,3.1rem)] font-medium leading-[1.12] tracking-[-0.035em] text-fog-50"
-              text="MovEra is a small, senior team of designers and engineers. We combine design, technology, strategy and engineering to turn ideas into digital products — and we stay close long after launch, because the best products never stop moving."
+              text={t.text}
             />
             <Reveal className="mt-10">
               <ButtonLink href="/about" variant="secondary" arrow>
-                More about us
+                {t.more}
               </ButtonLink>
             </Reveal>
           </div>

@@ -1,4 +1,5 @@
 import { getFeaturedProjects, getPublishedServices } from "@/lib/data/content";
+import { getI18n } from "@/i18n/server";
 import { Hero } from "@/components/home/hero";
 import { CapabilityMarquee } from "@/components/home/capability-marquee";
 import { ServicesSection } from "@/components/home/services-section";
@@ -8,23 +9,21 @@ import { AboutSection } from "@/components/home/about-section";
 import { FinalCta } from "@/components/home/final-cta";
 import { JsonLd, organizationJsonLd } from "@/components/seo/json-ld";
 
-// Content is managed in /admin; admin saves revalidate immediately.
-export const revalidate = 3600;
-
 export default async function HomePage() {
-  const [services, projects] = await Promise.all([getPublishedServices(), getFeaturedProjects(4)]);
+  const { locale, t } = await getI18n();
+  const [services, projects] = await Promise.all([getPublishedServices(locale), getFeaturedProjects(locale, 4)]);
 
   return (
     <>
       <JsonLd data={organizationJsonLd()} />
       <Hero />
-      <CapabilityMarquee />
+      <CapabilityMarquee label={t.home.capabilitiesLabel} items={t.home.capabilities} />
       <ServicesSection
         services={services.map(({ slug, shortTitle, tagline, capabilities }) => ({ slug, shortTitle, tagline, capabilities }))}
       />
-      {projects.length > 0 && <WorkSection projects={projects} />}
+      {projects.length > 0 && <WorkSection projects={projects} t={t.home.work} />}
       <ProcessSection />
-      <AboutSection />
+      <AboutSection t={t.home.about} pillars={t.company.pillars} />
       <FinalCta />
     </>
   );

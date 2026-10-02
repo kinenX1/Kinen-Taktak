@@ -1,6 +1,6 @@
 import type { PortfolioCategory } from "@prisma/client";
 
-/** Filters on /work. `value` of null means "All". */
+/** Filters on /work. `value` of null means "All". Labels live in the dictionaries (`t.options.filters`). */
 export const portfolioFilters: { label: string; value: PortfolioCategory | null; slug: string }[] = [
   { label: "All", value: null, slug: "all" },
   { label: "Websites", value: "WEBSITE", slug: "websites" },

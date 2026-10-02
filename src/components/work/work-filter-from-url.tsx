@@ -10,7 +10,7 @@ function Inner({ projects }: { projects: PortfolioItem[] }) {
   return <WorkGrid projects={projects} initialFilter={params.get("type") ?? undefined} />;
 }
 
-/** Reads ?type= on the client so /work stays statically rendered. */
+/** Reads ?type= on the client so the filter works without a server round trip. */
 export function WorkFilterFromUrl({ projects }: { projects: PortfolioItem[] }) {
   return (
     <Suspense fallback={<WorkGrid projects={projects} />}>

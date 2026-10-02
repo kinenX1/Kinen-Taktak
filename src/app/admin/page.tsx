@@ -3,15 +3,16 @@ import { requestStatuses } from "@/config/project-brief";
 import { getAdminOverview } from "@/lib/data/admin";
 import { labelFor } from "@/config/project-brief";
 import { formatDate } from "@/lib/utils";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState, PageHeader, Panel } from "@/components/dashboard/page-header";
 import { Folder } from "@/components/ui/icons";
+import { CountUp } from "@/components/motion/count-up";
 
 export const metadata = { title: "Overview" };
 
 export default async function AdminOverviewPage() {
-  const { counts, totalClients, newMessages, recent } = await getAdminOverview();
+  const { counts, totalClients, newMessages, unreadChats, newApplications, subscribers, recent } = await getAdminOverview();
   const pipeline = requestStatuses.filter((s) => s.value !== "DRAFT");
   const total = pipeline.reduce((n, s) => n + (counts[s.value] ?? 0), 0);
 
@@ -33,10 +34,16 @@ export default async function AdminOverviewPage() {
           { k: "In progress", v: counts.IN_PROGRESS ?? 0, href: "/admin/requests?status=IN_PROGRESS" },
           { k: "Clients", v: totalClients, href: "/admin/clients" },
           { k: "Unread messages", v: newMessages, href: "/admin/messages" },
+          { k: "Unread chats", v: unreadChats, href: "/admin/chats" },
+          { k: "New applications", v: newApplications, href: "/admin/careers?status=NEW" },
+          { k: "Subscribers", v: subscribers, href: "/admin/audience?source=subscriber" },
+          { k: "Total requests", v: total, href: "/admin/requests" },
         ].map((s) => (
           <Link key={s.k} href={s.href} className="group bg-ink-900 p-5 transition-colors hover:bg-ink-850 md:p-6">
             <dt className="text-sm text-fog-400 group-hover:text-fog-200">{s.k}</dt>
-            <dd className="mt-3 text-4xl font-medium tracking-[-0.04em]">{s.v}</dd>
+            <dd className="mt-3 text-4xl font-medium tracking-[-0.04em]">
+              <CountUp value={s.v} />
+            </dd>
           </Link>
         ))}
       </dl>

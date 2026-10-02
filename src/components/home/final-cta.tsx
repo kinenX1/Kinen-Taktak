@@ -5,15 +5,13 @@ import { motion, useMotionTemplate, useMotionValue, useSpring } from "motion/rea
 import { SplitReveal } from "@/components/motion/split-reveal";
 import { Magnetic } from "@/components/motion/magnetic";
 import { ArrowUpRight } from "@/components/ui/icons";
+import { useT } from "@/i18n/client";
 
 /** The closing statement of the home page: a spotlight, speed lines and one action. */
-export function FinalCta({
-  title = ["Have an idea?", "Let's build it."],
-  cta = "Start Your Project",
-}: {
-  title?: [string, string];
-  cta?: string;
-}) {
+export function FinalCta({ title: customTitle, cta: customCta }: { title?: [string, string]; cta?: string }) {
+  const t = useT().home.cta;
+  const title = customTitle ?? [t.title1, t.title2];
+  const cta = customCta ?? t.button;
   const mx = useMotionValue(50);
   const my = useMotionValue(50);
   const sx = useSpring(mx, { stiffness: 60, damping: 20 });

@@ -1,10 +1,8 @@
 import { Marquee } from "@/components/motion/marquee";
 
-const items = ["Websites", "Web Apps", "Mobile Apps", "UI/UX Design", "Custom Software", "E-commerce", "SaaS", "Automation", "AI Products"];
-
-export function CapabilityMarquee() {
+export function CapabilityMarquee({ label, items }: { label: string; items: string[] }) {
   return (
-    <section aria-label="Capabilities" className="relative border-y border-line py-6 md:py-8">
+    <section aria-label={label} className="relative border-y border-line py-6 md:py-8">
       <p className="sr-only">{items.join(", ")}</p>
       <Marquee duration={55}>
         {items.map((item, i) => (

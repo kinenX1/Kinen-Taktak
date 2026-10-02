@@ -1,14 +1,17 @@
 import "server-only";
-import type { Prisma, ProjectType, RequestStatus } from "@prisma/client";
+import type { ApplicationStatus, Prisma, ProjectType, RequestStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 
 /** Admin-only queries. Callers must have passed `requireAdmin()`. */
 
 export async function getAdminOverview() {
-  const [byStatus, totalClients, newMessages, recent] = await Promise.all([
+  const [byStatus, totalClients, newMessages, unreadChats, newApplications, subscribers, recent] = await Promise.all([
     db.projectRequest.groupBy({ by: ["status"], _count: true }),
     db.user.count({ where: { role: "CLIENT" } }),
     db.contactMessage.count({ where: { status: "NEW" } }),
+    db.projectMessage.count({ where: { fromStaff: false, readAt: null } }),
+    db.jobApplication.count({ where: { status: "NEW" } }),
+    db.subscriber.count({ where: { unsubscribedAt: null } }),
     db.projectRequest.findMany({
       where: { status: { not: "DRAFT" } },
       orderBy: { createdAt: "desc" },
@@ -24,7 +27,7 @@ export async function getAdminOverview() {
     }),
   ]);
   const counts = Object.fromEntries(byStatus.map((s) => [s.status, s._count])) as Record<string, number>;
-  return { counts, totalClients, newMessages, recent };
+  return { counts, totalClients, newMessages, unreadChats, newApplications, subscribers, recent };
 }
 
 export type RequestFilters = {
@@ -81,7 +84,7 @@ export function getRequestForAdmin(reference: string) {
   return db.projectRequest.findFirst({
     where: { reference, status: { not: "DRAFT" } },
     include: {
-      user: { select: { id: true, name: true, email: true, company: true, createdAt: true } },
+      user: { select: { id: true, name: true, email: true, company: true, createdAt: true, avatarAt: true, locale: true } },
       files: { orderBy: { createdAt: "asc" } },
       updates: { orderBy: { createdAt: "desc" }, include: { author: { select: { name: true } } } },
     },
@@ -108,6 +111,7 @@ export async function searchClients(q?: string) {
       company: true,
       country: true,
       role: true,
+      avatarAt: true,
       createdAt: true,
       _count: { select: { projectRequests: { where: { status: { not: "DRAFT" } } } } },
     },
@@ -125,7 +129,10 @@ export function getClient(id: string) {
       company: true,
       country: true,
       role: true,
+      locale: true,
+      avatarAt: true,
       createdAt: true,
+      receivedEmails: { orderBy: { createdAt: "desc" }, take: 50, include: { sentBy: { select: { name: true } } } },
       projectRequests: {
         where: { status: { not: "DRAFT" } },
         orderBy: { createdAt: "desc" },
@@ -140,5 +147,107 @@ export function getMessages(status?: "NEW" | "READ" | "ARCHIVED") {
     where: status ? { status } : { status: { not: "ARCHIVED" } },
     orderBy: { createdAt: "desc" },
     take: 200,
+    include: { _count: { select: { emails: true } } },
+  });
+}
+
+// ── Careers ────────────────────────────────────────────────
+
+export async function searchApplications({ q, status, opening }: { q?: string; status?: ApplicationStatus; opening?: string }) {
+  return db.jobApplication.findMany({
+    where: {
+      ...(status ? { status } : {}),
+      ...(opening ? (opening === "spontaneous" ? { openingId: null } : { openingId: opening }) : {}),
+      ...(q
+        ? {
+            OR: [
+              { fullName: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
+              { reference: { contains: q, mode: "insensitive" } },
+              { roleTitle: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+    select: {
+      id: true,
+      reference: true,
+      fullName: true,
+      email: true,
+      roleTitle: true,
+      status: true,
+      country: true,
+      cvName: true,
+      createdAt: true,
+    },
+  });
+}
+
+export function getApplication(id: string) {
+  return db.jobApplication.findUnique({
+    where: { id },
+    include: {
+      opening: { select: { id: true, slug: true, title: true } },
+      emails: { orderBy: { createdAt: "desc" }, include: { sentBy: { select: { name: true } } } },
+    },
+  });
+}
+
+export function getOpeningsForAdmin() {
+  return db.jobOpening.findMany({
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    include: { _count: { select: { applications: true } } },
+  });
+}
+
+// ── Audience & email ───────────────────────────────────────
+
+export type AudienceEntry = {
+  email: string;
+  name: string | null;
+  sources: ("client" | "contact" | "applicant" | "subscriber")[];
+  lastSeen: Date;
+  locale: string | null;
+  userId?: string;
+  subscriberId?: string;
+};
+
+/** Everyone who has given MovEra their email, merged by address. */
+export async function getAudience(q?: string): Promise<AudienceEntry[]> {
+  const like = q ? { contains: q, mode: "insensitive" as const } : undefined;
+  const [users, contacts, applicants, subscribers] = await Promise.all([
+    db.user.findMany({ where: like ? { OR: [{ email: like }, { name: like }] } : {}, select: { id: true, email: true, name: true, locale: true, createdAt: true }, take: 500 }),
+    db.contactMessage.findMany({ where: like ? { OR: [{ email: like }, { name: like }] } : {}, select: { email: true, name: true, createdAt: true }, take: 500 }),
+    db.jobApplication.findMany({ where: like ? { OR: [{ email: like }, { fullName: like }] } : {}, select: { email: true, fullName: true, locale: true, createdAt: true }, take: 500 }),
+    db.subscriber.findMany({ where: { unsubscribedAt: null, ...(like ? { email: like } : {}) }, select: { id: true, email: true, name: true, locale: true, createdAt: true }, take: 500 }),
+  ]);
+
+  const map = new Map<string, AudienceEntry>();
+  const add = (email: string, name: string | null, source: AudienceEntry["sources"][number], at: Date, extra: Partial<AudienceEntry> = {}) => {
+    const key = email.toLowerCase();
+    const entry = map.get(key) ?? { email: key, name: null, sources: [], lastSeen: at, locale: null };
+    if (!entry.sources.includes(source)) entry.sources.push(source);
+    entry.name ??= name;
+    if (at > entry.lastSeen) entry.lastSeen = at;
+    entry.locale ??= extra.locale ?? null;
+    if (extra.userId) entry.userId = extra.userId;
+    if (extra.subscriberId) entry.subscriberId = extra.subscriberId;
+    map.set(key, entry);
+  };
+  users.forEach((u) => add(u.email, u.name, "client", u.createdAt, { userId: u.id, locale: u.locale }));
+  contacts.forEach((c) => add(c.email, c.name, "contact", c.createdAt));
+  applicants.forEach((a) => add(a.email, a.fullName, "applicant", a.createdAt, { locale: a.locale }));
+  subscribers.forEach((s) => add(s.email, s.name, "subscriber", s.createdAt, { subscriberId: s.id, locale: s.locale }));
+  return [...map.values()].sort((a, b) => +b.lastSeen - +a.lastSeen);
+}
+
+export function getEmailLog(to?: string) {
+  return db.outboundEmail.findMany({
+    where: to ? { to: { equals: to, mode: "insensitive" } } : {},
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: { sentBy: { select: { name: true } } },
   });
 }

@@ -4,32 +4,35 @@ import { Prisma, type ProjectType } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { labelFor, uploadRules } from "@/config/project-brief";
-import { siteConfig } from "@/config/site";
 import { db } from "@/lib/db";
-import { adminNotificationEmail, sendEmail } from "@/lib/email";
+import { sendRequestReceivedEmails, sendWelcomeEmail } from "@/lib/emails";
+import { fmt } from "@/i18n/config";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { getI18n } from "@/i18n/server";
+import { localizedFieldErrors, localizeFieldErrors } from "@/i18n/errors";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateReference } from "@/lib/reference";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { deleteStoredFile, storeFile, validateUpload, type ValidatedFile } from "@/lib/uploads";
-import { passwordField, fieldErrorsOf, formValues, type FormState } from "@/lib/validation/common";
+import { passwordField, formValues, type FormState } from "@/lib/validation/common";
 import { projectDraftSchema, projectRequestSchema } from "@/lib/validation/project-request";
 
 export type ProjectFormState = FormState & { reference?: string };
 
 const MAX_TOTAL_BYTES = uploadRules.maxFiles * uploadRules.maxFileSizeMb * 1024 * 1024;
 
-async function collectFiles(formData: FormData, alreadyAttached: number) {
+async function collectFiles(formData: FormData, alreadyAttached: number, t: Dictionary) {
   const files = formData
     .getAll("files")
     .filter((f): f is File => typeof f === "object" && f !== null && "size" in f && f.size > 0);
 
   if (files.length + alreadyAttached > uploadRules.maxFiles) {
-    return { error: `You can attach up to ${uploadRules.maxFiles} files.` };
+    return { error: fmt(t.brief.server.tooManyFiles, { max: uploadRules.maxFiles }) };
   }
   if (files.reduce((sum, f) => sum + f.size, 0) > MAX_TOTAL_BYTES) {
-    return { error: "The attached files are too large in total." };
+    return { error: t.brief.server.filesTooLarge };
   }
 
   const valid: ValidatedFile[] = [];
@@ -57,29 +60,26 @@ async function uniqueReference() {
 async function resolveUser(
   formData: FormData,
   contact: { name: string; email: string },
+  { locale, t }: Awaited<ReturnType<typeof getI18n>>,
 ): Promise<{ userId: string; newAccount: boolean } | { error: FormState }> {
   const current = await getCurrentUser();
   if (current) return { userId: current.id, newAccount: false };
 
   const password = passwordField.safeParse(formData.get("accountPassword"));
   if (!password.success) {
-    return { error: { fieldErrors: { accountPassword: password.error.issues.map((i) => i.message) } } };
+    return {
+      error: { fieldErrors: localizeFieldErrors({ accountPassword: password.error.issues.map((i) => i.message) }, t) },
+    };
   }
   if (!contact.email || !contact.name) {
-    return { error: { message: "Add your name and email so we can create your client account." } };
+    return { error: { message: t.brief.server.needContact } };
   }
   const existing = await db.user.findUnique({ where: { email: contact.email }, select: { id: true } });
   if (existing) {
-    return {
-      error: {
-        fieldErrors: {
-          contactEmail: ["You already have a MovEra account. Log in to submit this brief — your answers are kept."],
-        },
-      },
-    };
+    return { error: { fieldErrors: { contactEmail: [t.brief.server.accountExists] } } };
   }
   const user = await db.user.create({
-    data: { name: contact.name, email: contact.email, passwordHash: await hashPassword(password.data) },
+    data: { name: contact.name, email: contact.email, locale, passwordHash: await hashPassword(password.data) },
     select: { id: true },
   });
   return { userId: user.id, newAccount: true };
@@ -89,11 +89,13 @@ export async function submitProjectRequest(
   _prev: ProjectFormState,
   formData: FormData,
 ): Promise<ProjectFormState> {
+  const i18n = await getI18n();
+  const { locale, t } = i18n;
   const values = formValues(formData, ["accountPassword"]);
   const isDraft = formData.get("intent") === "draft";
 
   const limited = await rateLimit("project-request", 20, 60 * 60 * 1000);
-  if (!limited.ok) return { message: "Too many submissions. Please try again later.", values };
+  if (!limited.ok) return { message: t.brief.server.rateLimited, values };
 
   const raw = Object.fromEntries(
     [...formData.entries()].filter(([, v]) => typeof v === "string"),
@@ -101,8 +103,8 @@ export async function submitProjectRequest(
   const parsed = isDraft ? projectDraftSchema.safeParse(raw) : projectRequestSchema.safeParse(raw);
   if (!parsed.success) {
     return {
-      fieldErrors: fieldErrorsOf(parsed.error),
-      message: "Some answers need attention before we can continue.",
+      fieldErrors: localizedFieldErrors(parsed.error, t),
+      message: t.brief.server.needsAttention,
       values,
     };
   }
@@ -119,15 +121,15 @@ export async function submitProjectRequest(
         })
       : null;
   if (draftRef && !draft) {
-    return { message: "That draft could not be found. It may already have been submitted.", values };
+    return { message: t.brief.server.draftMissing, values };
   }
 
-  const collected = await collectFiles(formData, draft?._count.files ?? 0);
+  const collected = await collectFiles(formData, draft?._count.files ?? 0, t);
   if ("error" in collected) {
     return { fieldErrors: { files: [collected.error!] }, values };
   }
 
-  const who = await resolveUser(formData, { name: data.contactName, email: data.contactEmail });
+  const who = await resolveUser(formData, { name: data.contactName, email: data.contactEmail }, i18n);
   if ("error" in who) return { ...who.error, values };
 
   const storedNames: string[] = [];
@@ -215,28 +217,27 @@ export async function submitProjectRequest(
     } else {
       console.error("[project-request] failed", error);
     }
-    return { message: "We couldn't save your brief because of a server problem. Please try again.", values };
+    return { message: t.brief.server.failed, values };
   }
 
-  if (who.newAccount) await createSession(who.userId);
+  if (who.newAccount) {
+    await createSession(who.userId);
+    await sendWelcomeEmail({ name: data.contactName, email: data.contactEmail, locale });
+  }
   revalidatePath("/dashboard", "layout");
 
   if (isDraft) redirect(`/dashboard/requests/${reference}?saved=draft`);
 
-  const link = `${siteConfig.url}/dashboard/requests/${reference}`;
-  await sendEmail({
-    to: data.contactEmail,
-    subject: `We've received your project idea — ${reference}`,
-    text: `Hi ${data.contactName},\n\nThank you for telling us about "${data.title}". We've received your project idea. Our team will review it and contact you soon.\n\nYour reference: ${reference}\nTrack its status: ${link}\n\n— MovEra`,
+  await sendRequestReceivedEmails({
+    reference,
+    title: data.title,
+    contactName: data.contactName,
+    contactEmail: data.contactEmail,
+    locale,
+    typeLabel: labelFor.projectType(data.projectType),
+    budgetLabel: data.budget === "custom" ? (data.budgetCustom ?? "Custom") : labelFor.budget(data.budget),
+    timelineLabel: labelFor.timeline(data.timeline),
   });
-  const admin = adminNotificationEmail();
-  if (admin) {
-    await sendEmail({
-      to: admin,
-      subject: `New project request ${reference}: ${data.title}`,
-      text: `${data.contactName} <${data.contactEmail}> submitted a ${labelFor.projectType(data.projectType)} brief.\n\nBudget: ${labelFor.budget(data.budget)}\nTimeline: ${labelFor.timeline(data.timeline)}\n\n${siteConfig.url}/admin/requests/${reference}`,
-    });
-  }
 
   return { ok: true, reference };
 }

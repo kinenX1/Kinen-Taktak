@@ -1,16 +1,18 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { uploadRules } from "@/config/project-brief";
+import { db } from "@/lib/db";
 
 /**
- * Local file storage for project brief attachments. Files live outside
- * /public and are only served through an authorised route handler.
- * For serverless hosting, replace these functions with an object-storage
- * implementation (S3, R2, GCS) keeping the same signatures.
+ * Storage for uploaded files (brief attachments, CVs). New files are kept in
+ * the database (FileBlob) so they survive deploys on read-only serverless
+ * filesystems such as Vercel; files saved to disk by earlier versions are
+ * still read from UPLOAD_DIR. Files are only served through authorised
+ * route handlers, never from /public.
  */
 
+const BLOB_PREFIX = "blob:";
 const UPLOAD_DIR = path.resolve(/*turbopackIgnore: true*/ process.env.UPLOAD_DIR ?? "./storage/uploads");
 
 type Kind = { mime: string; exts: string[]; check: (b: Buffer) => boolean };
@@ -89,11 +91,10 @@ export async function validateUpload(file: File): Promise<ValidatedFile | { erro
   return { buffer, originalName, mimeType: kind.mime, ext };
 }
 
-export async function storeFile(file: ValidatedFile) {
-  await mkdir(/*turbopackIgnore: true*/ UPLOAD_DIR, { recursive: true });
-  const storedName = `${randomUUID()}${file.ext}`;
-  await writeFile(/*turbopackIgnore: true*/ path.join(UPLOAD_DIR, storedName), file.buffer, { mode: 0o600 });
-  return storedName;
+/** Stores the bytes and returns the key to save as `storedName`. */
+export async function storeFile(file: Pick<ValidatedFile, "buffer">) {
+  const blob = await db.fileBlob.create({ data: { data: new Uint8Array(file.buffer) }, select: { id: true } });
+  return `${BLOB_PREFIX}${blob.id}`;
 }
 
 function resolveStored(storedName: string) {
@@ -102,12 +103,42 @@ function resolveStored(storedName: string) {
   return path.join(UPLOAD_DIR, safe);
 }
 
-export function readStoredFile(storedName: string) {
+export async function readStoredFile(storedName: string): Promise<Buffer> {
+  if (storedName.startsWith(BLOB_PREFIX)) {
+    const blob = await db.fileBlob.findUnique({ where: { id: storedName.slice(BLOB_PREFIX.length) } });
+    if (!blob) throw new Error("File not found");
+    return Buffer.from(blob.data);
+  }
   return readFile(/*turbopackIgnore: true*/ resolveStored(storedName));
 }
 
 export async function deleteStoredFile(storedName: string) {
+  if (storedName.startsWith(BLOB_PREFIX)) {
+    await db.fileBlob.deleteMany({ where: { id: storedName.slice(BLOB_PREFIX.length) } });
+    return;
+  }
   await unlink(/*turbopackIgnore: true*/ resolveStored(storedName)).catch(() => {});
+}
+
+/** Detects JPEG, PNG, WebP or GIF from the file signature. */
+export function imageKind(b: Buffer): "image/jpeg" | "image/png" | "image/webp" | "image/gif" | null {
+  const kind = KINDS.slice(0, 4).find((k) => k.check(b));
+  return (kind?.mime as ReturnType<typeof imageKind>) ?? null;
+}
+
+const CV_KINDS = KINDS.filter((k) => [".pdf", ".doc", ".docx"].some((e) => k.exts.includes(e)));
+export const MAX_CV_BYTES = 4 * 1024 * 1024;
+
+/** Validates a CV upload: PDF, DOC or DOCX, verified by signature. */
+export async function validateCv(file: File): Promise<ValidatedFile | { error: "type" | "size" }> {
+  if (file.size === 0 || file.size > MAX_CV_BYTES) return { error: "size" };
+  const originalName = sanitizeFileName(file.name);
+  const ext = path.extname(originalName).toLowerCase();
+  const kind = CV_KINDS.find((k) => k.exts.includes(ext));
+  if (!kind) return { error: "type" };
+  const buffer = Buffer.from(await file.arrayBuffer());
+  if (!kind.check(buffer)) return { error: "type" };
+  return { buffer, originalName, mimeType: kind.mime, ext };
 }
 
 export const isInlineSafe = (mime: string) =>

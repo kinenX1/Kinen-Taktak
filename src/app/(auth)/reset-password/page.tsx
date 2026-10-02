@@ -5,8 +5,12 @@ import { hashToken } from "@/lib/auth/tokens";
 import { AuthHeading } from "@/components/auth/auth-heading";
 import { ResetForm } from "@/components/auth/reset-form";
 import { FormMessage } from "@/components/ui/field";
+import { getI18n } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Choose a new password", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.meta.reset, robots: { index: false } };
+}
 
 /** Checks the link up front so an expired or used one never shows a form that can only fail. */
 async function isUsableToken(token: string) {
@@ -21,16 +25,17 @@ async function isUsableToken(token: string) {
 export default async function ResetPasswordPage({ searchParams }: PageProps<"/reset-password">) {
   const { token } = await searchParams;
   const valid = typeof token === "string" && (await isUsableToken(token));
+  const { t } = await getI18n();
   return (
     <>
-      <AuthHeading eyebrow="Account recovery" title="Choose a new password." />
+      <AuthHeading eyebrow={t.auth.recovery} title={t.auth.resetTitle} />
       {valid ? (
         <ResetForm token={token} />
       ) : (
         <FormMessage>
-          This reset link is invalid or has expired.{" "}
+          {t.auth.invalidLink}{" "}
           <Link href="/forgot-password" className="underline underline-offset-2">
-            Request a new one
+            {t.auth.requestNew}
           </Link>
           .
         </FormMessage>

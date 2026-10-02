@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ViewTransition } from "react";
-import { categoryLabel } from "@/config/portfolio";
-import { getAdjacentProject, getProjectBySlug, getPublishedProjects } from "@/lib/data/content";
+import { getAdjacentProject, getProjectBySlug } from "@/lib/data/content";
+import { fmt } from "@/i18n/config";
+import { getI18n } from "@/i18n/server";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ArrowUpRight } from "@/components/ui/icons";
 import { SectionLabel } from "@/components/ui/section-label";
@@ -16,23 +17,13 @@ import { FinalCta } from "@/components/home/final-cta";
 import { JsonLd } from "@/components/seo/json-ld";
 import { siteConfig } from "@/config/site";
 
-export const revalidate = 3600;
-
-export async function generateStaticParams() {
-  try {
-    const projects = await getPublishedProjects();
-    return projects.map((p) => ({ slug: p.slug }));
-  } catch {
-    return []; // Database unavailable at build time — pages render on demand.
-  }
-}
-
 export async function generateMetadata({ params }: PageProps<"/work/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const project = await getProjectBySlug(slug);
-  if (!project) return { title: "Project not found" };
+  const { locale, t } = await getI18n();
+  const project = await getProjectBySlug(locale, slug);
+  if (!project) return { title: t.meta.projectNotFound };
   return {
-    title: `${project.title} — ${categoryLabel[project.category]}`,
+    title: `${project.title} — ${t.options.categories[project.category]}`,
     description: project.summary,
     alternates: { canonical: `/work/${project.slug}` },
     openGraph: {
@@ -48,15 +39,18 @@ const isDirectVideo = (url: string) => /\.(mp4|webm)(\?.*)?$/i.test(url);
 
 export default async function ProjectPage({ params }: PageProps<"/work/[slug]">) {
   const { slug } = await params;
-  const project = await getProjectBySlug(slug);
+  const { locale, t } = await getI18n();
+  const project = await getProjectBySlug(locale, slug);
   if (!project) notFound();
-  const next = await getAdjacentProject(slug);
+  const next = await getAdjacentProject(locale, slug);
+  const tp = t.project;
+  const categoryLabel = t.options.categories;
 
   const meta = [
-    { k: "Client", v: project.client },
-    { k: "Category", v: categoryLabel[project.category] },
-    { k: "Year", v: String(project.year) },
-    { k: "Stack", v: project.technologies.slice(0, 3).join(", ") },
+    { k: tp.client, v: project.client },
+    { k: tp.category, v: categoryLabel[project.category] },
+    { k: tp.year, v: String(project.year) },
+    { k: tp.stack, v: project.technologies.slice(0, 3).join(", ") },
   ];
 
   return (
@@ -82,13 +76,13 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
             className="group mb-10 inline-flex min-h-11 items-center gap-2 text-sm text-fog-400 transition-colors hover:text-fog-50"
           >
             <ArrowLeft size={16} className="transition-transform duration-500 group-hover:-translate-x-1" />
-            All work
+            {tp.allWork}
           </Link>
           <p className="eyebrow mb-6 flex flex-wrap items-center gap-3">
             <span className="text-flux">{categoryLabel[project.category]}</span>
             <span aria-hidden="true">·</span>
             <span>{project.year}</span>
-            {project.isDemo && <Badge>Concept project</Badge>}
+            {project.isDemo && <Badge>{t.common.conceptProject}</Badge>}
           </p>
           <h1 className="text-display-2xl font-medium">
             <SplitReveal immediate lines={[project.title]} />
@@ -127,14 +121,13 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
       {project.isDemo && (
         <div className="container-x mt-8">
           <p className="rounded-md border border-line bg-ink-900 px-5 py-4 text-sm leading-relaxed text-fog-400">
-            <strong className="font-medium text-fog-200">About this project:</strong> {project.title} is a concept created by
-            MovEra to demonstrate our approach. It is not work for a real client, and it makes no claims about real-world results.
+            <strong className="font-medium text-fog-200">{tp.aboutLabel}</strong> {fmt(tp.aboutText, { title: project.title })}
           </p>
         </div>
       )}
 
       {/* ── Overview ───────────────────────── */}
-      <StorySection label="Overview" index="01">
+      <StorySection label={tp.overview} index="01">
         <p className="text-[clamp(1.5rem,2.8vw,2.5rem)] font-medium leading-[1.2] tracking-[-0.03em] text-fog-50">{project.overview}</p>
       </StorySection>
 
@@ -142,8 +135,8 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
       <section className="border-y border-line bg-ink-900/50">
         <div className="container-x grid md:grid-cols-2">
           {[
-            { k: "The challenge", v: project.challenge, n: "02" },
-            { k: "The solution", v: project.solution, n: "03" },
+            { k: tp.challenge, v: project.challenge, n: "02" },
+            { k: tp.solution, v: project.solution, n: "03" },
           ].map((b, i) => (
             <Reveal
               key={b.k}
@@ -158,22 +151,22 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
       </section>
 
       {/* ── Design ─────────────────────────── */}
-      <StorySection label="Design" index="04">
+      <StorySection label={tp.design} index="04">
         <p className="text-lg leading-relaxed text-fog-200 md:text-xl">{project.design}</p>
       </StorySection>
       <div className="container-x grid gap-6 md:grid-cols-12">
         <Parallax offset={30} className="md:col-span-7">
-          <DetailFrame project={project} origin="18% 22%" />
+          <DetailFrame project={project} label={fmt(tp.detail, { title: project.title })} origin="18% 22%" />
         </Parallax>
         <Parallax offset={70} className="md:col-span-5 md:mt-24">
-          <DetailFrame project={project} origin="72% 50%" tall />
+          <DetailFrame project={project} label={fmt(tp.detail, { title: project.title })} origin="72% 50%" tall />
         </Parallax>
       </div>
 
       {/* ── Development ────────────────────── */}
-      <StorySection label="Development" index="05">
+      <StorySection label={tp.development} index="05">
         <p className="text-lg leading-relaxed text-fog-200 md:text-xl">{project.development}</p>
-        <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3" aria-label="Technologies">
+        <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3" aria-label={t.work.technologies}>
           {project.technologies.map((t) => (
             <li key={t} className="flex items-center gap-2 text-2xl font-medium tracking-[-0.03em] text-fog-50 md:text-3xl">
               <span aria-hidden="true" className="size-1.5 rounded-full bg-flux" />
@@ -185,13 +178,13 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
 
       {/* ── Gallery & video (when provided) ── */}
       {project.gallery.length > 0 && (
-        <section aria-label="Gallery" className="container-x grid gap-6 pb-24 md:grid-cols-2">
+        <section aria-label={tp.gallery} className="container-x grid gap-6 pb-24 md:grid-cols-2">
           {project.gallery.map((src, i) => (
             <Reveal key={src} className={i % 3 === 0 ? "md:col-span-2" : undefined}>
               <div className="relative aspect-[16/10] overflow-hidden rounded-lg bg-ink-800">
                 <Image
                   src={src}
-                  alt={`${project.title} — image ${i + 1}`}
+                  alt={fmt(tp.imageAlt, { title: project.title, n: i + 1 })}
                   fill
                   sizes={i % 3 === 0 ? "100vw" : "50vw"}
                   unoptimized={src.startsWith("http")}
@@ -203,12 +196,12 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
         </section>
       )}
       {project.videoUrl && (
-        <section aria-label="Video" className="container-x pb-24">
+        <section aria-label={tp.video} className="container-x pb-24">
           {isDirectVideo(project.videoUrl) ? (
             <video src={project.videoUrl} controls playsInline preload="metadata" className="w-full rounded-lg bg-ink-800" />
           ) : (
             <a href={project.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-fog-50 underline-offset-4 hover:underline">
-              Watch the project video <ArrowUpRight size={16} />
+              {tp.watchVideo} <ArrowUpRight size={16} />
             </a>
           )}
         </section>
@@ -216,7 +209,7 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
 
       {/* ── Results ────────────────────────── */}
       {project.results.length > 0 && (
-        <StorySection label={project.isDemo ? "What we delivered" : "Results"} index="06">
+        <StorySection label={project.isDemo ? tp.delivered : tp.results} index="06">
           <ol className="divide-y divide-line border-y border-line">
             {project.results.map((r, i) => (
               <li key={r} className="flex items-baseline gap-6 py-6">
@@ -230,14 +223,14 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
 
       {/* ── Next project ───────────────────── */}
       {next && (
-        <section aria-label="Next project" className="border-t border-line">
+        <section aria-label={tp.next} className="border-t border-line">
           <Link
             href={`/work/${next.slug}`}
             transitionTypes={["nav-forward"]}
             className="group container-x flex flex-col gap-6 py-20 md:flex-row md:items-end md:justify-between md:py-28"
           >
             <div>
-              <p className="eyebrow mb-4">Next project — {categoryLabel[next.category]}</p>
+              <p className="eyebrow mb-4">{fmt(tp.nextLabel, { category: categoryLabel[next.category] })}</p>
               <p className="text-display-xl font-medium transition-colors duration-700" style={{ ["--a" as string]: next.accent }}>
                 <span className="bg-[linear-gradient(var(--a),var(--a))] bg-[length:0%_0.06em] bg-left-bottom bg-no-repeat transition-[background-size] duration-700 ease-(--ease-out-expo) group-hover:bg-[length:100%_0.06em]">
                   {next.title}
@@ -251,7 +244,7 @@ export default async function ProjectPage({ params }: PageProps<"/work/[slug]">)
         </section>
       )}
 
-      <FinalCta title={["Want something", "like this?"]} />
+      <FinalCta title={[tp.ctaTitle1, tp.ctaTitle2]} />
     </article>
   );
 }
@@ -272,17 +265,19 @@ function StorySection({ label, index, children }: { label: string; index: string
 /** A cropped, zoomed view of the cover art — reads as a detail shot. */
 function DetailFrame({
   project,
+  label,
   origin,
   tall,
 }: {
-  project: { visualVariant: import("@prisma/client").VisualVariant; accent: string; title: string };
+  project: { visualVariant: import("@prisma/client").VisualVariant; accent: string };
+  label: string;
   origin: string;
   tall?: boolean;
 }) {
   return (
     <div className={`relative overflow-hidden rounded-lg border border-line ${tall ? "aspect-[4/5]" : "aspect-[4/3]"}`}>
       <div className="absolute inset-0 scale-[1.9]" style={{ transformOrigin: origin }}>
-        <ProjectVisual variant={project.visualVariant} accent={project.accent} title={`${project.title} detail`} className="size-full" />
+        <ProjectVisual variant={project.visualVariant} accent={project.accent} title={label} className="size-full" />
       </div>
     </div>
   );

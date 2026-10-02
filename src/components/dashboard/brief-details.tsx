@@ -1,30 +1,41 @@
+"use client";
+
 import type { ProjectFile, ProjectRequest } from "@prisma/client";
-import { labelFor } from "@/config/project-brief";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 import { formatBytes } from "@/lib/utils";
 import { Download, FileIcon } from "@/components/ui/icons";
 import { Panel } from "./page-header";
 
 /** Read-only rendering of a submitted brief. All values render as text (never HTML). */
 export function BriefDetails({ request, files }: { request: ProjectRequest; files: ProjectFile[] }) {
+  const dict = useT();
+  const t = dict.dashboard.brief;
+  const o = dict.options;
+  const budget = request.budget && request.budget in o.budgets ? o.budgets[request.budget as keyof typeof o.budgets] : "—";
+  const timeline = request.timeline && request.timeline in o.timelines ? o.timelines[request.timeline as keyof typeof o.timelines] : "—";
   const facts = [
-    { k: "Project type", v: request.projectType === "OTHER" ? `Other — ${request.otherType ?? ""}` : labelFor.projectType(request.projectType) },
-    { k: "Budget", v: request.budget === "custom" ? (request.budgetCustom ?? "Custom") : labelFor.budget(request.budget) },
-    { k: "Timeline", v: labelFor.timeline(request.timeline) },
-    { k: "Reference", v: request.reference, mono: true },
+    {
+      k: t.projectType,
+      v: request.projectType === "OTHER" ? fmt(dict.brief.review.other, { value: request.otherType ?? "" }) : o.projectTypes[request.projectType].label,
+    },
+    { k: t.budget, v: request.budget === "custom" ? (request.budgetCustom ?? t.custom) : budget },
+    { k: t.timeline, v: timeline },
+    { k: t.reference, v: request.reference, mono: true },
   ];
   const sections = [
-    { k: "What should we build?", v: request.description },
-    { k: "The business or idea", v: request.business },
-    { k: "Target users", v: request.targetUsers },
-    { k: "Features", v: request.features },
-    { k: "Additional information", v: request.additionalInfo },
+    { k: t.what, v: request.description },
+    { k: t.business, v: request.business },
+    { k: t.targetUsers, v: request.targetUsers },
+    { k: t.features, v: request.features },
+    { k: t.additional, v: request.additionalInfo },
   ].filter((s) => s.v);
   const contact = [
-    { k: "Name", v: request.contactName },
-    { k: "Email", v: request.contactEmail },
-    { k: "Phone", v: request.contactPhone },
-    { k: "Company", v: request.contactCompany },
-    { k: "Country", v: request.contactCountry },
+    { k: t.name, v: request.contactName },
+    { k: t.email, v: request.contactEmail },
+    { k: t.phone, v: request.contactPhone },
+    { k: t.company, v: request.contactCompany },
+    { k: t.country, v: request.contactCountry },
   ].filter((c) => c.v);
 
   return (
@@ -38,7 +49,7 @@ export function BriefDetails({ request, files }: { request: ProjectRequest; file
         ))}
       </dl>
 
-      <Panel title="Brief">
+      <Panel title={t.brief}>
         <div className="divide-y divide-line">
           {sections.map((s) => (
             <div key={s.k} className="grid gap-2 px-5 py-5 md:grid-cols-12 md:gap-6">
@@ -48,7 +59,7 @@ export function BriefDetails({ request, files }: { request: ProjectRequest; file
           ))}
           {request.inspiration.length > 0 && (
             <div className="grid gap-2 px-5 py-5 md:grid-cols-12 md:gap-6">
-              <h3 className="text-sm text-fog-500 md:col-span-4">Inspiration</h3>
+              <h3 className="text-sm text-fog-500 md:col-span-4">{t.inspiration}</h3>
               <ul className="space-y-1.5 md:col-span-8">
                 {request.inspiration.map((url) => (
                   <li key={url}>
@@ -64,7 +75,7 @@ export function BriefDetails({ request, files }: { request: ProjectRequest; file
       </Panel>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <Panel title="Contact details">
+        <Panel title={t.contact}>
           <dl className="divide-y divide-line">
             {contact.map((c) => (
               <div key={c.k} className="flex justify-between gap-4 px-5 py-3 text-sm">
@@ -74,7 +85,7 @@ export function BriefDetails({ request, files }: { request: ProjectRequest; file
             ))}
           </dl>
         </Panel>
-        <Panel title={`Files (${files.length})`}>
+        <Panel title={fmt(t.files, { count: files.length })}>
           {files.length ? (
             <ul className="divide-y divide-line">
               {files.map((f) => (
@@ -84,13 +95,13 @@ export function BriefDetails({ request, files }: { request: ProjectRequest; file
                     <span className="min-w-0 flex-1 truncate text-fog-50">{f.originalName}</span>
                     <span className="font-mono text-2xs text-fog-500">{formatBytes(f.size)}</span>
                     <Download size={16} className="text-fog-500 transition-colors group-hover:text-flux" />
-                    <span className="sr-only">Download</span>
+                    <span className="sr-only">{t.download}</span>
                   </a>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="px-5 py-4 text-sm text-fog-500">No files attached.</p>
+            <p className="px-5 py-4 text-sm text-fog-500">{t.noFiles}</p>
           )}
         </Panel>
       </div>

@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { ViewTransition } from "react";
-import { categoryLabel } from "@/config/portfolio";
 import type { PortfolioItem } from "@/lib/data/content";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/badge";
@@ -21,11 +24,12 @@ type Props = {
 
 /** Editorial project block used on the home page and /work. */
 export function ProjectEntry({ project, index, size = "medium", headingLevel = "h3", priority }: Props) {
+  const t = useT();
   const Heading = headingLevel;
   const href = `/work/${project.slug}`;
   return (
     <article className="group">
-      <ProjectCoverLink href={href} className="rounded-lg">
+      <ProjectCoverLink href={href} label={t.work.view} className="rounded-lg">
         <ViewTransition name={`project-${project.slug}`} share="morph" default="none">
           <ProjectVisual
             variant={project.visualVariant}
@@ -43,12 +47,12 @@ export function ProjectEntry({ project, index, size = "medium", headingLevel = "
         <div className={cn(size === "large" && "md:col-span-5")}>
           <p className="eyebrow flex flex-wrap items-center gap-3">
             <span className="text-flux">{String(index + 1).padStart(2, "0")}</span>
-            <span>{categoryLabel[project.category]}</span>
+            <span>{t.options.categories[project.category]}</span>
             <span aria-hidden="true">·</span>
             <span>{project.year}</span>
             {project.isDemo && (
               <Badge className="ml-1" tone="neutral">
-                Concept
+                {t.common.concept}
               </Badge>
             )}
           </p>
@@ -63,7 +67,7 @@ export function ProjectEntry({ project, index, size = "medium", headingLevel = "
         <div className={cn("space-y-5", size === "large" && "md:col-span-7 md:pt-8")}>
           <p className="max-w-xl leading-relaxed text-fog-400">{project.summary}</p>
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-2xs uppercase tracking-[0.1em] text-fog-500" aria-label="Technologies">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 font-mono text-2xs uppercase tracking-[0.1em] text-fog-500" aria-label={t.work.technologies}>
               {project.technologies.slice(0, 4).map((t) => (
                 <li key={t}>{t}</li>
               ))}
@@ -71,9 +75,9 @@ export function ProjectEntry({ project, index, size = "medium", headingLevel = "
             <Link
               href={href}
               className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-fog-50"
-              aria-label={`View project: ${project.title}`}
+              aria-label={fmt(t.work.viewProjectLabel, { title: project.title })}
             >
-              View Project
+              {t.work.viewProject}
               <span className="flex size-8 items-center justify-center rounded-full border border-line-strong transition-all duration-500 ease-(--ease-out-expo) group-hover:rotate-45 group-hover:border-flux group-hover:bg-flux group-hover:text-ink-950">
                 <ArrowUpRight size={15} />
               </span>

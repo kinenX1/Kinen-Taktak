@@ -3,9 +3,10 @@
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { useRef } from "react";
 import { ease } from "@/lib/motion";
+import type { Dictionary } from "@/i18n/dictionaries";
 
 /** "Movement + Era" collapses into "MovEra" when scrolled into view. */
-export function NameEquation() {
+export function NameEquation({ t: copy }: { t: Dictionary["about"] }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "0px 0px -30% 0px" });
   const reduce = useReducedMotion();
@@ -14,7 +15,7 @@ export function NameEquation() {
 
   return (
     <div ref={ref} className="relative">
-      <p className="sr-only">Movement plus Era makes MovEra.</p>
+      <p className="sr-only">{copy.nameSr}</p>
       <div aria-hidden="true" className="flex flex-wrap items-baseline text-[clamp(3.5rem,13vw,13rem)] font-medium leading-[0.9] tracking-[-0.06em]">
         <span className="text-fog-50">Mov</span>
         <motion.span
@@ -43,12 +44,10 @@ export function NameEquation() {
         className="mt-8 grid max-w-3xl gap-6 sm:grid-cols-2"
       >
         <p className="leading-relaxed text-fog-400">
-          <span className="text-fog-50">Movement</span> — products should create momentum. Every screen, feature and line of
-          code should help a business move forward.
+          <span className="text-fog-50">{copy.movement}</span> — {copy.movementBody}
         </p>
         <p className="leading-relaxed text-fog-400">
-          <span className="text-fog-50">Era</span> — we build for where technology is going: modern foundations that stay
-          relevant long after launch.
+          <span className="text-fog-50">{copy.era}</span> — {copy.eraBody}
         </p>
       </motion.div>
     </div>

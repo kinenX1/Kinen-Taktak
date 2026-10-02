@@ -5,8 +5,12 @@ import { useState } from "react";
 import { siteConfig } from "@/config/site";
 import { ease } from "@/lib/motion";
 import { ButtonLink } from "@/components/ui/button";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 
 export function SuccessPanel({ reference, name }: { reference: string; name?: string }) {
+  const dict = useT();
+  const t = dict.brief.success;
   const [copied, setCopied] = useState(false);
   return (
     <motion.div
@@ -43,17 +47,16 @@ export function SuccessPanel({ reference, name }: { reference: string; name?: st
         />
       </svg>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: ease.outExpo, delay: 0.5 }} className="relative">
-        <p className="eyebrow mt-10">{name ? `Thank you, ${name.split(" ")[0]}` : "Thank you"}</p>
+        <p className="eyebrow mt-10">{name ? fmt(t.thanksName, { name: name.split(" ")[0]! }) : t.thanks}</p>
         <h2 className="mx-auto mt-4 max-w-3xl text-display-md font-medium">
-          We&apos;ve received your <span className="accent-serif text-flux">project idea.</span>
+          {t.title1} <span className="accent-serif text-flux">{t.title2}</span>
         </h2>
         <p className="mx-auto mt-5 max-w-lg leading-relaxed text-fog-400">
-          Our team will review it and contact you soon.
-          {siteConfig.responseTimePromise ? ` ${siteConfig.responseTimePromise}` : ""} You can follow its status in your
-          client portal at any time.
+          {t.body}
+          {siteConfig.responseTimePromise ? ` ${siteConfig.responseTimePromise}` : ""}
         </p>
         <div className="mx-auto mt-10 inline-flex items-center gap-4 rounded-full border border-line bg-ink-950 py-2 pl-6 pr-2">
-          <span className="eyebrow">Reference</span>
+          <span className="eyebrow">{t.reference}</span>
           <span className="font-mono text-lg tracking-[0.08em] text-fog-50">{reference}</span>
           <button
             type="button"
@@ -64,15 +67,15 @@ export function SuccessPanel({ reference, name }: { reference: string; name?: st
             }}
             className="h-9 rounded-full bg-fog-50/[0.06] px-4 text-xs text-fog-200 transition-colors hover:bg-fog-50/10"
           >
-            {copied ? "Copied" : "Copy"}
+            {copied ? dict.common.copied : dict.common.copy}
           </button>
         </div>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <ButtonLink href={`/dashboard/requests/${reference}`} arrow>
-            View in dashboard
+            {t.dashboard}
           </ButtonLink>
           <ButtonLink href="/" variant="secondary">
-            Back to home
+            {t.home}
           </ButtonLink>
         </div>
       </motion.div>

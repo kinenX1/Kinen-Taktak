@@ -392,3 +392,129 @@
     animation: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   HUD layer — futuristic accents for navigation and key surfaces
+   ════════════════════════════════════════════════════════════════ */
+@property --spin {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin-prop {
+  to {
+    --spin: 360deg;
+  }
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-120%) skewX(-20deg);
+  }
+  to {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+
+@keyframes scan {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@layer components {
+  /* Rotating conic halo around profile photos */
+  .avatar-ring {
+    background: conic-gradient(from var(--spin), var(--color-flux), var(--color-ion), transparent 55%, var(--color-flux-soft), var(--color-flux));
+    animation: spin-prop 5s linear infinite;
+  }
+
+  /* Corner brackets, like a heads-up display frame */
+  .hud-corners {
+    position: relative;
+  }
+  .hud-corners::before,
+  .hud-corners::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    border-color: rgb(255 90 31 / 0.7);
+    transition: opacity 0.4s var(--ease-out-expo);
+  }
+  .hud-corners::before {
+    top: -4px;
+    left: -4px;
+    border-top: 1px solid;
+    border-left: 1px solid;
+    border-top-left-radius: 4px;
+  }
+  .hud-corners::after {
+    right: -4px;
+    bottom: -4px;
+    border-right: 1px solid;
+    border-bottom: 1px solid;
+    border-bottom-right-radius: 4px;
+  }
+
+  /* Light sweep across the active navigation pill */
+  .nav-active-pill::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.9), transparent);
+    opacity: 0.55;
+    animation: sweep 3.6s var(--ease-in-out-quint) infinite;
+  }
+
+  /* Animated gradient beam travelling around a border */
+  .beam-border {
+    position: relative;
+    isolation: isolate;
+  }
+  .beam-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: conic-gradient(from var(--spin), transparent 0 70%, var(--color-flux) 80%, var(--color-ion) 88%, transparent 96%), var(--color-line-strong);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: spin-prop 6s linear infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Faint scan line moving over a panel */
+  .scanline {
+    position: relative;
+    overflow: hidden;
+  }
+  .scanline::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 45%, rgb(255 90 31 / 0.06) 50%, transparent 55%);
+    animation: scan 6s linear infinite;
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ring,
+  .beam-border::before,
+  .nav-active-pill::before,
+  .scanline::after {
+    animation: none;
+  }
+}

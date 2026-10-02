@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { useT } from "@/i18n/client";
 import { Button } from "./button";
 
 /** Submit button that asks for a second click before a destructive action. */
-export function ConfirmSubmit({ children, confirmLabel = "Click again to confirm", size }: { children: React.ReactNode; confirmLabel?: string; size?: "sm" | "md" }) {
+export function ConfirmSubmit({ children, confirmLabel, size }: { children: React.ReactNode; confirmLabel?: string; size?: "sm" | "md" }) {
+  const t = useT();
   const [armed, setArmed] = useState(false);
   const { pending } = useFormStatus();
   useEffect(() => {
@@ -27,7 +29,7 @@ export function ConfirmSubmit({ children, confirmLabel = "Click again to confirm
       }}
       aria-live="polite"
     >
-      {armed ? confirmLabel : children}
+      {armed ? (confirmLabel ?? t.common.clickToConfirm) : children}
     </Button>
   );
 }

@@ -5,23 +5,32 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { logoutAction } from "@/actions/auth";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 import { ease } from "@/lib/motion";
-import { cn, initials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { WordmarkLink } from "@/components/layout/wordmark";
+import { AccountMenu, type NavUser } from "@/components/layout/account-menu";
+import { LanguageSwitch } from "@/components/layout/language-switch";
+import { HudClock } from "@/components/layout/hud-clock";
+import { UserAvatar } from "@/components/ui/avatar";
 import * as Icons from "@/components/ui/icons";
 
 export type ShellNavItem = { label: string; href: string; icon: keyof typeof Icons; badge?: number; exact?: boolean };
 
 type Props = {
   nav: ShellNavItem[];
-  user: { name: string; email: string; role: string };
+  user: NavUser;
   area: string;
   secondary?: { label: string; href: string };
+  /** Shows the EN/FR switch (client area only — the admin panel is English). */
+  showLanguage?: boolean;
   children: ReactNode;
 };
 
 /** Application frame shared by the client dashboard and the admin panel. */
-export function AppShell({ nav, user, area, secondary, children }: Props) {
+export function AppShell({ nav, user, area, secondary, showLanguage, children }: Props) {
+  const t = useT().dashboard;
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [prev, setPrev] = useState(pathname);
@@ -49,7 +58,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
         <WordmarkLink className="text-lg" />
         <span className="rounded-full border border-line px-2 py-0.5 font-mono text-2xs uppercase tracking-[0.1em] text-fog-400">{area}</span>
       </div>
-      <nav aria-label={`${area} navigation`} className="mt-4 flex-1 px-3">
+      <nav aria-label={fmt(t.navLabel, { area })} className="mt-4 flex-1 px-3">
         <ul className="space-y-0.5">
           {nav.map((item) => {
             const Icon = Icons[item.icon] as (p: { size?: number }) => ReactNode;
@@ -87,9 +96,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
       </nav>
       <div className="border-t border-line p-3">
         <div className="flex items-center gap-3 rounded-md px-2 py-2">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-flux to-flux-deep text-xs font-semibold text-ink-950">
-            {initials(user.name)}
-          </span>
+          <UserAvatar name={user.name} src={user.avatar} size={36} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm text-fog-50">{user.name}</span>
             <span className="block truncate text-xs text-fog-500">{user.email}</span>
@@ -101,7 +108,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
             className="mt-1 flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm text-fog-400 transition-colors hover:bg-fog-50/[0.04] hover:text-fog-50"
           >
             <Icons.LogOut size={18} />
-            Log out
+            {t.logout}
           </button>
         </form>
       </div>
@@ -114,16 +121,19 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
 
       <div className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-line bg-ink-950/85 px-4 backdrop-blur-xl lg:hidden">
         <WordmarkLink className="text-lg" />
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-expanded={open}
-          aria-controls="app-drawer"
-          className="flex size-11 items-center justify-center rounded-full text-fog-50 hover:bg-fog-50/[0.06]"
-        >
-          <Icons.Menu size={20} />
-          <span className="sr-only">Open navigation</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <AccountMenu user={user} showLanguage={showLanguage} />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-expanded={open}
+            aria-controls="app-drawer"
+            className="flex size-11 items-center justify-center rounded-full text-fog-50 hover:bg-fog-50/[0.06]"
+          >
+            <Icons.Menu size={20} />
+            <span className="sr-only">{t.openNav}</span>
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -141,7 +151,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
               id="app-drawer"
               role="dialog"
               aria-modal="true"
-              aria-label="Navigation"
+              aria-label={t.navigation}
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -152,7 +162,7 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
                 type="button"
                 onClick={() => setOpen(false)}
                 className="absolute right-3 top-3 flex size-10 items-center justify-center rounded-full text-fog-400 hover:bg-fog-50/[0.06] hover:text-fog-50"
-                aria-label="Close navigation"
+                aria-label={t.closeNav}
                 autoFocus
               >
                 <Icons.Close size={18} />
@@ -163,9 +173,18 @@ export function AppShell({ nav, user, area, secondary, children }: Props) {
         )}
       </AnimatePresence>
 
-      <main id="main" tabIndex={-1} className="min-w-0 outline-none">
-        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 md:py-12 lg:px-10">{children}</div>
-      </main>
+      <div className="min-w-0">
+        <header className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b border-line bg-ink-950/80 px-10 backdrop-blur-xl lg:flex">
+          <HudClock className="flex" />
+          <div className="flex items-center gap-3">
+            {showLanguage && <LanguageSwitch id="shell-lang" />}
+            <AccountMenu user={user} showLanguage={false} />
+          </div>
+        </header>
+        <main id="main" tabIndex={-1} className="min-w-0 outline-none">
+          <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 md:py-12 lg:px-10">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRequestForAdmin } from "@/lib/data/admin";
+import { getThread, markThreadRead } from "@/lib/data/chat";
+import { requireAdmin } from "@/lib/auth/dal";
+import { avatarUrl } from "@/lib/avatar";
 import { formatDate } from "@/lib/utils";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { ArrowLeft, Mail } from "@/components/ui/icons";
 import { buttonClasses } from "@/components/ui/button";
 import { PageHeader, Panel } from "@/components/dashboard/page-header";
@@ -11,6 +14,8 @@ import { BriefDetails } from "@/components/dashboard/brief-details";
 import { UpdateFeed } from "@/components/dashboard/update-feed";
 import { StatusTimeline } from "@/components/dashboard/status-timeline";
 import { NoteForm, StatusForm } from "@/components/admin/request-actions";
+import { ChatPanel } from "@/components/chat/chat-panel";
+import { EmailComposer } from "@/components/admin/email-composer";
 
 export async function generateMetadata({ params }: PageProps<"/admin/requests/[reference]">): Promise<Metadata> {
   const { reference } = await params;
@@ -19,8 +24,11 @@ export async function generateMetadata({ params }: PageProps<"/admin/requests/[r
 
 export default async function AdminRequestPage({ params }: PageProps<"/admin/requests/[reference]">) {
   const { reference } = await params;
+  const admin = await requireAdmin();
   const request = await getRequestForAdmin(reference);
   if (!request) notFound();
+  await markThreadRead(request.id, "staff");
+  const thread = await getThread(request.id);
 
   return (
     <>
@@ -55,6 +63,19 @@ export default async function AdminRequestPage({ params }: PageProps<"/admin/req
         </div>
       </Panel>
 
+      <div className="mb-8">
+        <ChatPanel
+          title="Chat with the client"
+          lead="The client sees these messages in their dashboard and gets an email for new replies."
+          live="Live"
+          requestId={request.id}
+          side="staff"
+          initial={thread}
+          me={{ name: admin.name, avatar: avatarUrl(admin) }}
+          other={{ name: request.user.name, avatar: avatarUrl(request.user) }}
+        />
+      </div>
+
       <div className="grid gap-8 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <BriefDetails request={request} files={request.files} />
@@ -65,6 +86,15 @@ export default async function AdminRequestPage({ params }: PageProps<"/admin/req
           </Panel>
           <Panel title="Add a note">
             <NoteForm requestId={request.id} />
+          </Panel>
+          <Panel title="Email the client">
+            <EmailComposer
+              to={request.contactEmail}
+              name={request.contactName}
+              recipientId={request.user.id}
+              defaultSubject={`${request.reference} — ${request.title}`}
+              locale={request.user.locale}
+            />
           </Panel>
           <Panel title="Activity">
             <UpdateFeed updates={request.updates} showVisibility />

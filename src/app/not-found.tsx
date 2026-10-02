@@ -1,30 +1,35 @@
 import type { Metadata } from "next";
+import { getI18n } from "@/i18n/server";
 import { ButtonLink } from "@/components/ui/button";
 import { StatusScreen } from "@/components/layout/status-screen";
 
-export const metadata: Metadata = { title: "Page not found", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.meta.notFound, robots: { index: false } };
+}
 
-export default function NotFound() {
+export default async function NotFound() {
+  const { t } = await getI18n();
   return (
     <StatusScreen
       code="404"
       title={
         <>
-          This page has <span className="accent-serif text-flux">moved on.</span>
+          {t.errors.notFound1} <span className="accent-serif text-flux">{t.errors.notFound2}</span>
         </>
       }
       actions={
         <>
           <ButtonLink href="/" arrow>
-            Back to home
+            {t.common.backToHome}
           </ButtonLink>
           <ButtonLink href="/work" variant="secondary">
-            Explore our work
+            {t.errors.explore}
           </ButtonLink>
         </>
       }
     >
-      The link may be old, or the page never existed. Everything else is still moving forward.
+      {t.errors.notFoundBody}
     </StatusScreen>
   );
 }

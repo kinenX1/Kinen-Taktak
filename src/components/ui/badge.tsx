@@ -1,5 +1,3 @@
-import type { RequestStatus } from "@prisma/client";
-import { requestStatuses } from "@/config/project-brief";
 import { cn } from "@/lib/utils";
 
 const tones = {
@@ -32,14 +30,5 @@ export function Badge({
       {dot && <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />}
       {children}
     </span>
-  );
-}
-
-export function StatusBadge({ status, className }: { status: RequestStatus; className?: string }) {
-  const s = requestStatuses.find((x) => x.value === status)!;
-  return (
-    <Badge tone={s.tone} dot className={className}>
-      {s.label}
-    </Badge>
   );
 }

@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { OptionalTag } from "./optional-tag";
 
 /**
  * Form primitives. Every control is paired with a visible <label>, errors
@@ -28,7 +29,7 @@ export function Field({ id, label, hint, error, optional, className, children }:
     <div className={cn("flex flex-col gap-2", className)}>
       <label htmlFor={id} className="flex items-baseline justify-between gap-3 text-sm font-medium text-fog-200">
         <span>{label}</span>
-        {optional && <span className="font-mono text-2xs uppercase tracking-[0.12em] text-fog-500">Optional</span>}
+        {optional && <OptionalTag />}
       </label>
       {children({ id, "aria-invalid": errors?.length ? true : undefined, "aria-describedby": describedBy })}
       {hint && !errors?.length && (

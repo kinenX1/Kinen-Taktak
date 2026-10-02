@@ -24,17 +24,20 @@ export const siteConfig = {
   responseTimePromise: null as string | null,
 } as const;
 
+/** Labels come from the dictionaries (`t.nav[key]`). */
 export const mainNav = [
-  { label: "Home", href: "/" },
-  { label: "Work", href: "/work" },
-  { label: "Services", href: "/services" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { key: "home", href: "/" },
+  { key: "work", href: "/work" },
+  { key: "services", href: "/services" },
+  { key: "about", href: "/about" },
+  { key: "careers", href: "/careers" },
+  { key: "contact", href: "/contact" },
 ] as const;
 
+/** Labels come from the dictionaries (`t.footer[key]`). */
 export const legalNav = [
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Terms of Service", href: "/terms" },
+  { key: "privacy", href: "/privacy" },
+  { key: "terms", href: "/terms" },
 ] as const;
 
 export const activeSocials = () => siteConfig.socials.filter((s) => s.href);

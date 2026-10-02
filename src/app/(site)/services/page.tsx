@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ProjectType } from "@prisma/client";
-import { categoryLabel } from "@/config/portfolio";
 import { getPublishedProjects, getPublishedServices } from "@/lib/data/content";
+import { getI18n } from "@/i18n/server";
 import { PageHero } from "@/components/layout/page-hero";
 import { ButtonLink } from "@/components/ui/button";
 import { ArrowUpRight } from "@/components/ui/icons";
@@ -13,15 +13,15 @@ import { ProcessSection } from "@/components/home/process-section";
 import { FinalCta } from "@/components/home/final-cta";
 import { ServicesIndex } from "@/components/services/services-index";
 
-export const revalidate = 3600;
-
-export const metadata: Metadata = {
-  title: "Services",
-  description:
-    "Website development, web and mobile applications, UI/UX design, custom software, e-commerce, SaaS, automation and AI products — designed and engineered by MovEra.",
-  alternates: { canonical: "/services" },
-  openGraph: { url: "/services", title: "Services — MovEra" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t.meta.services.title,
+    description: t.meta.services.description,
+    alternates: { canonical: "/services" },
+    openGraph: { url: "/services", title: `${t.meta.services.title} — MovEra` },
+  };
+}
 
 /** Maps a service to the project type pre-selected on /start-project. */
 const briefType: Record<string, ProjectType> = {
@@ -37,17 +37,16 @@ const briefType: Record<string, ProjectType> = {
 };
 
 export default async function ServicesPage() {
-  const [services, projects] = await Promise.all([getPublishedServices(), getPublishedProjects()]);
+  const { locale, t } = await getI18n();
+  const ts = t.services;
+  const categoryLabel = t.options.categories;
+  const [services, projects] = await Promise.all([getPublishedServices(locale), getPublishedProjects(locale)]);
 
   return (
     <>
-      <PageHero
-        label="Services"
-        title={["Nine disciplines.", { text: "One team.", className: "accent-serif text-flux" }]}
-        intro="Whether you need a single landing page or a complete platform, you work with the same people from the first conversation to launch — and after it."
-      />
+      <PageHero label={ts.label} title={[ts.title1, { text: ts.title2, className: "accent-serif text-flux" }]} intro={ts.intro} />
 
-      <ServicesIndex items={services.map((s) => ({ slug: s.slug, label: s.shortTitle }))} />
+      <ServicesIndex label={ts.label} items={services.map((s) => ({ slug: s.slug, label: s.shortTitle }))} />
 
       {services.map((service, i) => {
         const examples = projects.filter((p) => service.relatedCategories.includes(p.category)).slice(0, 2);
@@ -81,14 +80,14 @@ export default async function ServicesPage() {
                   <Reveal>
                     <p className="text-lg leading-relaxed text-fog-200">{service.description}</p>
                     <div className="mt-8 rounded-lg border border-line bg-ink-900/60 p-6">
-                      <p className="eyebrow mb-3">Who it&apos;s for</p>
+                      <p className="eyebrow mb-3">{ts.whoFor}</p>
                       <p className="leading-relaxed text-fog-200">{service.audience}</p>
                     </div>
                   </Reveal>
 
                   <div className="grid gap-12 sm:grid-cols-2">
                     <Reveal>
-                      <h3 className="eyebrow mb-5">What we provide</h3>
+                      <h3 className="eyebrow mb-5">{ts.provide}</h3>
                       <ul className="divide-y divide-line border-y border-line">
                         {service.capabilities.map((c) => (
                           <li key={c} className="py-3 text-fog-50">
@@ -98,7 +97,7 @@ export default async function ServicesPage() {
                       </ul>
                     </Reveal>
                     <Reveal delay={0.1}>
-                      <h3 className="eyebrow mb-5">What you get</h3>
+                      <h3 className="eyebrow mb-5">{ts.get}</h3>
                       <ul className="space-y-4">
                         {service.benefits.map((b) => (
                           <li key={b} className="flex gap-3 leading-snug text-fog-200">
@@ -111,7 +110,7 @@ export default async function ServicesPage() {
                   </div>
 
                   <Reveal>
-                    <h3 className="eyebrow mb-5">Technologies</h3>
+                    <h3 className="eyebrow mb-5">{ts.technologies}</h3>
                     <ul className="flex flex-wrap gap-2">
                       {service.technologies.map((t) => (
                         <li key={t} className="rounded-full border border-line px-3.5 py-1.5 font-mono text-xs text-fog-200">
@@ -123,7 +122,7 @@ export default async function ServicesPage() {
 
                   {examples.length > 0 && (
                     <Reveal>
-                      <h3 className="eyebrow mb-5">Example work</h3>
+                      <h3 className="eyebrow mb-5">{ts.examples}</h3>
                       <ul className="grid gap-4 sm:grid-cols-2">
                         {examples.map((p) => (
                           <li key={p.slug}>
@@ -152,7 +151,7 @@ export default async function ServicesPage() {
 
                   <Reveal>
                     <ButtonLink href={`/start-project?type=${briefType[service.slug] ?? "OTHER"}`} arrow>
-                      Start a project
+                      {ts.start}
                     </ButtonLink>
                   </Reveal>
                 </div>
@@ -163,7 +162,7 @@ export default async function ServicesPage() {
       })}
 
       <ProcessSection labelIndex="—" />
-      <FinalCta title={["Not sure what", "you need?"]} cta="Tell Us Your Idea" />
+      <FinalCta title={[ts.ctaTitle1, ts.ctaTitle2]} cta={ts.ctaButton} />
     </>
   );
 }

@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { submitProjectRequest, type ProjectFormState } from "@/actions/project-request";
-import { budgetRanges, labelFor, projectTypes, timelines } from "@/config/project-brief";
+import { budgetRanges, projectTypes, timelines } from "@/config/project-brief";
 import { cn } from "@/lib/utils";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Field, FormMessage, Input, Textarea } from "@/components/ui/field";
 import { ArrowLeft, Check } from "@/components/ui/icons";
@@ -24,17 +26,27 @@ type Props = {
 const STORAGE_KEY = "movera:brief";
 
 const steps = [
-  { id: "you", title: "About you", fields: ["contactName", "contactEmail", "contactPhone", "contactCompany", "contactCountry", "accountPassword"] },
-  { id: "project", title: "The project", fields: ["title", "projectType", "otherType", "description"] },
-  { id: "context", title: "Context", fields: ["business", "targetUsers", "features"] },
-  { id: "scope", title: "Budget & timeline", fields: ["budget", "budgetCustom", "timeline"] },
-  { id: "extras", title: "Inspiration & files", fields: ["inspiration", "files", "additionalInfo"] },
-  { id: "review", title: "Review", fields: [] },
+  { id: "you", fields: ["contactName", "contactEmail", "contactPhone", "contactCompany", "contactCountry", "accountPassword"] },
+  { id: "project", fields: ["title", "projectType", "otherType", "description"] },
+  { id: "context", fields: ["business", "targetUsers", "features"] },
+  { id: "scope", fields: ["budget", "budgetCustom", "timeline"] },
+  { id: "extras", fields: ["inspiration", "files", "additionalInfo"] },
+  { id: "review", fields: [] },
 ] as const;
 
 const stepOfField = (field: string) => steps.findIndex((s) => (s.fields as readonly string[]).includes(field));
 
 export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCount = 0 }: Props) {
+  const dict = useT();
+  const t = dict.brief;
+  const o = dict.options;
+  const stepTitle = (i: number) => t.steps[steps[i]!.id];
+  const typeOptions = projectTypes.map((p) => ({ value: p.value, label: o.projectTypes[p.value].label, hint: o.projectTypes[p.value].hint }));
+  const budgetOptions = budgetRanges.map((b) => ({ value: b.value, label: o.budgets[b.value] }));
+  const timelineOptions = timelines.map((x) => ({ value: x.value, label: o.timelines[x.value] }));
+  const typeLabel = (v: string) => (v in o.projectTypes ? o.projectTypes[v as keyof typeof o.projectTypes].label : "—");
+  const budgetLabel = (v: string) => (v in o.budgets ? o.budgets[v as keyof typeof o.budgets] : "—");
+  const timelineLabel = (v: string) => (v in o.timelines ? o.timelines[v as keyof typeof o.timelines] : "—");
   const [state, dispatch] = useActionState<ProjectFormState, FormData>(submitProjectRequest, {});
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
@@ -125,12 +137,12 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
         next[el.name] = [
           el.validity.valueMissing
             ? el.type === "radio"
-              ? "Please choose an option."
-              : "This field is required."
+              ? t.errChoose
+              : t.errRequired
             : el.validity.tooShort
-              ? `Please write at least ${el.minLength} characters.`
+              ? fmt(t.errMin, { min: el.minLength })
               : el.validity.typeMismatch
-                ? "Please enter a valid email address."
+                ? t.errEmail
                 : el.validationMessage,
         ];
         firstInvalid ??= el;
@@ -178,7 +190,7 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
     if (intent === "draft") {
       const title = form.elements.namedItem("title") as HTMLInputElement | null;
       if (!title?.value.trim()) {
-        setClientErrors((e) => ({ ...e, title: ["Give your project a name before saving a draft."] }));
+        setClientErrors((e) => ({ ...e, title: [t.errDraftTitle] }));
         setStep(1);
         requestAnimationFrame(() => title?.focus());
         return;
@@ -222,12 +234,12 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
       <aside className="lg:col-span-3">
         <div className="lg:sticky lg:top-28">
           <p className="eyebrow mb-3 lg:hidden">
-            Step {step + 1} of {steps.length} — {steps[step]!.title}
+            {fmt(t.stepOf, { n: step + 1, total: steps.length, title: stepTitle(step) })}
           </p>
           <div className="h-1 overflow-hidden rounded-full bg-line lg:hidden" aria-hidden="true">
             <div className="h-full rounded-full bg-flux transition-[width] duration-700 ease-(--ease-out-expo)" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
           </div>
-          <nav aria-label="Brief steps" className="hidden lg:block">
+          <nav aria-label={t.stepsLabel} className="hidden lg:block">
             <ol className="space-y-1">
               {steps.map((s, i) => {
                 const done = i < step;
@@ -253,7 +265,7 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
                       >
                         {done ? <Check size={13} strokeWidth={2.4} /> : String(i + 1).padStart(2, "0")}
                       </span>
-                      {s.title}
+                      {stepTitle(i)}
                     </button>
                   </li>
                 );
@@ -262,11 +274,11 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
           </nav>
           {!signedIn && (
             <p className="mt-8 hidden text-sm leading-relaxed text-fog-500 lg:block">
-              Already a client?{" "}
+              {t.alreadyClient}{" "}
               <Link href="/login?next=/start-project" className="text-fog-200 underline-offset-4 hover:underline" onClick={persist}>
-                Log in
+                {t.logIn}
               </Link>{" "}
-              — your answers are kept.
+              {t.answersKept}
             </p>
           )}
         </div>
@@ -295,12 +307,12 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
         )}
 
         {/* Step 1 — client information */}
-        <Step index={0} current={step} title="First, tell us about you." lead="We'll use these details to contact you about your project.">
+        <Step index={0} current={step} title={t.s1Title} lead={t.s1Lead}>
           <div className="grid gap-6 sm:grid-cols-2">
-            <Field id="contactName" label="Full name" error={errors.contactName}>
+            <Field id="contactName" label={t.fullName} error={errors.contactName}>
               {(a) => <Input {...a} name="contactName" autoComplete="name" required minLength={2} maxLength={80} defaultValue={d.contactName} />}
             </Field>
-            <Field id="contactEmail" label="Email" error={errors.contactEmail}>
+            <Field id="contactEmail" label={t.email} error={errors.contactEmail}>
               {(a) => (
                 <Input
                   {...a}
@@ -312,27 +324,27 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
                 />
               )}
             </Field>
-            <Field id="contactPhone" label="Phone" optional error={errors.contactPhone}>
+            <Field id="contactPhone" label={t.phone} optional error={errors.contactPhone}>
               {(a) => <Input {...a} name="contactPhone" type="tel" autoComplete="tel" maxLength={40} defaultValue={d.contactPhone} />}
             </Field>
-            <Field id="contactCompany" label="Company" optional error={errors.contactCompany}>
+            <Field id="contactCompany" label={t.company} optional error={errors.contactCompany}>
               {(a) => <Input {...a} name="contactCompany" autoComplete="organization" maxLength={120} defaultValue={d.contactCompany} />}
             </Field>
-            <Field id="contactCountry" label="Country" optional error={errors.contactCountry} className="sm:col-span-2">
+            <Field id="contactCountry" label={t.country} optional error={errors.contactCountry} className="sm:col-span-2">
               {(a) => <Input {...a} name="contactCountry" autoComplete="country-name" maxLength={80} defaultValue={d.contactCountry} />}
             </Field>
           </div>
           {!signedIn && (
             <div className="mt-10 rounded-lg border border-line bg-ink-900/60 p-6">
-              <p className="font-medium text-fog-50">Create your client account</p>
+              <p className="font-medium text-fog-50">{t.accountTitle}</p>
               <p className="mt-1 text-sm leading-relaxed text-fog-400">
-                Choose a password so you can track this request in your dashboard. Already have an account?{" "}
+                {t.accountBody}{" "}
                 <Link href="/login?next=/start-project" onClick={persist} className="text-flux underline-offset-4 hover:underline">
-                  Log in
+                  {t.logIn}
                 </Link>
                 .
               </p>
-              <Field id="accountPassword" label="Password" hint="At least 10 characters." error={errors.accountPassword} className="mt-5 max-w-sm">
+              <Field id="accountPassword" label={t.password} hint={t.passwordHint} error={errors.accountPassword} className="mt-5 max-w-sm">
                 {(a) => <Input {...a} name="accountPassword" type="password" autoComplete="new-password" required minLength={10} maxLength={128} />}
               </Field>
             </div>
@@ -340,15 +352,15 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
         </Step>
 
         {/* Step 2 — project */}
-        <Step index={1} current={step} title="What do you want us to build?" lead="Give it a working name and describe the idea in your own words.">
+        <Step index={1} current={step} title={t.s2Title} lead={t.s2Lead}>
           <div className="space-y-8">
-            <Field id="title" label="Project name" hint="A working title is fine — e.g. “Restaurant Mobile App”." error={errors.title}>
+            <Field id="title" label={t.projectName} hint={t.projectNameHint} error={errors.title}>
               {(a) => <Input {...a} name="title" required minLength={2} maxLength={120} defaultValue={d.title} />}
             </Field>
             <OptionCards
               name="projectType"
-              legend="Project type"
-              options={projectTypes}
+              legend={t.projectType}
+              options={typeOptions}
               value={projectType}
               onChange={(v) => {
                 setProjectType(v);
@@ -357,14 +369,14 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
               error={errors.projectType}
             />
             {projectType === "OTHER" && (
-              <Field id="otherType" label="What kind of project is it?" error={errors.otherType}>
+              <Field id="otherType" label={t.otherType} error={errors.otherType}>
                 {(a) => <Input {...a} name="otherType" required maxLength={120} defaultValue={d.otherType} />}
               </Field>
             )}
             <Field
               id="description"
-              label="Project description"
-              hint="What should it do? What problem does it solve? At least 20 characters."
+              label={t.description}
+              hint={t.descriptionHint}
               error={errors.description}
             >
               {(a) => <Textarea {...a} name="description" rows={8} required minLength={20} maxLength={8000} defaultValue={d.description} />}
@@ -373,15 +385,15 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
         </Step>
 
         {/* Step 3 — context */}
-        <Step index={2} current={step} title="Tell us about the context." lead="The more we understand, the better our first conversation will be. Skip anything you're unsure about.">
+        <Step index={2} current={step} title={t.s3Title} lead={t.s3Lead}>
           <div className="space-y-8">
-            <Field id="business" label="Tell us about your business or idea" optional error={errors.business}>
+            <Field id="business" label={t.business} optional error={errors.business}>
               {(a) => <Textarea {...a} name="business" rows={5} maxLength={5000} defaultValue={d.business} />}
             </Field>
-            <Field id="targetUsers" label="Who will use this product?" optional error={errors.targetUsers}>
+            <Field id="targetUsers" label={t.targetUsers} optional error={errors.targetUsers}>
               {(a) => <Textarea {...a} name="targetUsers" rows={4} maxLength={3000} defaultValue={d.targetUsers} />}
             </Field>
-            <Field id="features" label="Which features do you need?" hint="A rough list is perfect — one per line." optional error={errors.features}>
+            <Field id="features" label={t.features} hint={t.featuresHint} optional error={errors.features}>
               {(a) => (
                 <Textarea
                   {...a}
@@ -389,7 +401,7 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
                   rows={6}
                   maxLength={8000}
                   defaultValue={d.features}
-                  placeholder={"Online booking\nCustomer accounts\nPayments"}
+                  placeholder={t.featuresPlaceholder}
                 />
               )}
             </Field>
@@ -397,12 +409,12 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
         </Step>
 
         {/* Step 4 — budget & timeline */}
-        <Step index={3} current={step} title="Budget and timeline." lead="Ranges help us suggest the right approach. There are no wrong answers.">
+        <Step index={3} current={step} title={t.s4Title} lead={t.s4Lead}>
           <div className="space-y-10">
             <OptionCards
               name="budget"
-              legend="Budget"
-              options={budgetRanges}
+              legend={t.budget}
+              options={budgetOptions}
               value={budget}
               onChange={(v) => {
                 setBudget(v);
@@ -412,14 +424,14 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
               variant="chip"
             />
             {budget === "custom" && (
-              <Field id="budgetCustom" label="Your budget" hint="e.g. “$25,000” or “€3,000 per month”." error={errors.budgetCustom} className="max-w-sm">
+              <Field id="budgetCustom" label={t.yourBudget} hint={t.yourBudgetHint} error={errors.budgetCustom} className="max-w-sm">
                 {(a) => <Input {...a} name="budgetCustom" required maxLength={120} defaultValue={d.budgetCustom} />}
               </Field>
             )}
             <OptionCards
               name="timeline"
-              legend="Timeline"
-              options={timelines}
+              legend={t.timeline}
+              options={timelineOptions}
               value={timeline}
               onChange={(v) => {
                 setTimeline(v);
@@ -432,9 +444,9 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
         </Step>
 
         {/* Step 5 — extras */}
-        <Step index={4} current={step} title="Anything else we should see?" lead="Share references you like and any documents that help explain the project.">
+        <Step index={4} current={step} title={t.s5Title} lead={t.s5Lead}>
           <div className="space-y-8">
-            <Field id="inspiration" label="Inspiration" hint="Links to websites or apps you like — one per line (up to 10)." optional error={errors.inspiration}>
+            <Field id="inspiration" label={t.inspiration} hint={t.inspirationHint} optional error={errors.inspiration}>
               {(a) => (
                 <Textarea
                   {...a}
@@ -448,58 +460,58 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
             </Field>
             <FileDrop files={files} onChange={setFiles} error={errors.files} existingCount={existingFileCount} />
             {existingFileCount > 0 && (
-              <p className="text-xs text-fog-500">{existingFileCount} file(s) already attached to this draft.</p>
+              <p className="text-xs text-fog-500">{fmt(t.alreadyAttached, { count: existingFileCount })}</p>
             )}
-            <Field id="additionalInfo" label="Additional information" optional error={errors.additionalInfo}>
+            <Field id="additionalInfo" label={t.additionalInfo} optional error={errors.additionalInfo}>
               {(a) => <Textarea {...a} name="additionalInfo" rows={4} maxLength={5000} defaultValue={d.additionalInfo} />}
             </Field>
           </div>
         </Step>
 
         {/* Step 6 — review */}
-        <Step index={5} current={step} title="Review your brief." lead="Check everything looks right, then send it to the MovEra team.">
+        <Step index={5} current={step} title={t.s6Title} lead={t.s6Lead}>
           <dl className="divide-y divide-line border-y border-line">
             {[
-              { k: "Name", v: review.contactName, s: 0 },
-              { k: "Email", v: review.contactEmail, s: 0 },
-              { k: "Company", v: review.contactCompany, s: 0 },
-              { k: "Project", v: review.title, s: 1 },
+              { k: t.review.name, v: review.contactName, s: 0 },
+              { k: t.review.email, v: review.contactEmail, s: 0 },
+              { k: t.review.company, v: review.contactCompany, s: 0 },
+              { k: t.review.project, v: review.title, s: 1 },
               {
-                k: "Type",
-                v: projectType === "OTHER" ? `Other — ${review.otherType ?? ""}` : labelFor.projectType(projectType),
+                k: t.review.type,
+                v: projectType === "OTHER" ? fmt(t.review.other, { value: review.otherType ?? "" }) : typeLabel(projectType),
                 s: 1,
               },
-              { k: "Description", v: review.description, s: 1, long: true },
-              { k: "Business", v: review.business, s: 2, long: true },
-              { k: "Target users", v: review.targetUsers, s: 2, long: true },
-              { k: "Features", v: review.features, s: 2, long: true },
-              { k: "Budget", v: budget === "custom" ? review.budgetCustom : labelFor.budget(budget), s: 3 },
-              { k: "Timeline", v: labelFor.timeline(timeline), s: 3 },
-              { k: "Inspiration", v: review.inspiration, s: 4, long: true },
-              { k: "Files", v: files.length ? files.map((f) => f.name).join(", ") : undefined, s: 4 },
-              { k: "Additional info", v: review.additionalInfo, s: 4, long: true },
-            ].map((row) => (
-              <div key={row.k} className="grid gap-2 py-4 sm:grid-cols-12 sm:gap-6">
+              { k: t.review.description, v: review.description, s: 1, long: true },
+              { k: t.review.business, v: review.business, s: 2, long: true },
+              { k: t.review.targetUsers, v: review.targetUsers, s: 2, long: true },
+              { k: t.review.features, v: review.features, s: 2, long: true },
+              { k: t.review.budget, v: budget === "custom" ? review.budgetCustom : budgetLabel(budget), s: 3 },
+              { k: t.review.timeline, v: timelineLabel(timeline), s: 3 },
+              { k: t.review.inspiration, v: review.inspiration, s: 4, long: true },
+              { k: t.review.files, v: files.length ? files.map((f) => f.name).join(", ") : undefined, s: 4 },
+              { k: t.review.additionalInfo, v: review.additionalInfo, s: 4, long: true },
+            ].map((row, i) => (
+              <div key={i} className="grid gap-2 py-4 sm:grid-cols-12 sm:gap-6">
                 <dt className="eyebrow pt-0.5 sm:col-span-3">{row.k}</dt>
                 <dd className={cn("text-sm text-fog-50 sm:col-span-7", row.long && "whitespace-pre-line leading-relaxed", !row.v && "text-fog-500")}>
                   {row.v?.trim() ? row.v : "—"}
                 </dd>
                 <div className="sm:col-span-2 sm:text-right">
                   <button type="button" onClick={() => goTo(row.s)} className="text-xs text-fog-400 underline-offset-4 hover:text-flux hover:underline">
-                    Edit<span className="sr-only"> {row.k}</span>
+                    {dict.common.edit}<span className="sr-only"> {row.k}</span>
                   </button>
                 </div>
               </div>
             ))}
           </dl>
           <p className="mt-6 text-xs leading-relaxed text-fog-500">
-            By sending this brief you agree to our{" "}
+            {t.agree}{" "}
             <Link href="/terms" className="underline underline-offset-2 hover:text-fog-200">
-              Terms
+              {t.terms}
             </Link>{" "}
-            and{" "}
+            {dict.common.and}{" "}
             <Link href="/privacy" className="underline underline-offset-2 hover:text-fog-200">
-              Privacy Policy
+              {t.privacy}
             </Link>
             .
           </p>
@@ -510,20 +522,20 @@ export function ProjectBriefForm({ signedIn, defaults, draftRef, existingFileCou
           <div className="flex items-center gap-2">
             {step > 0 && (
               <Button type="button" variant="ghost" onClick={() => goTo(step - 1)} disabled={pending}>
-                <ArrowLeft size={16} /> Back
+                <ArrowLeft size={16} /> {t.back}
               </Button>
             )}
             <Button type="button" variant="ghost" onClick={() => submit("draft")} disabled={pending} className="text-fog-400">
-              Save draft
+              {t.saveDraft}
             </Button>
           </div>
           {step < steps.length - 1 ? (
             <Button type="submit" arrow size="lg" disabled={pending}>
-              Continue
+              {t.continue}
             </Button>
           ) : (
             <Button type="submit" arrow size="lg" pending={pending}>
-              {pending ? "Sending your brief" : "Send project brief"}
+              {pending ? t.sending : t.send}
             </Button>
           )}
         </div>

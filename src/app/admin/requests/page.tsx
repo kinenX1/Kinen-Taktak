@@ -3,7 +3,7 @@ import type { ProjectType, RequestStatus } from "@prisma/client";
 import { labelFor, projectTypes, requestStatuses } from "@/config/project-brief";
 import { searchRequests } from "@/lib/data/admin";
 import { formatDate } from "@/lib/utils";
-import { StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/field";
 import { Folder, Search } from "@/components/ui/icons";

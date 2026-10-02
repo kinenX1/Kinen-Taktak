@@ -4,6 +4,8 @@ import { useId, useRef, useState } from "react";
 import { uploadRules } from "@/config/project-brief";
 import { cn, formatBytes } from "@/lib/utils";
 import { Close, FileIcon, Upload } from "@/components/ui/icons";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 
 const accepted = uploadRules.accept.split(",");
 const MAX = uploadRules.maxFileSizeMb * 1024 * 1024;
@@ -20,6 +22,8 @@ export function FileDrop({
   error?: string[];
   existingCount?: number;
 }) {
+  const t = useT();
+  const tf = t.brief.files;
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -32,15 +36,15 @@ export function FileDrop({
     for (const file of Array.from(list)) {
       const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
       if (!accepted.includes(ext)) {
-        setLocalError(`${file.name} isn't a supported file type.`);
+        setLocalError(fmt(tf.unsupported, { name: file.name }));
         continue;
       }
       if (file.size > MAX) {
-        setLocalError(`${file.name} is larger than ${uploadRules.maxFileSizeMb} MB.`);
+        setLocalError(fmt(tf.tooLarge, { name: file.name, size: uploadRules.maxFileSizeMb }));
         continue;
       }
       if (next.length >= remaining) {
-        setLocalError(`You can attach up to ${uploadRules.maxFiles} files.`);
+        setLocalError(fmt(tf.tooMany, { max: uploadRules.maxFiles }));
         break;
       }
       if (!next.some((f) => f.name === file.name && f.size === file.size)) next.push(file);
@@ -54,8 +58,8 @@ export function FileDrop({
   return (
     <div>
       <p id={`${id}-label`} className="mb-3 flex items-baseline justify-between text-sm font-medium text-fog-200">
-        Files
-        <span className="font-mono text-2xs uppercase tracking-[0.12em] text-fog-500">Optional</span>
+        {tf.title}
+        <span className="font-mono text-2xs uppercase tracking-[0.12em] text-fog-500">{t.common.optional}</span>
       </p>
       <div
         onDragOver={(e) => {
@@ -78,18 +82,18 @@ export function FileDrop({
           <Upload size={18} />
         </span>
         <p className="text-sm text-fog-200">
-          Drag files here or{" "}
+          {tf.drag}{" "}
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             className="font-medium text-flux underline-offset-4 hover:underline"
             aria-describedby={`${id}-hint`}
           >
-            browse
+            {tf.browse}
           </button>
         </p>
         <p id={`${id}-hint`} className="text-xs text-fog-500">
-          Images, PDFs and documents · up to {uploadRules.maxFiles} files · {uploadRules.maxFileSizeMb} MB each
+          {fmt(tf.hint, { max: uploadRules.maxFiles, size: uploadRules.maxFileSizeMb })}
         </p>
         <input
           ref={inputRef}
@@ -111,7 +115,7 @@ export function FileDrop({
         </p>
       )}
       {files.length > 0 && (
-        <ul className="mt-4 space-y-2" aria-label="Selected files">
+        <ul className="mt-4 space-y-2" aria-label={tf.selected}>
           {files.map((f, i) => (
             <li key={`${f.name}-${i}`} className="flex items-center gap-3 rounded-md border border-line bg-ink-900 px-4 py-3 text-sm">
               <FileIcon size={16} className="shrink-0 text-fog-400" />
@@ -121,7 +125,7 @@ export function FileDrop({
                 type="button"
                 onClick={() => onChange(files.filter((_, j) => j !== i))}
                 className="-mr-1 flex size-8 shrink-0 items-center justify-center rounded-full text-fog-400 transition-colors hover:bg-fog-50/10 hover:text-fog-50"
-                aria-label={`Remove ${f.name}`}
+                aria-label={fmt(tf.removeFile, { name: f.name })}
               >
                 <Close size={14} />
               </button>

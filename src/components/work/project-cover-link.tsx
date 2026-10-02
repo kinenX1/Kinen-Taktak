@@ -9,7 +9,7 @@ import { useState, type ReactNode } from "react";
  * The cover is a duplicate of the title link, so it is hidden from the
  * accessibility tree and keyboard focus order.
  */
-export function ProjectCoverLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+export function ProjectCoverLink({ href, label, children, className }: { href: string; label: string; children: ReactNode; className?: string }) {
   const reduce = useReducedMotion();
   const [hover, setHover] = useState(false);
   const x = useSpring(useMotionValue(0), { stiffness: 300, damping: 30, mass: 0.5 });
@@ -44,7 +44,7 @@ export function ProjectCoverLink({ href, children, className }: { href: string; 
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="pointer-events-none absolute left-0 top-0 z-10 -ml-12 -mt-12 flex size-24 items-center justify-center rounded-full bg-fog-50 text-sm font-medium text-ink-950"
         >
-          View
+          {label}
         </motion.span>
       )}
     </Link>

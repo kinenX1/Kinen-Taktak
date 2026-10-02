@@ -6,6 +6,8 @@ import type { PortfolioCategory } from "@prisma/client";
 import { portfolioFilters } from "@/config/portfolio";
 import type { PortfolioItem } from "@/lib/data/content";
 import { ease } from "@/lib/motion";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 import { ButtonLink } from "@/components/ui/button";
 import { ProjectEntry } from "./project-entry";
@@ -16,6 +18,7 @@ import { ProjectEntry } from "./project-entry";
  * so filtered views can be shared.
  */
 export function WorkGrid({ projects, initialFilter }: { projects: PortfolioItem[]; initialFilter?: string }) {
+  const t = useT();
   const [filter, setFilter] = useState(() => portfolioFilters.find((f) => f.slug === initialFilter)?.slug ?? "all");
   const active = portfolioFilters.find((f) => f.slug === filter)!;
   const visible = active.value ? projects.filter((p) => p.category === active.value) : projects;
@@ -36,7 +39,7 @@ export function WorkGrid({ projects, initialFilter }: { projects: PortfolioItem[
   return (
     <div className="container-x pb-24 md:pb-36">
       <div className="sticky top-3 z-30 -mx-(--gutter) mb-14 px-(--gutter) md:top-4">
-        <div role="group" aria-label="Filter projects by type" className="glass no-scrollbar inline-flex max-w-full gap-1 overflow-x-auto rounded-full p-1.5 shadow-[var(--shadow-float)]">
+        <div role="group" aria-label={t.work.filterLabel} className="glass no-scrollbar inline-flex max-w-full gap-1 overflow-x-auto rounded-full p-1.5 shadow-[var(--shadow-float)]">
           {portfolioFilters.map((f) => {
             const count = f.value ? (counts[f.value] ?? 0) : projects.length;
             const isActive = f.slug === filter;
@@ -54,7 +57,7 @@ export function WorkGrid({ projects, initialFilter }: { projects: PortfolioItem[
                 {isActive && (
                   <motion.span layoutId="work-filter" className="absolute inset-0 rounded-full bg-fog-50" transition={{ type: "spring", stiffness: 380, damping: 32 }} />
                 )}
-                <span className="relative">{f.label}</span>
+                <span className="relative">{t.options.filters[f.slug as keyof typeof t.options.filters]}</span>
                 <span className={cn("relative font-mono text-2xs", isActive ? "text-ink-950/60" : "text-fog-500")}>{count}</span>
               </button>
             );
@@ -63,7 +66,7 @@ export function WorkGrid({ projects, initialFilter }: { projects: PortfolioItem[
       </div>
 
       <p className="sr-only" aria-live="polite">
-        Showing {visible.length} {visible.length === 1 ? "project" : "projects"}
+        {visible.length === 1 ? t.work.showingOne : fmt(t.work.showing, { count: visible.length })}
       </p>
 
       <motion.div layout className="grid gap-x-10 gap-y-20 md:grid-cols-2 md:gap-y-28 lg:gap-x-16">
@@ -86,12 +89,12 @@ export function WorkGrid({ projects, initialFilter }: { projects: PortfolioItem[
 
       {visible.length === 0 && (
         <div className="flex flex-col items-start gap-6 border-t border-line py-20">
-          <p className="text-display-md font-medium text-fog-400">Nothing here — yet.</p>
+          <p className="text-display-md font-medium text-fog-400">{t.work.emptyTitle}</p>
           <p className="max-w-md leading-relaxed text-fog-400">
-            We haven&apos;t published a {active.label.toLowerCase()} project yet. Tell us about yours and it could be the first.
+            {fmt(t.work.emptyBody, { category: t.options.filters[active.slug as keyof typeof t.options.filters].toLowerCase() })}
           </p>
           <ButtonLink href="/start-project" arrow>
-            Start a Project
+            {t.nav.startProject}
           </ButtonLink>
         </div>
       )}

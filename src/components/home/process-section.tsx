@@ -2,8 +2,9 @@
 
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
 import { useRef, useState } from "react";
-import { processSteps } from "@/content/company";
 import { ease } from "@/lib/motion";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 import { SectionLabel } from "@/components/ui/section-label";
 import { SplitReveal } from "@/components/motion/split-reveal";
@@ -14,6 +15,9 @@ import { SplitReveal } from "@/components/motion/split-reveal";
  * it becomes a vertical timeline with the same rail.
  */
 export function ProcessSection({ labelIndex = "03" }: { labelIndex?: string }) {
+  const dict = useT();
+  const t = dict.home.process;
+  const processSteps = dict.company.processSteps;
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.6", "end 0.6"] });
   const progress = useSpring(scrollYProgress, { stiffness: 100, damping: 26 });
@@ -31,10 +35,10 @@ export function ProcessSection({ labelIndex = "03" }: { labelIndex?: string }) {
     <section aria-labelledby="process-title" className="relative border-t border-line bg-ink-900/50 py-24 md:py-36">
       <div className="container-x">
         <SectionLabel index={labelIndex} className="mb-6">
-          Process
+          {t.label}
         </SectionLabel>
         <h2 id="process-title" className="max-w-4xl text-display-lg font-medium">
-          <SplitReveal lines={["From first idea to", { text: "constant evolution.", className: "accent-serif text-flux" }]} />
+          <SplitReveal lines={[t.title1, { text: t.title2, className: "accent-serif text-flux" }]} />
         </h2>
 
         <div ref={ref} className="mt-16 grid gap-12 md:mt-24 lg:grid-cols-12">
@@ -103,7 +107,7 @@ export function ProcessSection({ labelIndex = "03" }: { labelIndex?: string }) {
                   {s.summary}
                 </h3>
                 <p className="mt-4 max-w-xl leading-relaxed text-fog-400">{s.detail}</p>
-                <ul className="mt-5 flex flex-wrap gap-2" aria-label={`${s.title} outputs`}>
+                <ul className="mt-5 flex flex-wrap gap-2" aria-label={fmt(t.outputs, { step: s.title })}>
                   {s.outputs.map((o) => (
                     <li key={o} className="rounded-full border border-line px-3 py-1 text-xs text-fog-200">
                       {o}

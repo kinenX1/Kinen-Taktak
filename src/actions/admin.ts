@@ -1,12 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
-import { labelFor } from "@/config/project-brief";
-import { siteConfig } from "@/config/site";
 import { db } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { CONTENT_TAG } from "@/lib/data/content";
+import { sendStatusChangedEmail } from "@/lib/emails";
+import { isLocale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/server";
+import { labelFor } from "@/config/project-brief";
 import { requireAdmin } from "@/lib/auth/dal";
 import {
   messageStatusSchema,
@@ -28,7 +30,15 @@ export async function changeStatusAction(_prev: FormState, formData: FormData): 
 
   const request = await db.projectRequest.findUnique({
     where: { id: requestId },
-    select: { id: true, status: true, reference: true, title: true, contactEmail: true, contactName: true },
+    select: {
+      id: true,
+      status: true,
+      reference: true,
+      title: true,
+      contactEmail: true,
+      contactName: true,
+      user: { select: { locale: true } },
+    },
   });
   if (!request) return { message: "Request not found." };
   if (request.status === status && !note) return { message: "Nothing changed." };
@@ -49,10 +59,15 @@ export async function changeStatusAction(_prev: FormState, formData: FormData): 
   ]);
 
   if (notifyClient) {
-    await sendEmail({
-      to: request.contactEmail,
-      subject: `Update on ${request.reference}: ${labelFor.status(status)}`,
-      text: `Hi ${request.contactName},\n\nThe status of "${request.title}" is now ${labelFor.status(status)}.${note ? `\n\n${note}` : ""}\n\nView details: ${siteConfig.url}/dashboard/requests/${request.reference}\n\n— MovEra`,
+    const locale = isLocale(request.user.locale) ? request.user.locale : "en";
+    await sendStatusChangedEmail({
+      reference: request.reference,
+      title: request.title,
+      contactName: request.contactName,
+      contactEmail: request.contactEmail,
+      locale,
+      statusLabel: getDictionary(locale).options.statuses[status].label,
+      note,
     });
   }
 
@@ -110,6 +125,7 @@ export async function savePortfolioProjectAction(_prev: FormState, formData: For
     }
     throw error;
   }
+  updateTag(CONTENT_TAG);
   revalidatePath("/", "layout");
   redirect("/admin/portfolio?saved=1");
 }
@@ -118,6 +134,7 @@ export async function deletePortfolioProjectAction(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   await db.portfolioProject.delete({ where: { id } }).catch(() => {});
+  updateTag(CONTENT_TAG);
   revalidatePath("/", "layout");
   redirect("/admin/portfolio?deleted=1");
 }
@@ -131,6 +148,7 @@ export async function saveServiceAction(_prev: FormState, formData: FormData): P
   }
   const { id, published, ...rest } = parsed.data;
   await db.service.update({ where: { id }, data: { ...rest, published: !!published } });
+  updateTag(CONTENT_TAG);
   revalidatePath("/", "layout");
   return { ok: true, message: "Service saved.", values };
 }

@@ -2,7 +2,8 @@ import "server-only";
 import nodemailer, { type Transporter } from "nodemailer";
 import { siteConfig } from "@/config/site";
 
-type Email = { to: string; subject: string; text: string; html?: string };
+export type Email = { to: string; subject: string; text: string; html?: string; replyTo?: string };
+export type SendResult = { status: "SENT" | "FAILED" | "LOGGED"; error?: string };
 
 let transporter: Transporter | null | undefined;
 
@@ -22,26 +23,29 @@ function getTransporter() {
   return transporter;
 }
 
+export const emailConfigured = () => !!process.env.SMTP_HOST;
+
 /**
- * Sends an email through SMTP when configured. Without SMTP settings the
+ * Sends an email through SMTP when configured (e.g. Gmail: smtp.gmail.com,
+ * port 465, SMTP_SECURE=true and an App Password). Without SMTP settings the
  * message is written to the server log so flows remain testable locally.
- * Failures are logged and never thrown to the user.
+ * Failures are logged and reported in the result, never thrown.
  */
-export async function sendEmail(email: Email) {
+export async function sendEmail(email: Email): Promise<SendResult> {
   const t = getTransporter();
   if (!t) {
-    console.info(
-      `\n[email:not-configured] To: ${email.to}\nSubject: ${email.subject}\n\n${email.text}\n`,
-    );
-    return;
+    console.info(`\n[email:not-configured] To: ${email.to}\nSubject: ${email.subject}\n\n${email.text}\n`);
+    return { status: "LOGGED" };
   }
   try {
     await t.sendMail({
       from: process.env.EMAIL_FROM ?? `${siteConfig.name} <${siteConfig.email}>`,
       ...email,
     });
+    return { status: "SENT" };
   } catch (error) {
     console.error("[email] Failed to send", error);
+    return { status: "FAILED", error: error instanceof Error ? error.message.slice(0, 500) : "Unknown error" };
   }
 }
 

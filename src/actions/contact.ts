@@ -1,39 +1,35 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { adminNotificationEmail, sendEmail } from "@/lib/email";
+import { sendContactEmails } from "@/lib/emails";
 import { rateLimit } from "@/lib/rate-limit";
 import { getCurrentUser } from "@/lib/auth/dal";
+import { getI18n } from "@/i18n/server";
+import { localizedFieldErrors } from "@/i18n/errors";
 import { contactSchema } from "@/lib/validation/contact";
-import { fieldErrorsOf, formValues, type FormState } from "@/lib/validation/common";
+import { formValues, type FormState } from "@/lib/validation/common";
 
 export async function contactAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { locale, t } = await getI18n();
   const values = formValues(formData);
 
   // Honeypot: real people never see or fill this field.
-  if (formData.get("website")) return { ok: true };
+  if (formData.get("website")) return { ok: true, message: t.contact.form.sent };
 
   const limited = await rateLimit("contact", 5, 60 * 60 * 1000);
-  if (!limited.ok) return { message: "You've sent several messages recently. Please try again later.", values };
+  if (!limited.ok) return { message: t.contact.form.rateLimited, values };
 
   const parsed = contactSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed.error), values };
+  if (!parsed.success) return { fieldErrors: localizedFieldErrors(parsed.error, t), values };
 
   const user = await getCurrentUser();
   try {
     await db.contactMessage.create({ data: { ...parsed.data, userId: user?.id } });
   } catch (error) {
     console.error("[contact] failed", error);
-    return { message: "We couldn't send your message because of a server problem. Please try again.", values };
+    return { message: t.contact.form.failed, values };
   }
 
-  const admin = adminNotificationEmail();
-  if (admin) {
-    await sendEmail({
-      to: admin,
-      subject: `New message: ${parsed.data.subject}`,
-      text: `${parsed.data.name} <${parsed.data.email}>${parsed.data.company ? ` (${parsed.data.company})` : ""}\n\n${parsed.data.message}`,
-    });
-  }
-  return { ok: true, message: "Thanks — your message is with us. We'll reply by email." };
+  await sendContactEmails({ ...parsed.data, locale });
+  return { ok: true, message: t.contact.form.sent };
 }

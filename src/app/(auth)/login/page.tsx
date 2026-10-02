@@ -5,24 +5,29 @@ import { getCurrentUser } from "@/lib/auth/dal";
 import { safeRedirectPath } from "@/lib/utils";
 import { AuthHeading } from "@/components/auth/auth-heading";
 import { LoginForm } from "@/components/auth/login-form";
+import { getI18n } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Log in", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return { title: t.meta.login, robots: { index: false } };
+}
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const params = await searchParams;
   const next = typeof params.next === "string" ? safeRedirectPath(params.next) : undefined;
   if (await getCurrentUser()) redirect(next ?? "/dashboard");
+  const { t } = await getI18n();
 
   return (
     <>
-      <AuthHeading eyebrow="Client portal" title="Welcome back.">
-        Log in to follow your projects and send new briefs.
+      <AuthHeading eyebrow={t.auth.clientPortal} title={t.auth.loginTitle}>
+        {t.auth.loginLead}
       </AuthHeading>
       <LoginForm next={next} />
       <p className="mt-10 text-sm text-fog-400">
-        New to MovEra?{" "}
+        {t.auth.newTo}{" "}
         <Link href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"} className="text-fog-50 underline-offset-4 hover:underline">
-          Create an account
+          {t.auth.createAccountLink}
         </Link>
       </p>
     </>

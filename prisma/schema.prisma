@@ -20,22 +20,42 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   name         String
   passwordHash String
-  role         Role     @default(CLIENT)
+  role         Role      @default(CLIENT)
   phone        String?
   company      String?
   country      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  /// Preferred language for the interface and emails ("en" or "fr").
+  locale       String    @default("en")
+  /// Set when the user uploads a profile photo; used to bust image caches.
+  avatarAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   sessions        Session[]
   resetTokens     PasswordResetToken[]
   projectRequests ProjectRequest[]
   updates         ProjectUpdate[]
   contactMessages ContactMessage[]
+  avatar          Avatar?
+  messages        ProjectMessage[]
+  applications    JobApplication[]
+  sentEmails      OutboundEmail[]      @relation("EmailSender")
+  receivedEmails  OutboundEmail[]      @relation("EmailRecipient")
+}
+
+/// Profile photo, stored in the database so it survives serverless deploys.
+/// Kept in its own table so user queries never load the image bytes.
+model Avatar {
+  userId    String   @id
+  mimeType  String
+  data      Bytes
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// Database-backed session. `id` is the SHA-256 hash of the token stored in
@@ -129,9 +149,10 @@ model ProjectRequest {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  files   ProjectFile[]
-  updates ProjectUpdate[]
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files    ProjectFile[]
+  updates  ProjectUpdate[]
+  messages ProjectMessage[]
 
   @@index([userId, status])
   @@index([status, createdAt])
@@ -141,7 +162,8 @@ model ProjectFile {
   id           String   @id @default(cuid())
   requestId    String
   originalName String
-  /// Randomised name on disk; never derived from user input.
+  /// Randomised storage key; never derived from user input.
+  /// `blob:<id>` points at a FileBlob row, anything else is a file on disk.
   storedName   String   @unique
   mimeType     String
   size         Int
@@ -181,6 +203,169 @@ model ProjectUpdate {
   @@index([requestId, createdAt])
 }
 
+/// Chat between a client and the MovEra team about one request.
+model ProjectMessage {
+  id        String    @id @default(cuid())
+  requestId String
+  authorId  String?
+  /// True when written by a MovEra administrator.
+  fromStaff Boolean
+  body      String
+  /// When the other side first saw the message.
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  request ProjectRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([requestId, createdAt])
+  @@index([fromStaff, readAt])
+}
+
+/// Raw bytes of an uploaded file (attachments, CVs). Lives in the database
+/// so uploads keep working on read-only serverless filesystems.
+model FileBlob {
+  id        String   @id @default(cuid())
+  data      Bytes
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Careers
+// ─────────────────────────────────────────────────────────────
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  FREELANCE
+  INTERNSHIP
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+model JobOpening {
+  id               String         @id @default(cuid())
+  slug             String         @unique
+  title            String
+  team             String
+  location         String
+  employmentType   EmploymentType @default(FULL_TIME)
+  workMode         WorkMode       @default(REMOTE)
+  summary          String
+  responsibilities String[]
+  requirements     String[]
+  niceToHave       String[]
+  published        Boolean        @default(true)
+  sortOrder        Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  applications JobApplication[]
+
+  @@index([published, sortOrder])
+}
+
+enum ApplicationStatus {
+  NEW
+  REVIEWING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+model JobApplication {
+  id        String            @id @default(cuid())
+  /// Human-friendly reference, e.g. JA-7K3Q9P.
+  reference String            @unique
+  /// Null for a spontaneous application.
+  openingId String?
+  /// Role title at the time of applying (kept if the opening is deleted).
+  roleTitle String
+  status    ApplicationStatus @default(NEW)
+  userId    String?
+
+  fullName        String
+  email           String
+  phone           String?
+  country         String?
+  city            String?
+  linkedin        String?
+  portfolio       String?
+  github          String?
+  yearsExperience Int?
+  skills          String[]
+  languages       String?
+  workMode        WorkMode?
+  availability    String?
+  expectedSalary  String?
+  motivation      String
+  locale          String    @default("en")
+
+  cvName   String?
+  cvMime   String?
+  cvSize   Int?
+  cvBlobId String? @unique
+
+  adminNotes String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  opening JobOpening?     @relation(fields: [openingId], references: [id], onDelete: SetNull)
+  user    User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  emails  OutboundEmail[]
+
+  @@index([status, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audience & outbound email
+// ─────────────────────────────────────────────────────────────
+
+/// People who left their email to hear from MovEra.
+model Subscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  locale         String    @default("en")
+  source         String    @default("footer")
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+  /// SMTP is not configured; the email was only written to the server log.
+  LOGGED
+}
+
+/// Emails written by the team from the admin panel.
+model OutboundEmail {
+  id               String      @id @default(cuid())
+  to               String
+  subject          String
+  body             String
+  status           EmailStatus
+  error            String?
+  sentById         String?
+  recipientId      String?
+  contactMessageId String?
+  applicationId    String?
+  createdAt        DateTime    @default(now())
+
+  sentBy         User?           @relation("EmailSender", fields: [sentById], references: [id], onDelete: SetNull)
+  recipient      User?           @relation("EmailRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  contactMessage ContactMessage? @relation(fields: [contactMessageId], references: [id], onDelete: SetNull)
+  application    JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([to, createdAt])
+}
+
 // ─────────────────────────────────────────────────────────────
 // Marketing content (managed from /admin)
 // ─────────────────────────────────────────────────────────────
@@ -203,19 +388,19 @@ enum VisualVariant {
 }
 
 model PortfolioProject {
-  id       String            @id @default(cuid())
-  slug     String            @unique
-  title    String
-  category PortfolioCategory
+  id           String            @id @default(cuid())
+  slug         String            @unique
+  title        String
+  category     PortfolioCategory
   /// Short label for who the work was for, e.g. "Demo — Hospitality".
-  client   String
-  year     Int
-  summary  String
-  overview    String
-  challenge   String
-  solution    String
-  design      String
-  development String
+  client       String
+  year         Int
+  summary      String
+  overview     String
+  challenge    String
+  solution     String
+  design       String
+  development  String
   results      String[]
   technologies String[]
 
@@ -240,22 +425,22 @@ model PortfolioProject {
 }
 
 model Service {
-  id           String   @id @default(cuid())
-  slug         String   @unique
-  title        String
-  shortTitle   String
-  tagline      String
-  description  String
-  audience     String
-  capabilities String[]
-  benefits     String[]
-  technologies String[]
+  id                String              @id @default(cuid())
+  slug              String              @unique
+  title             String
+  shortTitle        String
+  tagline           String
+  description       String
+  audience          String
+  capabilities      String[]
+  benefits          String[]
+  technologies      String[]
   /// Portfolio categories used to surface related example work.
   relatedCategories PortfolioCategory[]
-  sortOrder    Int      @default(0)
-  published    Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  sortOrder         Int                 @default(0)
+  published         Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 }
 
 enum MessageStatus {
@@ -275,7 +460,8 @@ model ContactMessage {
   userId    String?
   createdAt DateTime      @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  emails OutboundEmail[]
 
   @@index([status, createdAt])
 }

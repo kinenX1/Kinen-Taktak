@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { pillars, values } from "@/content/company";
+import { getI18n } from "@/i18n/server";
 import { PageHero } from "@/components/layout/page-hero";
 import { SectionLabel } from "@/components/ui/section-label";
 import { Reveal } from "@/components/motion/reveal";
@@ -11,30 +11,31 @@ import { ProcessSection } from "@/components/home/process-section";
 import { FinalCta } from "@/components/home/final-cta";
 import { FlowBand } from "@/components/about/flow-band";
 
-export const metadata: Metadata = {
-  title: "About",
-  description:
-    "MovEra is a digital product studio combining design, technology, strategy and engineering to turn ideas into digital products.",
-  alternates: { canonical: "/about" },
-  openGraph: { url: "/about", title: "About — MovEra" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t.meta.about.title,
+    description: t.meta.about.description,
+    alternates: { canonical: "/about" },
+    openGraph: { url: "/about", title: `${t.meta.about.title} — MovEra` },
+  };
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { t } = await getI18n();
+  const ta = t.about;
+  const { pillars, values } = t.company;
   return (
     <>
-      <PageHero
-        label="About"
-        title={["A studio built", "around", { text: "momentum.", className: "accent-serif text-flux" }]}
-        intro="We're designers, engineers and strategists who believe good software should feel effortless to use — and be a pleasure to maintain."
-      />
+      <PageHero label={ta.label} title={[ta.title1, ta.title2, { text: ta.title3, className: "accent-serif text-flux" }]} intro={ta.intro} />
 
       {/* ── Who we are / the name ─────────── */}
       <section aria-labelledby="who-title" className="border-t border-line py-24 md:py-32">
         <div className="container-x">
           <SectionLabel index="01" className="mb-10">
-            <span id="who-title">Who we are</span>
+            <span id="who-title">{ta.who}</span>
           </SectionLabel>
-          <NameEquation />
+          <NameEquation t={ta} />
         </div>
       </section>
 
@@ -43,13 +44,13 @@ export default function AboutPage() {
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <SectionLabel index="02">
-              <span id="what-title">What we do</span>
+              <span id="what-title">{ta.what}</span>
             </SectionLabel>
           </div>
           <div className="lg:col-span-8">
             <ScrollText
               className="text-[clamp(1.5rem,3vw,2.75rem)] font-medium leading-[1.15] tracking-[-0.035em] text-fog-50"
-              text="We turn ideas into websites, applications and software that people actually enjoy using. Strategy tells us what to build, design makes it clear, engineering makes it solid — and we bring all three to every project."
+              text={ta.whatText}
             />
             <ul className="mt-16 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2">
               {pillars.map((p, i) => (
@@ -65,23 +66,23 @@ export default function AboutPage() {
       </section>
 
       {/* ── Mission & vision ──────────────── */}
-      <section aria-label="Mission and vision" className="relative overflow-hidden border-y border-line">
+      <section aria-label={ta.missionVision} className="relative overflow-hidden border-y border-line">
         <FlowBand />
         <div className="container-x relative grid gap-16 py-24 md:py-36 lg:grid-cols-2">
           <div>
             <SectionLabel index="03" className="mb-8">
-              Mission
+              {ta.mission}
             </SectionLabel>
             <h2 className="text-display-md font-medium">
-              <SplitReveal lines={["Help ambitious businesses", { text: "move faster", className: "text-flux" }, "with software they can trust."]} />
+              <SplitReveal lines={[ta.mission1, { text: ta.mission2, className: "text-flux" }, ta.mission3]} />
             </h2>
           </div>
           <div className="lg:pt-32">
             <SectionLabel index="04" className="mb-8">
-              Vision
+              {ta.vision}
             </SectionLabel>
             <h2 className="text-display-md font-medium">
-              <SplitReveal lines={["A world where great digital", "products aren't reserved", { text: "for the biggest companies.", className: "accent-serif text-fog-400" }]} />
+              <SplitReveal lines={[ta.vision1, ta.vision2, { text: ta.vision3, className: "accent-serif text-fog-400" }]} />
             </h2>
           </div>
         </div>
@@ -91,10 +92,10 @@ export default function AboutPage() {
       <section aria-labelledby="values-title" className="py-24 md:py-36">
         <div className="container-x">
           <SectionLabel index="05" className="mb-6">
-            Values
+            {ta.values}
           </SectionLabel>
           <h2 id="values-title" className="mb-14 max-w-3xl text-display-lg font-medium">
-            <SplitReveal lines={["What we", { text: "stand for.", className: "accent-serif text-flux" }]} />
+            <SplitReveal lines={[ta.values1, { text: ta.values2, className: "accent-serif text-flux" }]} />
           </h2>
           <ol className="border-t border-line">
             {values.map((v, i) => (
@@ -119,28 +120,25 @@ export default function AboutPage() {
         <div className="container-x grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <SectionLabel index="07">
-              <span id="philosophy-title">Philosophy</span>
+              <span id="philosophy-title">{ta.philosophy}</span>
             </SectionLabel>
           </div>
           <div className="space-y-10 lg:col-span-8">
             <Reveal>
               <blockquote className="text-[clamp(1.75rem,3.6vw,3.25rem)] font-medium leading-[1.1] tracking-[-0.04em]">
-                “Software is never finished. The question is only whether it&apos;s{" "}
-                <span className="accent-serif text-flux">moving forward</span> or falling behind.”
+                {ta.quote1} <span className="accent-serif text-flux">{ta.quoteAccent}</span> {ta.quote2}
               </blockquote>
             </Reveal>
             <Reveal delay={0.1}>
               <p className="max-w-2xl text-lg leading-relaxed text-fog-400">
-                That&apos;s why we design for change: clean architecture, documented decisions and design systems that let
-                products grow without starting over. We&apos;d rather ship something focused and improve it with real
-                feedback than spend a year polishing guesses.
+                {ta.philosophyBody}
               </p>
             </Reveal>
           </div>
         </div>
         <div className="mt-20 border-y border-line py-6">
           <Marquee duration={60} reverse>
-            {["Clarity", "Momentum", "Craft", "Honesty", "Ownership", "Accessibility"].map((w) => (
+            {ta.words.map((w) => (
               <span key={w} className="flex items-center gap-10 px-10 text-[clamp(2.5rem,6vw,5rem)] font-medium tracking-[-0.05em] text-outline">
                 {w}
                 <span className="size-3 rounded-full bg-flux" aria-hidden="true" />

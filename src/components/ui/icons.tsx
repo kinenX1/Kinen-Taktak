@@ -165,3 +165,57 @@ export const Spark = (p: IconProps) => (
     <path d="M12 3v5M12 16v5M3 12h5M16 12h5M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
   </Icon>
 );
+
+export const Chat = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z" />
+    <path d="M8.5 11h.01M12 11h.01M15.5 11h.01" strokeWidth={2.2} />
+  </Icon>
+);
+
+export const Send = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M21 3 10.5 13.5M21 3l-6.5 18-4-7.5L3 9.5 21 3z" />
+  </Icon>
+);
+
+export const Camera = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </Icon>
+);
+
+export const Trash = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+  </Icon>
+);
+
+export const Globe = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" />
+  </Icon>
+);
+
+export const MapPin = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 21s-7-6.2-7-11.5a7 7 0 1 1 14 0C19 14.8 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </Icon>
+);
+
+export const Clock = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Icon>
+);
+
+export const Rocket = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14 4c3.5-1 6-.5 6-.5s.5 2.5-.5 6L13 16l-5-5 6.5-7zM8 11l-4 1 3-4h4M13 16l-1 4 4-3v-4" />
+    <path d="M6 15c-1.5.5-2.5 2.5-2.5 5 2.5 0 4.5-1 5-2.5" />
+  </Icon>
+);

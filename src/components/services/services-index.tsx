@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 /** Sticky in-page navigation that tracks which service is on screen. */
-export function ServicesIndex({ items }: { items: { slug: string; label: string }[] }) {
+export function ServicesIndex({ items, label }: { items: { slug: string; label: string }[]; label: string }) {
   const [active, setActive] = useState(items[0]?.slug);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -33,7 +33,7 @@ export function ServicesIndex({ items }: { items: { slug: string; label: string 
   }, [active]);
 
   return (
-    <nav aria-label="Services" className="sticky top-3 z-30 md:top-4">
+    <nav aria-label={label} className="sticky top-3 z-30 md:top-4">
       <div className="container-x">
         <ul ref={listRef} className="glass no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-full p-1.5 shadow-[var(--shadow-float)] lg:inline-flex">
           {items.map((item) => (

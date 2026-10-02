@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { searchClients } from "@/lib/data/admin";
-import { formatDate, initials } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { avatarUrl } from "@/lib/avatar";
+import { UserAvatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/field";
 import { Search, Users } from "@/components/ui/icons";
@@ -29,7 +31,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/admin/cl
             {clients.map((c) => (
               <li key={c.id}>
                 <Link href={`/admin/clients/${c.id}`} className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-fog-50/[0.03]">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ink-700 text-xs font-medium">{initials(c.name)}</span>
+                  <UserAvatar name={c.name} src={avatarUrl(c)} size={40} />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="truncate font-medium">{c.name}</span>

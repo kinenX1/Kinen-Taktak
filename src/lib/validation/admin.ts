@@ -116,3 +116,25 @@ export const roleSchema = z.object({
   userId: z.string().min(1).max(40),
   role: z.enum(["CLIENT", "ADMIN"]),
 });
+
+export const applicationUpdateSchema = z.object({
+  id: z.string().min(1).max(40),
+  status: z.enum(["NEW", "REVIEWING", "INTERVIEW", "OFFER", "HIRED", "REJECTED"]),
+  adminNotes: optionalText(8000),
+});
+
+export const openingSchema = z.object({
+  id: z.string().max(40).optional(),
+  slug,
+  title: requiredText("Title", 2, 140),
+  team: requiredText("Team", 2, 60),
+  location: requiredText("Location", 2, 80),
+  employmentType: z.enum(["FULL_TIME", "PART_TIME", "FREELANCE", "INTERNSHIP"]),
+  workMode: z.enum(["REMOTE", "HYBRID", "ON_SITE"]),
+  summary: requiredText("Summary", 10, 500),
+  responsibilities: lines(),
+  requirements: lines(),
+  niceToHave: lines(),
+  sortOrder: z.coerce.number().int().min(0).max(9999),
+  published: z.literal("on").optional(),
+});

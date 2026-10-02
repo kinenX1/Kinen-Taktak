@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Folder } from "@/components/ui/icons";
 import { EmptyState, PageHeader, Panel } from "@/components/dashboard/page-header";
 import { RequestList } from "@/components/dashboard/request-list";
+import { UserAvatar } from "@/components/ui/avatar";
+import { avatarUrl } from "@/lib/avatar";
+import { EmailComposer } from "@/components/admin/email-composer";
+import { EmailHistory } from "@/components/admin/email-history";
 
 export const metadata = { title: "Client" };
 
@@ -24,6 +28,7 @@ export default async function ClientPage({ params }: PageProps<"/admin/clients/[
     { k: "Company", v: client.company },
     { k: "Country", v: client.country },
     { k: "Joined", v: formatDate(client.createdAt) },
+    { k: "Language", v: client.locale === "fr" ? "French" : "English" },
   ];
 
   return (
@@ -33,7 +38,12 @@ export default async function ClientPage({ params }: PageProps<"/admin/clients/[
       </Link>
       <PageHeader
         eyebrow="Client"
-        title={client.name}
+        title={
+          <span className="flex items-center gap-4">
+            <UserAvatar name={client.name} src={avatarUrl(client)} size={56} ring />
+            {client.name}
+          </span>
+        }
         description={client.role === "ADMIN" ? <Badge tone="accent">Administrator</Badge> : undefined}
         actions={
           client.id !== admin.id && (
@@ -67,6 +77,12 @@ export default async function ClientPage({ params }: PageProps<"/admin/clients/[
           ) : (
             <EmptyState icon={<Folder size={20} />} title="No submitted requests" />
           )}
+        </Panel>
+        <Panel title="Email this client" className="xl:col-span-2">
+          <EmailComposer to={client.email} name={client.name} recipientId={client.id} locale={client.locale} />
+        </Panel>
+        <Panel title={`Emails (${client.receivedEmails.length})`} className="self-start">
+          <EmailHistory emails={client.receivedEmails} />
         </Panel>
       </div>
     </>

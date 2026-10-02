@@ -2,19 +2,23 @@ import type { Metadata } from "next";
 import { projectTypes } from "@/config/project-brief";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth/dal";
+import { getI18n } from "@/i18n/server";
 import { PageHero } from "@/components/layout/page-hero";
 import { ProjectBriefForm, type BriefDefaults } from "@/components/brief/project-brief-form";
 
-export const metadata: Metadata = {
-  title: "Start a Project",
-  description:
-    "Tell MovEra about your website, app or software idea. Send a project brief and follow its progress from your client portal.",
-  alternates: { canonical: "/start-project" },
-  openGraph: { url: "/start-project", title: "Start a Project — MovEra" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getI18n();
+  return {
+    title: t.meta.startProject.title,
+    description: t.meta.startProject.description,
+    alternates: { canonical: "/start-project" },
+    openGraph: { url: "/start-project", title: `${t.meta.startProject.title} — MovEra` },
+  };
+}
 
 export default async function StartProjectPage({ searchParams }: PageProps<"/start-project">) {
   const params = await searchParams;
+  const { t } = await getI18n();
   const user = await getCurrentUser();
   const draftRef = typeof params.draft === "string" ? params.draft : undefined;
   const requestedType = typeof params.type === "string" ? params.type : undefined;
@@ -75,11 +79,7 @@ export default async function StartProjectPage({ searchParams }: PageProps<"/sta
 
   return (
     <>
-      <PageHero
-        label="Start a project"
-        title={["Tell us what", { text: "you want to build.", className: "accent-serif text-flux" }]}
-        intro="This brief takes about five minutes. It gives our team everything needed to prepare a thoughtful first conversation — and you can track it from your dashboard."
-      />
+      <PageHero label={t.brief.label} title={[t.brief.title1, { text: t.brief.title2, className: "accent-serif text-flux" }]} intro={t.brief.intro} />
       <section className="container-x pb-24 md:pb-36">
         <ProjectBriefForm
           key={activeDraft ?? "new"}

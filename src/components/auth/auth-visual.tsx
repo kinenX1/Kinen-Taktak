@@ -4,11 +4,13 @@ import dynamic from "next/dynamic";
 import { motion } from "motion/react";
 import { ease } from "@/lib/motion";
 import { WordmarkLink } from "@/components/layout/wordmark";
+import { useT } from "@/i18n/client";
 
 const FlowField = dynamic(() => import("@/components/visuals/flow-field").then((m) => m.FlowField), { ssr: false });
 
 /** Left-hand brand panel for the authentication screens (desktop). */
 export function AuthVisual() {
+  const t = useT().auth;
   return (
     <aside className="grain relative hidden overflow-hidden border-r border-line bg-ink-900 lg:flex lg:flex-col lg:justify-between lg:p-12">
       <div aria-hidden="true" className="absolute inset-0">
@@ -22,13 +24,11 @@ export function AuthVisual() {
         transition={{ duration: 1.2, ease: ease.outExpo, delay: 0.2 }}
         className="relative max-w-lg"
       >
-        <p className="eyebrow mb-6">Client portal</p>
+        <p className="eyebrow mb-6">{t.clientPortal}</p>
         <p className="text-display-md font-medium">
-          Every project, <span className="accent-serif text-flux">in motion.</span>
+          {t.visualTitle1} <span className="accent-serif text-flux">{t.visualTitle2}</span>
         </p>
-        <p className="mt-5 leading-relaxed text-fog-400">
-          Send project briefs, follow their progress and keep every update in one place.
-        </p>
+        <p className="mt-5 leading-relaxed text-fog-400">{t.visualBody}</p>
       </motion.div>
     </aside>
   );

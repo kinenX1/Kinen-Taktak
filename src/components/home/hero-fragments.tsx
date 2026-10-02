@@ -3,6 +3,7 @@
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform, type MotionValue } from "motion/react";
 import { useEffect } from "react";
 import { ease } from "@/lib/motion";
+import { useT } from "@/i18n/client";
 
 /**
  * Floating interface fragments orbiting the hero — pieces of the products
@@ -10,6 +11,7 @@ import { ease } from "@/lib/motion";
  * Decorative only; hidden from assistive technology.
  */
 export function HeroFragments({ progress }: { progress: MotionValue<number> }) {
+  const t = useT().home.hero;
   const reduce = useReducedMotion();
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -31,22 +33,22 @@ export function HeroFragments({ progress }: { progress: MotionValue<number> }) {
       <Fragment depth={40} sx={sx} sy={sy} progress={progress} scroll={-220} delay={1.4} className="right-[6%] top-[20%]">
         <div className="glass w-64 rounded-lg p-4 font-mono text-[11px] leading-relaxed shadow-[var(--shadow-float)]">
           <div className="mb-3 flex items-center justify-between text-fog-500">
-            <span>deploy — production</span>
+            <span>{t.fragmentDeploy}</span>
             <span className="flex items-center gap-1.5 text-success">
-              <span className="size-1.5 rounded-full bg-success" /> live
+              <span className="size-1.5 rounded-full bg-success" /> {t.fragmentLive}
             </span>
           </div>
           <p className="text-fog-400">
-            <span className="text-ion">✓</span> build compiled
+            <span className="text-ion">✓</span> {t.fragmentBuild}
           </p>
           <p className="text-fog-400">
-            <span className="text-ion">✓</span> tests passed
+            <span className="text-ion">✓</span> {t.fragmentTests}
           </p>
           <p className="text-fog-400">
-            <span className="text-ion">✓</span> accessibility checks
+            <span className="text-ion">✓</span> {t.fragmentA11y}
           </p>
           <p className="text-fog-50">
-            <span className="text-flux">→</span> released to users
+            <span className="text-flux">→</span> {t.fragmentReleased}
           </p>
         </div>
       </Fragment>
@@ -63,7 +65,7 @@ export function HeroFragments({ progress }: { progress: MotionValue<number> }) {
       <Fragment depth={60} sx={sx} sy={sy} progress={progress} scroll={-300} delay={1.8} className="right-[7%] top-[50%]">
         <div className="glass w-56 rounded-lg p-4 shadow-[var(--shadow-float)]">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fog-500">Momentum</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fog-500">{t.fragmentMomentum}</span>
             <span className="font-mono text-[10px] text-flux">↗</span>
           </div>
           <div className="mt-4 flex h-14 items-end gap-1.5">
@@ -84,7 +86,7 @@ export function HeroFragments({ progress }: { progress: MotionValue<number> }) {
       <Fragment depth={-50} sx={sx} sy={sy} progress={progress} scroll={-160} delay={2} className="right-[25%] top-[34%] hidden xl:block">
         <div className="glass flex items-center gap-3 rounded-full py-2 pl-2 pr-4 shadow-[var(--shadow-float)]">
           <span className="flex size-7 items-center justify-center rounded-full bg-flux text-[12px] font-semibold text-ink-950">M</span>
-          <span className="text-[12px] text-fog-200">New era, shipped.</span>
+          <span className="text-[12px] text-fog-200">{t.fragmentShipped}</span>
         </div>
       </Fragment>
     </div>

@@ -2,7 +2,7 @@
 
 import { useLenis } from "@/components/motion/smooth-scroll";
 
-export function BackToTop() {
+export function BackToTop({ label }: { label: string }) {
   const lenis = useLenis();
   return (
     <button
@@ -14,7 +14,7 @@ export function BackToTop() {
       }}
       className="inline-flex min-h-11 items-center gap-2 transition-colors hover:text-fog-50"
     >
-      Back to top <span aria-hidden="true">↑</span>
+      {label} <span aria-hidden="true">↑</span>
     </button>
   );
 }

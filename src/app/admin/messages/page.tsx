@@ -7,6 +7,7 @@ import { Inbox } from "@/components/ui/icons";
 import { EmptyState, PageHeader, Panel } from "@/components/dashboard/page-header";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { EmailComposer } from "@/components/admin/email-composer";
 
 export const metadata = { title: "Messages" };
 
@@ -24,7 +25,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/admin/m
 
   return (
     <>
-      <PageHeader eyebrow="Admin" title="Messages" description="Enquiries from the contact form." />
+      <PageHeader eyebrow="Admin" title="Messages" description="Enquiries from the contact form. Reply by email right here — the sender gets it in their inbox." />
       <nav aria-label="Message filters" className="mb-6 flex gap-1">
         {tabs.map((t) => (
           <Link
@@ -50,6 +51,7 @@ export default async function MessagesPage({ searchParams }: PageProps<"/admin/m
                     <p className="flex flex-wrap items-center gap-2 font-medium">
                       {m.subject}
                       {m.status === "NEW" && <Badge tone="accent">New</Badge>}
+                      {m._count.emails > 0 && <Badge tone="success">Replied</Badge>}
                     </p>
                     <p className="mt-1 text-sm text-fog-400">
                       {m.name}
@@ -62,6 +64,12 @@ export default async function MessagesPage({ searchParams }: PageProps<"/admin/m
                   <p className="font-mono text-2xs text-fog-500">{formatDateTime(m.createdAt)}</p>
                 </div>
                 <p className="mt-4 whitespace-pre-line break-words text-sm leading-relaxed text-fog-200">{m.message}</p>
+                <details className="group mt-4 rounded-md border border-line bg-ink-900/60 px-4 open:pb-1">
+                  <summary className="flex h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium text-fog-50">
+                    <span className="text-flux transition-transform group-open:rotate-45">+</span> Reply by email
+                  </summary>
+                  <EmailComposer to={m.email} name={m.name} contactMessageId={m.id} defaultSubject={`Re: ${m.subject}`} compact />
+                </details>
                 <div className="mt-4 flex gap-2">
                   {m.status !== "READ" && (
                     <form action={setMessageStatusAction}>

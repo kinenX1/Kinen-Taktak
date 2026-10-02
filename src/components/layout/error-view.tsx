@@ -3,9 +3,12 @@
 import { useEffect } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Alert } from "@/components/ui/icons";
+import { fmt } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 
 /** Inline error boundary UI for route segments. */
 export function ErrorView({ error, reset, compact }: { error: Error & { digest?: string }; reset: () => void; compact?: boolean }) {
+  const t = useT().errors;
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -15,18 +18,18 @@ export function ErrorView({ error, reset, compact }: { error: Error & { digest?:
         <Alert size={20} />
       </span>
       <h1 className="max-w-2xl text-[clamp(2rem,5vw,3.5rem)] font-medium leading-[1.02] tracking-[-0.045em]">
-        Something went wrong on our side.
+        {t.title}
       </h1>
       <p className="mt-4 max-w-lg leading-relaxed text-fog-400">
-        The problem has been logged. Try again — if it keeps happening, please let us know.
-        {error.digest && <span className="mt-2 block font-mono text-xs text-fog-500">Error reference: {error.digest}</span>}
+        {t.body}
+        {error.digest && <span className="mt-2 block font-mono text-xs text-fog-500">{fmt(t.reference, { digest: error.digest })}</span>}
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button onClick={reset} arrow>
-          Try again
+          {t.retry}
         </Button>
         <ButtonLink href="/" variant="secondary">
-          Go to home
+          {t.home}
         </ButtonLink>
       </div>
     </div>

@@ -5,8 +5,9 @@ import { SectionLabel } from "@/components/ui/section-label";
 import { Reveal } from "@/components/motion/reveal";
 import { SplitReveal } from "@/components/motion/split-reveal";
 import { ProjectEntry } from "@/components/work/project-entry";
+import type { Dictionary } from "@/i18n/dictionaries";
 
-export function WorkSection({ projects }: { projects: PortfolioItem[] }) {
+export function WorkSection({ projects, t }: { projects: PortfolioItem[]; t: Dictionary["home"]["work"] }) {
   const [lead, ...rest] = projects;
   return (
     <section aria-labelledby="work-title" className="relative py-24 md:py-36">
@@ -14,19 +15,18 @@ export function WorkSection({ projects }: { projects: PortfolioItem[] }) {
         <div className="mb-14 flex flex-col gap-8 md:mb-20 md:flex-row md:items-end md:justify-between">
           <div>
             <SectionLabel index="02" className="mb-6">
-              Selected work
+              {t.label}
             </SectionLabel>
             <h2 id="work-title" className="text-display-lg font-medium">
-              <SplitReveal lines={["Built to be used.", { text: "Designed to be remembered.", className: "text-fog-400" }]} />
+              <SplitReveal lines={[t.title1, { text: t.title2, className: "text-fog-400" }]} />
             </h2>
           </div>
           <Reveal delay={0.2} className="max-w-sm space-y-6">
             <p className="leading-relaxed text-fog-400">
-              A selection of concept projects that show how we think, design and build. Each one explores a real
-              problem in a different industry.
+              {t.intro}
             </p>
             <ButtonLink href="/work" variant="secondary" arrow>
-              Explore all work
+              {t.all}
             </ButtonLink>
           </Reveal>
         </div>
