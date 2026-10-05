@@ -1,0 +1,10 @@
+# One-click hosting for the Drones War game on Render (render.com → New → Blueprint).
+services:
+  - type: web
+    name: drones-war
+    runtime: node
+    rootDir: drones-war
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    plan: free
