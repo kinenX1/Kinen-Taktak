@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#11160e">
+  <title>Drones War</title>
+  <meta name="description" content="Online team battle. Defenders vs attackers with drones, rockets, jeeps, commandos and a lot of tanks.">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Home -->
+  <section id="home" class="screen">
+    <div class="home-card">
+      <p class="eyebrow">Online team battle</p>
+      <h1 class="logo">Drones <span>War</span></h1>
+      <p class="tagline">Defenders vs Attackers. Drones, rockets, jeeps, commandos in military suits and a lot of tanks.</p>
+
+      <p id="invite-note" class="invite-note hidden"></p>
+
+      <label class="field">
+        <span>Your callsign</span>
+        <input id="name" maxlength="16" autocomplete="nickname" placeholder="e.g. Falcon">
+      </label>
+
+      <button id="create" class="btn btn-primary btn-big">Create a lobby</button>
+
+      <div class="divider"><span>or join your friends</span></div>
+
+      <div class="join-row">
+        <input id="code" maxlength="5" placeholder="CODE" autocapitalize="characters" spellcheck="false">
+        <button id="join" class="btn">Join lobby</button>
+      </div>
+
+      <p id="home-error" class="error" role="alert"></p>
+      <p id="conn" class="conn">Connecting to the server…</p>
+    </div>
+  </section>
+
+  <!-- Lobby -->
+  <section id="lobby" class="screen hidden">
+    <header class="lobby-head">
+      <div>
+        <p class="eyebrow">Lobby code</p>
+        <div class="code-row">
+          <span id="room-code" class="room-code">-----</span>
+          <button id="copy-invite" class="btn btn-small">Copy invite link</button>
+          <button id="share-invite" class="btn btn-small hidden">Share</button>
+        </div>
+        <p class="muted">Send the link to your friends. They open it, type a callsign and they're in.</p>
+      </div>
+      <button id="leave-lobby" class="btn btn-ghost btn-small">Leave</button>
+    </header>
+
+    <div class="teams">
+      <div class="team team-def">
+        <div class="team-head">
+          <h2>Defenders</h2>
+          <span class="team-goal">Protect the HQ until time runs out</span>
+        </div>
+        <ul id="list-def" class="roster"></ul>
+        <button class="btn btn-team" data-team="def">Join Defenders</button>
+      </div>
+      <div class="vs">VS</div>
+      <div class="team team-atk">
+        <div class="team-head">
+          <h2>Attackers</h2>
+          <span class="team-goal">Destroy the defenders' HQ</span>
+        </div>
+        <ul id="list-atk" class="roster"></ul>
+        <button class="btn btn-team" data-team="atk">Join Attackers</button>
+      </div>
+    </div>
+
+    <h3 class="section-title">Choose your loadout</h3>
+    <div id="unit-picker" class="unit-picker"></div>
+
+    <div class="lobby-bottom">
+      <div class="panel settings">
+        <h3>Battle settings <span id="host-tag" class="muted"></span></h3>
+        <label class="setting">
+          <span>AI tankers per team: <b id="bots-val">4</b></span>
+          <input id="bots" type="range" min="0" max="15" step="1" value="4">
+        </label>
+        <label class="setting">
+          <span>Match length</span>
+          <select id="minutes">
+            <option value="3">3 minutes</option>
+            <option value="5" selected>5 minutes</option>
+            <option value="8">8 minutes</option>
+            <option value="12">12 minutes</option>
+          </select>
+        </label>
+        <div class="actions">
+          <button id="ready" class="btn">I'm ready</button>
+          <button id="start" class="btn btn-primary">Start battle</button>
+        </div>
+        <p id="wait-host" class="muted hidden">Waiting for the host to start the battle…</p>
+      </div>
+
+      <div class="panel chat">
+        <h3>Chat</h3>
+        <ul id="lobby-chat" class="chat-log"></ul>
+        <form id="lobby-chat-form" class="chat-form">
+          <input id="lobby-chat-input" maxlength="140" placeholder="Say something…" autocomplete="off">
+          <button class="btn btn-small">Send</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="hidden">
+    <canvas id="cv"></canvas>
+
+    <div class="hud-top">
+      <div class="score score-def"><span>DEF</span><b id="score-def">0</b></div>
+      <div class="hud-center">
+        <div id="timer" class="timer">5:00</div>
+        <div class="hq-bar"><i id="hq-fill"></i><span id="hq-text">HQ 1500</span></div>
+      </div>
+      <div class="score score-atk"><b id="score-atk">0</b><span>ATK</span></div>
+    </div>
+
+    <button id="leave-game" class="btn btn-ghost btn-small leave-game">Leave</button>
+    <button id="mute" class="btn btn-ghost btn-small mute" title="Sound (M)">Sound on</button>
+
+    <ul id="killfeed" class="killfeed"></ul>
+    <ul id="game-chat" class="game-chat"></ul>
+    <form id="game-chat-form" class="game-chat-form hidden">
+      <input id="game-chat-input" maxlength="140" placeholder="Team talk… (Enter to send, Esc to cancel)" autocomplete="off">
+    </form>
+
+    <div class="hud-me">
+      <div id="me-unit" class="me-unit">Tank</div>
+      <div class="bar hp"><i id="hp-fill"></i><span id="hp-text">480</span></div>
+      <div class="bar alt"><i id="alt-fill"></i><span id="alt-text">Cannon</span></div>
+    </div>
+
+    <canvas id="minimap" class="minimap" width="240" height="150"></canvas>
+
+    <p id="help" class="help">WASD move · Mouse aim · Click fire · Right-click / Space special · 1–4 switch unit · Tab scores · Enter chat</p>
+
+    <div id="dead" class="overlay dead hidden">
+      <h2>Destroyed</h2>
+      <p>Back in the fight in <b id="respawn">5</b>s. Pick your next unit:</p>
+      <div id="dead-units" class="dead-units"></div>
+    </div>
+
+    <div id="scoreboard" class="overlay scoreboard hidden"></div>
+
+    <div id="over" class="overlay over hidden">
+      <h2 id="over-title">Victory</h2>
+      <p id="over-sub" class="muted"></p>
+      <div id="over-board"></div>
+      <p class="muted">Back to the lobby in a few seconds…</p>
+    </div>
+
+    <div id="touch" class="touch hidden">
+      <div id="stick-move" class="stick stick-left"><i></i></div>
+      <div id="stick-aim" class="stick stick-right"><i></i></div>
+      <button id="touch-alt" class="touch-alt">SPECIAL</button>
+    </div>
+  </section>
+
+  <script src="game.js"></script>
+</body>
+</html>

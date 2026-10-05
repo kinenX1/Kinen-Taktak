@@ -121,3 +121,7 @@ src/
 - Attachments, CVs and profile photos are stored in PostgreSQL, so they survive serverless deploys. Vercel limits request bodies to about 4.5 MB, which caps the size of a single upload there.
 - Set real `SMTP_*` credentials so clients receive confirmations and password-reset emails.
 - The legal pages (`/privacy`, `/terms`) contain clearly marked placeholder text that must be replaced with reviewed legal copy.
+
+## Drones War
+
+`drones-war/` holds a separate online team battle game with its own Node server and package. It doesn't share any code with the website. See [`drones-war/README.md`](drones-war/README.md) to run it.

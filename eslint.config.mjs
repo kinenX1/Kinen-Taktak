@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Drones War is a separate app with its own package.
+    "drones-war/**",
   ]),
 ]);
 
