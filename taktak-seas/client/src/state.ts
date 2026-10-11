@@ -53,6 +53,8 @@ export interface GameEvents extends Record<string, unknown[]> {
   /** Your inventory changed. */
   inventory: [];
   chat: [ChatMessage];
+  /** The whole chat history was replaced (after joining or reconnecting). */
+  chatReset: [];
   forgeWorking: [{ prompt: string }];
   forgeDone: [ForgeDone];
   forgeFailed: [{ prompt: string; error: string }];
@@ -133,6 +135,7 @@ export class GameState extends Emitter<GameEvents> {
     this.emit("players");
     for (const id of this.boats.keys()) this.emit("boat", id);
     this.emit("inventory");
+    this.emit("chatReset");
   }
 
   /** Wires server events into this state. Call once after joining. */
