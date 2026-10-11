@@ -217,7 +217,7 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
   // Height and style by how central the block is.
   const floorsFor = (t, avenueFront) => {
     const lo = 2 + t * 4;
-    const hi = 4 + t * 13 + (avenueFront ? 2 : 0);
+    const hi = 4 + t * 16 + (avenueFront ? 2 : 0);
     return Math.round(range(lo, hi) * (chance(0.12) ? 1.5 : 1));
   };
   const styleFor = (t, h, w, d) => {
@@ -254,7 +254,7 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
     const frontline = clamp(1 - Math.abs(blk.cx - 300) / 260, 0, 1);
     let floors = floorsFor(blk.t, blk.avenue);
     // Small footprints stay low so the city doesn't turn into needles.
-    floors = Math.min(floors, Math.floor(Math.min(bw, bd) * 0.55));
+    floors = Math.min(floors, Math.floor(Math.min(bw, bd) * (0.5 + 0.8 * blk.t)));
     floors = clamp(floors, 2, 18);
     let h = floors * 3.3 + 0.8;
     let ruined = damage(frontline);
@@ -273,15 +273,18 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
     const d = blk.d - sideN - sideS;
 
     if (blk.special === 'tower') {
-      // One landmark tower on a podium of low shops, with a forecourt toward the avenue side.
-      const tw = Math.min(w, d) - range(8, 12);
+      // One landmark tower on a podium of low shops. The tower hugs the avenue side of its block so
+      // the far side keeps a strip (alley + annex) that is always deep enough for the annex.
+      const north = blk.cz < AVENUE_Z; // block lies north of the avenue
+      const tw = Math.min(w, d) - range(10, 13);
       const tx = x0 + (w - tw) / 2 + range(-2, 2);
-      const tz = z0 + (d - tw) / 2 + range(-2, 2);
+      const near = range(0.8, 2); // gap to the avenue-side sidewalk
+      const tz = north ? z0 + d - tw - near : z0 + near;
       addBuilding(tx, tz, tw, tw, range(72, 90), pick(['tower', 'tower', 'glass']), chance(0.35) ? range(0.1, 0.3) : 0);
-      // Annex along the far side from the avenue.
-      const north = blk.cz < AVENUE_Z;
-      const annexD = Math.max(5, (north ? tz - z0 : z0 + d - (tz + tw)) - 2.5);
-      if (annexD > 4.5) {
+      // Annex along the far side from the avenue, separated from the tower by a 2.5 m alley.
+      const far = north ? tz - z0 : z0 + d - (tz + tw);
+      const annexD = Math.min(far - 2.5, 12);
+      if (annexD >= 4.5) {
         const az = north ? z0 : tz + tw + 2.5;
         addBuilding(x0 + 2, az, w - 4, annexD, range(7, 11), 'shop', chance(0.4) ? range(0.2, 0.5) : 0);
       }

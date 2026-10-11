@@ -13,7 +13,7 @@ export const WEAPON_KINDS = ['hitscan', 'rocket', 'shell', 'artillery', 'bomb', 
 export const PROJ_KINDS = ['rocket', 'shell', 'artillery', 'bomb', 'missile', 'grenade'];
 
 export const VIEW_MODES = {
-  soldier: ['first', 'third'],
+  soldier: ['third', 'first'], // third person by default: first person has no viewmodel arms yet
   jeep: ['third', 'first'], // first = driver seat
   tank: ['third', 'first', 'gunner'], // first = inside the tank, gunner = gunner's sight
   mlrs: ['third', 'first'],
@@ -189,7 +189,9 @@ export const U = {
   ID: 0, TYPE: 1, TEAM: 2, X: 3, Y: 4, Z: 5, YAW: 6, PITCH: 7, ROLL: 8, AIMYAW: 9, AIMPITCH: 10,
   SPD: 11, VX: 12, VY: 13, VZ: 14, HP: 15, FLAGS: 16, RESPAWN: 17, KILLS: 18, DEATHS: 19, SCORE: 20,
   WEAPON: 21, MAG: 22, RESERVE: 23, RELOAD: 24, MAG2: 25, RELOAD2: 26, GRENADES: 27, ACK: 28, LOCK: 29, THROTTLE: 30,
+  RESERVE2: 31, // second weapon slot reserve (-1 = infinite); the RPG has a finite one
 };
+export const U_LEN = 32;
 export const FLAG = {
   ALIVE: 1, GROUND: 2, CROUCH: 4, SPRINT: 8, ADS: 16, OUT: 32, MISSILE: 64, LOCKED_ON: 128, FIRING: 256, BURNING: 512,
 };
