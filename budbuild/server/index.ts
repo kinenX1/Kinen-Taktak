@@ -7,7 +7,7 @@ const port = Number(process.env.PORT) || 3001;
 const server = createGameServer();
 
 server.httpServer.listen(port, "0.0.0.0", () => {
-  console.log(`Taktak Seas is running on http://localhost:${port}`);
+  console.log(`The BudBuild is running on http://localhost:${port}`);
   console.log(
     aiConfigured()
       ? `AI builder: Claude (${aiModel()})`

@@ -1,4 +1,4 @@
-# Taktak Seas
+# The BudBuild
 
 An online multiplayer browser game. You and your friends start on an empty island. Everyone has their own AI builder: you type the piece you want ("a big red sail with a skull", "steam engine with a chimney", "wooden hull section") and your AI makes **that one piece**, never a whole boat. You put the pieces together on your shipyard slip, launch the boat when it floats, and sail across the sea to six cities. You can talk by voice or text the whole time.
 
@@ -31,10 +31,9 @@ An online multiplayer browser game. You and your friends start on an empty islan
 The repository has a `render.yaml` Blueprint at its root that deploys this folder as one web service. The game page and the multiplayer server run on the same port.
 
 1. Push this branch, or merge it into your default branch.
-2. In the Render dashboard choose **New → Blueprint**, pick this repository and the branch, and confirm. You can also open
-   `https://render.com/deploy?repo=https://github.com/kinenX1/Kinen-Taktak`. That link reads `render.yaml` from the default branch, so merge first.
+2. In the Render dashboard choose **New → Blueprint**, pick this repository and the branch that has `render.yaml`, and confirm.
 3. When Render asks for `ANTHROPIC_API_KEY`, paste your key from the [Claude Console](https://platform.claude.com/). You can also leave it empty to use the offline workshop.
-4. When the deploy finishes, Render gives you a link like `https://taktak-seas.onrender.com`. Open it, create an island, and send the invite link to your friends.
+4. When the deploy finishes, Render gives you a link like `https://the-budbuild.onrender.com`. Open it, create an island, and send the invite link to your friends.
 
 Notes:
 
@@ -59,7 +58,7 @@ Each player can ask for 40 pieces per 30 minutes, one at a time, with a few seco
 Requirements: Node 20.9 or later.
 
 ```bash
-cd taktak-seas
+cd budbuild
 npm install
 npm run dev          # game server on :3001 + Vite on http://localhost:5173
 ```

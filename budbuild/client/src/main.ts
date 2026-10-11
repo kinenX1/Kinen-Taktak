@@ -19,10 +19,10 @@ function playerKey(): string {
     return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   };
   try {
-    let key = localStorage.getItem("taktak.key");
+    let key = localStorage.getItem("budbuild.key");
     if (!key || !/^[A-Za-z0-9_-]{16,64}$/.test(key)) {
       key = make();
-      localStorage.setItem("taktak.key", key);
+      localStorage.setItem("budbuild.key", key);
     }
     return key;
   } catch {
@@ -72,7 +72,7 @@ function emitJoin(req: JoinRequest): Promise<JoinAck> {
 
 function leave(): void {
   try {
-    sessionStorage.removeItem("taktak.autojoin");
+    sessionStorage.removeItem("budbuild.autojoin");
   } catch {
     // ignore
   }
@@ -91,7 +91,7 @@ async function join(choice: LobbyChoice): Promise<string | null> {
   if (!res.ok) return res.error;
   identity = { ...choice, room: res.room.code };
   try {
-    sessionStorage.setItem("taktak.autojoin", res.room.code);
+    sessionStorage.setItem("budbuild.autojoin", res.room.code);
   } catch {
     // ignore
   }
@@ -116,7 +116,7 @@ function start(): void {
       game = new Game({ canvas, uiRoot: ui, socket, state, onLeave: leave });
       game.start();
       loading.remove();
-      document.title = `Taktak Seas · ${state.roomCode}`;
+      document.title = `The BudBuild · ${state.roomCode}`;
     }, 30),
   );
 }
@@ -155,11 +155,11 @@ document.addEventListener("click", (ev) => {
 });
 
 if (!webglAvailable()) {
-  overlay("3D isn't available", "Taktak Seas needs WebGL. Try a recent Chrome, Edge, Firefox or Safari, or turn on hardware acceleration.");
+  overlay("3D isn't available", "The BudBuild needs WebGL. Try a recent Chrome, Edge, Firefox or Safari, or turn on hardware acceleration.");
 } else {
   let auto: string | null = null;
   try {
-    auto = sessionStorage.getItem("taktak.autojoin");
+    auto = sessionStorage.getItem("budbuild.autojoin");
   } catch {
     auto = null;
   }

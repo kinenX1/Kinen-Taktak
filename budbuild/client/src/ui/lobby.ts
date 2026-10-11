@@ -35,25 +35,25 @@ function store(key: string, value: string): void {
 }
 
 export function savedIdentity(): { name: string; color: string; botName: string } | null {
-  const name = stored("taktak.name");
+  const name = stored("budbuild.name");
   if (!name) return null;
   return {
     name,
-    color: stored("taktak.color") ?? PLAYER_COLORS[0],
-    botName: stored("taktak.bot") ?? BOT_NAMES[0],
+    color: stored("budbuild.color") ?? PLAYER_COLORS[0],
+    botName: stored("budbuild.bot") ?? BOT_NAMES[0],
   };
 }
 
 export function showLobby(mount: HTMLElement, opts: LobbyOptions): { destroy(): void } {
-  let color = stored("taktak.color") ?? PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)];
+  let color = stored("budbuild.color") ?? PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)];
   const nameInput = el("input", {
     attrs: { type: "text", maxlength: String(NAME_MAX), placeholder: "Captain name", autocomplete: "nickname", "aria-label": "Your name" },
   });
-  nameInput.value = stored("taktak.name") ?? "";
+  nameInput.value = stored("budbuild.name") ?? "";
   const botInput = el("input", {
     attrs: { type: "text", maxlength: String(BOT_NAME_MAX), placeholder: "Bolt", "aria-label": "Your AI builder's name" },
   });
-  botInput.value = stored("taktak.bot") ?? BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+  botInput.value = stored("budbuild.bot") ?? BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
   const dice = el("button", {
     class: "btn icon",
     text: "🎲",
@@ -109,9 +109,9 @@ export function showLobby(mount: HTMLElement, opts: LobbyOptions): { destroy(): 
       return;
     }
     const botName = botInput.value.trim() || BOT_NAMES[0];
-    store("taktak.name", name);
-    store("taktak.color", color);
-    store("taktak.bot", botName);
+    store("budbuild.name", name);
+    store("budbuild.color", color);
+    store("budbuild.bot", botName);
     busy = true;
     error.textContent = "";
     buttons.forEach((b) => (b.disabled = true));
@@ -148,7 +148,7 @@ export function showLobby(mount: HTMLElement, opts: LobbyOptions): { destroy(): 
   }
 
   const card = el("div", { class: "lobby-card panel" }, [
-    el("h1", { class: "logo" }, [el("span", { class: "logo-boat", text: "⛵" }), "Taktak Seas"]),
+    el("h1", { class: "logo" }, [el("span", { class: "logo-boat", text: "⛵" }), "The BudBuild"]),
     el("p", { class: "tagline", text: "Build a boat from nothing with your own AI, piece by piece. Then sail with your friends to faraway cities." }),
     el("label", { class: "field" }, [el("span", { text: "Your captain name" }), nameInput]),
     el("div", { class: "field" }, [el("span", { text: "Your colour" }), swatches]),

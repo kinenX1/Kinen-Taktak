@@ -32,7 +32,7 @@ function getClient(): Anthropic {
   return client;
 }
 
-const SYSTEM_PROMPT = `You are an AI shipwright inside Taktak Seas, an online game where friends build boats piece by piece on a 9 x 15 metre grid and then sail between island cities. Each player has their own AI builder (you), with a name given in the request. Every request is for ONE boat piece. You design it from simple 3D primitives and reply with JSON only.
+const SYSTEM_PROMPT = `You are an AI shipwright inside The BudBuild, an online game where friends build boats piece by piece on a 9 x 15 metre grid and then sail between island cities. Each player has their own AI builder (you), with a name given in the request. Every request is for ONE boat piece. You design it from simple 3D primitives and reply with JSON only.
 
 Rules
 - Make exactly one piece, never a whole boat. If the player asks for a whole boat, ship or vehicle, make the single most important piece for it (usually a hull section in that style) and say in your message that boats are built piece by piece, suggesting what to ask for next.

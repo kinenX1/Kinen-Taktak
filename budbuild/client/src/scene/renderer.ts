@@ -17,7 +17,7 @@ export type Quality = "high" | "low";
 
 function readQuality(): Quality {
   try {
-    return localStorage.getItem("taktak.quality") === "low" ? "low" : "high";
+    return localStorage.getItem("budbuild.quality") === "low" ? "low" : "high";
   } catch {
     return "high";
   }
@@ -77,7 +77,7 @@ export const createSceneContext: CreateSceneContext = (canvas) => {
 
 export function setQuality(q: Quality): void {
   try {
-    localStorage.setItem("taktak.quality", q);
+    localStorage.setItem("budbuild.quality", q);
   } catch {
     // Storage blocked: the choice only lasts this session.
   }

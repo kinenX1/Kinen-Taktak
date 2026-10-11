@@ -10,7 +10,7 @@ let muted = readMuted();
 
 function readMuted(): boolean {
   try {
-    return localStorage.getItem("taktak.muted") === "1";
+    return localStorage.getItem("budbuild.muted") === "1";
   } catch {
     return false;
   }
@@ -62,7 +62,7 @@ export function unlockAudio(): void {
 export function toggleMuted(): boolean {
   muted = !muted;
   try {
-    localStorage.setItem("taktak.muted", muted ? "1" : "0");
+    localStorage.setItem("budbuild.muted", muted ? "1" : "0");
   } catch {
     // Not persisted; fine.
   }

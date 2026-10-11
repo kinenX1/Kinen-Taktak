@@ -217,8 +217,8 @@ export class Game {
 
   private seenHelp(): boolean {
     try {
-      if (localStorage.getItem("taktak.helpSeen")) return true;
-      localStorage.setItem("taktak.helpSeen", "1");
+      if (localStorage.getItem("budbuild.helpSeen")) return true;
+      localStorage.setItem("budbuild.helpSeen", "1");
     } catch {
       // Storage blocked: show help every time.
     }

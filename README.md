@@ -6,7 +6,7 @@ The website and client platform for **MovEra**, a digital product studio. It has
 - **Client portal:** accounts with profile photos, a multi-step project brief with file uploads and drafts, a dashboard with request status tracking, and a live chat with the team on every request
 - **Admin panel:** incoming requests (search, filter, status changes, internal notes), client chats, clients, contact messages, job applications and openings, an audience list of everyone who left an email with a composer to write to them, and portfolio and services content
 
-This repository also contains **Taktak Seas**, an online multiplayer boat-building game with an AI builder for every player and voice chat. It lives in [`taktak-seas/`](taktak-seas/README.md) with its own tooling, and deploys to Render with the `render.yaml` Blueprint at the root.
+This repository also contains **The BudBuild**, an online multiplayer boat-building game with an AI builder for every player and voice chat. It lives in [`budbuild/`](budbuild/README.md) with its own tooling, and deploys to Render with the `render.yaml` Blueprint at the root.
 
 ## Stack
 
