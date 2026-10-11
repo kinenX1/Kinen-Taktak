@@ -588,8 +588,10 @@ function faceTexture(skinHex, kind) {
 const QUALITY = { low: 0, medium: 1, high: 2, ultra: 3 };
 const matCache = new Map();
 
+// Plain materials (no vertex colors) so any module can use them on ordinary geometry. The model
+// builders derive vertex-colored "uber" variants from them (see models/kit.js).
 function std(params) {
-  return new THREE.MeshStandardMaterial({ vertexColors: true, ...params });
+  return new THREE.MeshStandardMaterial(params);
 }
 
 // Fabric UVs are box-projected in meters by the model builder; userData.boxUV = meters per texture tile.

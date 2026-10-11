@@ -72,10 +72,10 @@ export const UNITS = {
     radius: 2.8, height: 2.7,
     // 7.5 m hull, 3.6 m wide, hull top 1.9 m, turret to 2.7 m. Turret spheres rotate with aimYaw.
     hit: [
-      { x: 2.7, y: 1.0, z: -0.85, r: 1.0 }, { x: 2.7, y: 1.0, z: 0.85, r: 1.0 },
-      { x: 0.9, y: 1.0, z: -0.85, r: 1.0 }, { x: 0.9, y: 1.0, z: 0.85, r: 1.0 },
-      { x: -0.9, y: 1.0, z: -0.85, r: 1.0 }, { x: -0.9, y: 1.0, z: 0.85, r: 1.0 },
-      { x: -2.7, y: 1.0, z: -0.85, r: 1.0 }, { x: -2.7, y: 1.0, z: 0.85, r: 1.0 },
+      { x: 2.6, y: 0.95, z: -0.75, r: 1.15 }, { x: 2.6, y: 0.95, z: 0.75, r: 1.15 },
+      { x: 0.87, y: 0.95, z: -0.75, r: 1.15 }, { x: 0.87, y: 0.95, z: 0.75, r: 1.15 },
+      { x: -0.87, y: 0.95, z: -0.75, r: 1.15 }, { x: -0.87, y: 0.95, z: 0.75, r: 1.15 },
+      { x: -2.6, y: 0.95, z: -0.75, r: 1.15 }, { x: -2.6, y: 0.95, z: 0.75, r: 1.15 },
       { x: -0.3, y: 2.1, z: 0, r: 1.4, turret: true },
       { x: 1.3, y: 2.15, z: 0, r: 0.75, turret: true },
     ],
@@ -119,7 +119,7 @@ export const UNITS = {
     kind: 'air', hp: 90, armor: 1, blastArmor: 1, speed: 22, climb: 12, accel: 35, yawRate: 6, tilt: 0.35,
     minAlt: 0.3, maxAlt: 140, radius: 0.9, height: 0.5,
     // 1.2 m across.
-    hit: [{ x: 0, y: 0.25, z: 0, r: 0.72 }],
+    hit: [{ x: 0, y: 0.4, z: 0, r: 0.65 }],
     aim: { height: 0, pitchMin: -1.5, pitchMax: 0.5, rate: 0, yawLimit: 0 },
     weapons: [
       { name: 'Minigun', kind: 'hitscan', dmg: 12, rate: 0.06, range: 240, falloff: [60, 0.6],

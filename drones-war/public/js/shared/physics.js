@@ -211,8 +211,8 @@ function rayVCylinder(ox, oy, oz, dx, dy, dz, maxDist, cx, cz, r, y0, y1) {
 function castRay(index, ox, oy, oz, dx, dy, dz, maxDist) {
   let best = maxDist;
   let found = false;
-  // Ground plane y = 0.
-  if (oy <= 0) {
+  // Ground plane y = 0 (an origin exactly on the ground only hits it when the ray points down).
+  if (oy < 0) {
     HIT.dist = 0; HIT.surface = 0; HIT.nx = 0; HIT.ny = 1; HIT.nz = 0; HIT.box = -1;
     return true;
   }
@@ -784,6 +784,8 @@ function stepAir(s, inp, mx, mz, lookYaw, dt, def, index) {
 const OUT_MARGIN = 150; // m outside the map before the jet is steered back
 const BACK_MARGIN = 100; // ... and back under this before the player has control again
 const PULL_UP_ALT = 25;
+const PULL_UP_PITCH = 0.25;
+const PULL_UP_BAND = 62; // m per radian of allowed dive above PULL_UP_ALT
 
 function stepJet(s, mx, mz, lookYaw, lookPitch, dt, def, index) {
   s.crouch = false;
@@ -809,9 +811,15 @@ function stepJet(s, mx, mz, lookYaw, lookPitch, dt, def, index) {
   const maxTurn = def.turn * dt;
   const prevYaw = s.yaw;
   s.yaw = wrapAngle(turnToward(s.yaw, wantYaw, maxTurn) + rudder * def.turn * 0.5 * dt);
-  s.pitch = clamp(approach(s.pitch, clamp(wantPitch, -1.2, 1.2), maxTurn), -1.2, 1.2);
-  // Ground proximity: ease the nose up so a dive close to the ground doesn't end in a crash.
-  if (s.y < PULL_UP_ALT && s.pitch < 0) s.pitch += (0.25 - s.pitch) * Math.min(1, 3 * dt);
+  // Ground proximity (auto pull-up): the lowest pitch the stick may hold rises smoothly with
+  // falling altitude, from a full dive above ~100 m to level flight at PULL_UP_ALT, then quickly
+  // to +0.25 five meters below it. A floor that depends on altitude only (not on the pitch
+  // itself) can't feed back into nose chatter, and it is shallow enough that a dive recovers.
+  const above = s.y - PULL_UP_ALT;
+  const floor = above >= 0 ? Math.max(-1.2, -above / PULL_UP_BAND) : Math.min(PULL_UP_PITCH, -above * 0.05);
+  const pitchRate = floor > wantPitch ? maxTurn * 1.6 : maxTurn;
+  wantPitch = Math.max(clamp(wantPitch, -1.2, 1.2), floor);
+  s.pitch = clamp(approach(s.pitch, wantPitch, pitchRate), -1.2, 1.2);
 
   const yawRate = angleDiff(prevYaw, s.yaw) / dt;
   const wantRoll = clamp(yawRate / def.turn, -1, 1) * 1.1;
