@@ -618,7 +618,7 @@ export class Game {
     for (const [id, view] of this.boats) {
       const pose = this.poseFor(id, view, time);
       this.poses.set(id, pose);
-      view.root.visible = view.stats.pieceCount > 0;
+      view.root.visible = view.stats.pieceCount > 0 || (id === selfId && this.builder.active);
       view.setPose(pose.x, pose.y, pose.z, pose.heading, pose.pitch, pose.roll);
       view.root.updateMatrixWorld(true);
       view.update(dt, time, pose.speed);

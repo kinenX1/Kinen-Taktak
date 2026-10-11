@@ -100,7 +100,7 @@ export const createBoatView: CreateBoatView = (ownerId, state) => {
   let missingDefs = false;
   let pieces: PlacedPiece[] = [];
   let stats: BoatStats = computeBoatStats([], state.defs.get);
-  let heights: Float32Array = new Float32Array(GRID_W * GRID_L);
+  let heights: Float64Array = new Float64Array(GRID_W * GRID_L);
   const bounds: Bounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
 
   const grid = makeGrid();

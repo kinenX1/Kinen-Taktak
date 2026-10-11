@@ -127,7 +127,7 @@ export function createWorkshopPanel(deps: WorkshopPanelDeps): WorkshopPanel {
   const chips = el("div", { class: "ws-chips" });
   const offlineNote = el("p", {
     class: "ws-note",
-    text: "Offline workshop mode: pieces are made by the built-in workshop. Add an ANTHROPIC_API_KEY on the server for the full AI.",
+    text: "Offline mode: the built-in workshop makes your pieces (the server has no AI key).",
   });
 
   function scrollChat(): void {

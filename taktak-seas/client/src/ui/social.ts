@@ -36,7 +36,7 @@ export const createSocial: CreateSocial = (deps) => {
 
   function line(msg: ChatMessage): HTMLElement {
     const time = new Date(msg.t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const row = el("div", { class: `chat-line ${msg.kind}`, title: time });
+    const row = el("div", { class: `chat-line kind-${msg.kind}`, title: time });
     if (msg.kind === "chat") {
       row.append(el("span", { class: "chat-name", text: msg.name, style: { color: msg.color } }), el("span", { class: "chat-text", text: msg.text }));
     } else {

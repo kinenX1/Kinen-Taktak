@@ -81,8 +81,8 @@ export function cellAt(x: number, z: number): { gx: number; gz: number } {
 }
 
 /** Top surface height of every cell, row-major by gz then gx. */
-export function heightMap(pieces: readonly PlacedPiece[], defs: DefLookup): Float32Array {
-  const map = new Float32Array(GRID_W * GRID_L);
+export function heightMap(pieces: readonly PlacedPiece[], defs: DefLookup): Float64Array {
+  const map = new Float64Array(GRID_W * GRID_L);
   for (const p of pieces) {
     const def = defs(p.defId);
     if (!def) continue;
@@ -98,7 +98,7 @@ export function heightMap(pieces: readonly PlacedPiece[], defs: DefLookup): Floa
   return map;
 }
 
-function baseOn(map: Float32Array, gx: number, gz: number, fw: number, fd: number): number {
+function baseOn(map: Float64Array, gx: number, gz: number, fw: number, fd: number): number {
   let base = 0;
   for (let z = gz; z < gz + fd; z++) {
     for (let x = gx; x < gx + fw; x++) base = Math.max(base, map[z * GRID_W + x]);
@@ -111,7 +111,7 @@ function baseOn(map: Float32Array, gx: number, gz: number, fw: number, fd: numbe
  * is below them. Pieces whose definition is unknown are dropped.
  */
 export function settle(pieces: readonly PlacedPiece[], defs: DefLookup): PlacedPiece[] {
-  const map = new Float32Array(GRID_W * GRID_L);
+  const map = new Float64Array(GRID_W * GRID_L);
   const out: PlacedPiece[] = [];
   for (const p of pieces) {
     const def = defs(p.defId);

@@ -22,7 +22,7 @@ function prism(points: [number, number][], axis: "x" | "y"): THREE.BufferGeometr
     // Shape plane XY (x=x, y=z), extruded along z -> extrusion becomes y.
     geo.rotateX(Math.PI / 2);
   }
-  return geo.toNonIndexed();
+  return geo;
 }
 
 function wedgeGeometry(): THREE.BufferGeometry {
