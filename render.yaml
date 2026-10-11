@@ -1,0 +1,24 @@
+# Render Blueprint for Taktak Seas, the online boat-building game in /taktak-seas.
+# One web service serves the game page and runs the multiplayer server
+# (Socket.IO over WebSockets) on the same port.
+services:
+  - type: web
+    name: taktak-seas
+    runtime: node
+    rootDir: taktak-seas
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Your Anthropic API key powers each player's AI builder. Without it the
+      # game still works and uses the built-in offline workshop.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: claude-opus-5-5
+      # Most Claude requests per hour for the whole server (protects your bill).
+      - key: AI_HOURLY_LIMIT
+        value: "300"

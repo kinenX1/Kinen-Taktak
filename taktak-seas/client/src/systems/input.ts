@@ -47,7 +47,10 @@ export class Input {
     window.addEventListener("keyup", (ev) => this.down.delete(ev.code));
     window.addEventListener("blur", () => this.down.clear());
     this.setupPointer();
-    if (this.touch) this.setupTouchControls(uiRoot);
+    if (this.touch) {
+      document.body.classList.add("touch");
+      this.setupTouchControls(uiRoot);
+    }
   }
 
   private isGameKey(code: string): boolean {

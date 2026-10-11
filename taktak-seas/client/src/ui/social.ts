@@ -162,6 +162,12 @@ export const createSocial: CreateSocial = (deps) => {
 
   voice.onChange = renderVoice;
   const offPlayers = state.on("players", renderVoice);
+  // The server forgets voice state when the connection drops, so rejoin.
+  const offReconnect = state.on("reconnected", () => {
+    if (!voice.joined) return;
+    voice.leave();
+    void voice.join();
+  });
   renderVoice();
   const onUnload = () => voice.leave();
   window.addEventListener("pagehide", onUnload);
@@ -197,6 +203,7 @@ export const createSocial: CreateSocial = (deps) => {
       offChat();
       offReset();
       offPlayers();
+      offReconnect();
       window.removeEventListener("pagehide", onUnload);
       voice.dispose();
       root.remove();

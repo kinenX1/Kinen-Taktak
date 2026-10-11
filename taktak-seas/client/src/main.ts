@@ -138,6 +138,7 @@ socket.io.on("reconnect", async () => {
   state.connected = true;
   state.load(res.you, res.room, res.inventory);
   game.resync();
+  state.emit("reconnected");
 });
 state.on("kicked", (reason) => {
   game?.stop();

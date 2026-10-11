@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The boat game is a separate project with its own tooling.
+    "taktak-seas/**",
   ]),
 ]);
 

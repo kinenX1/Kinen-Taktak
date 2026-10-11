@@ -1540,16 +1540,11 @@ kbd {
   }
 
   .chat-slot {
-    width: calc(100vw - 24px);
-    bottom: calc(250px + var(--safe-bottom));
+    width: min(360px, calc(100vw - 24px));
   }
 
   .chat-log {
     max-height: 110px;
-  }
-
-  .bottom-center {
-    bottom: calc(196px + var(--safe-bottom));
   }
 
   .hint {
@@ -1586,5 +1581,61 @@ kbd {
 
   .logo {
     font-size: 34px;
+  }
+}
+
+/* Short screens (landscape phones, small windows). */
+@media (max-height: 560px) {
+  .room-card {
+    max-height: 42vh;
+  }
+
+  .chat-log {
+    max-height: 84px;
+  }
+
+  .minimap {
+    width: 120px;
+    height: 120px;
+  }
+
+  .map-buttons {
+    flex-wrap: wrap;
+    max-width: 120px;
+  }
+
+  .map-buttons .icon-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+}
+
+/* Touch screens: keep the chat and hints clear of the joystick and buttons. */
+.touch .chat-slot {
+  bottom: calc(250px + var(--safe-bottom));
+}
+
+.touch .bottom-center {
+  bottom: calc(196px + var(--safe-bottom));
+}
+
+@media (max-height: 560px) {
+  .touch .chat-slot {
+    bottom: calc(12px + var(--safe-bottom));
+    left: 170px;
+    width: min(300px, calc(100vw - 360px));
+  }
+
+  .touch .bottom-center {
+    bottom: calc(12px + var(--safe-bottom));
+  }
+
+  .touch .joystick {
+    bottom: 24px;
+  }
+
+  .touch .touch-buttons {
+    bottom: 20px;
   }
 }
