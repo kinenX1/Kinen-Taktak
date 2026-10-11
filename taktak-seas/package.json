@@ -1,0 +1,36 @@
+{
+  "name": "taktak-seas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Online multiplayer boat builder: build boats piece by piece with your own AI, then sail to other cities with friends.",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:client": "vite",
+    "build": "vite build && esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=dist/server/index.js",
+    "start": "node dist/server/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test test/*.test.ts"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0",
+    "express": "5.2.1",
+    "socket.io": "4.8.4",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "^20",
+    "@types/three": "0.186.0",
+    "esbuild": "0.28.2",
+    "socket.io-client": "4.8.4",
+    "three": "0.186.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vite": "7.3.7"
+  }
+}
