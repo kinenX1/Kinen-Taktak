@@ -214,7 +214,10 @@ export function createWorkshopPanel(deps: WorkshopPanelDeps): WorkshopPanel {
     ev.preventDefault();
     sendPrompt(promptInput.value);
   });
-  promptInput.addEventListener("keydown", (ev) => ev.stopPropagation());
+  promptInput.addEventListener("keydown", (ev) => {
+    ev.stopPropagation();
+    if (ev.key === "Escape") promptInput.blur();
+  });
 
   state.on("forgeWorking", () => showTyping());
   state.on("forgeDone", (msg) => {

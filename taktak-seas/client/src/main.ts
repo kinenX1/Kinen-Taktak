@@ -147,6 +147,13 @@ state.on("kicked", (reason) => {
 
 let lobby: { destroy(): void } | null = null;
 
+// After a mouse click, drop focus from HUD buttons so Space/Enter go to the
+// game instead of clicking the button again.
+document.addEventListener("click", (ev) => {
+  const button = (ev.target as HTMLElement | null)?.closest?.("button");
+  if (button && ev.detail > 0 && !button.closest(".lobby")) button.blur();
+});
+
 if (!webglAvailable()) {
   overlay("3D isn't available", "Taktak Seas needs WebGL. Try a recent Chrome, Edge, Firefox or Safari, or turn on hardware acceleration.");
 } else {

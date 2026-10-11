@@ -71,6 +71,7 @@ export class Game {
   private slowTimer = 0;
   private fireCooldown = 0;
   private returnArmedUntil = 0;
+  private lastBumpToast = 0;
   private lastMode = "";
   private raf = 0;
   private running = false;
@@ -205,7 +206,11 @@ export class Game {
       onBump: () => {
         this.camera.bump(0.6);
         sfx.bump();
-        this.hud.toast("Bump! Too shallow here, steer back to deeper water.", "warn");
+        const now = performance.now();
+        if (now - this.lastBumpToast > 6000) {
+          this.lastBumpToast = now;
+          this.hud.toast("Bump! Too shallow here, steer back to deeper water.", "warn");
+        }
       },
     };
   }

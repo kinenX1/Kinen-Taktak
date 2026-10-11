@@ -110,8 +110,29 @@ export class LocalPlayer {
     this.mode = helm ? "helm" : "passenger";
     const x = clamp(lx, -GRID_W / 2 + 0.4, GRID_W / 2 - 0.4);
     const z = clamp(lz, -GRID_L / 2 + 0.4, GRID_L / 2 - 0.4);
-    this.pos.set(x, view.deckHeightAt(x, z) + 0.02, z);
+    if (view.deckHeightAt(x, z) > 0) this.pos.set(x, view.deckHeightAt(x, z) + 0.02, z);
+    else this.pos.copy(this.nearestDeck(view, x, z));
     this.vy = 0;
+  }
+
+  /** Boat-local centre of the occupied cell closest to (x, z), on top of its deck. */
+  private nearestDeck(view: BoatView, x: number, z: number): THREE.Vector3 {
+    let best: THREE.Vector3 | null = null;
+    let bestD = Infinity;
+    for (let gz = 0; gz < GRID_L; gz++) {
+      for (let gx = 0; gx < GRID_W; gx++) {
+        const cx = gx + 0.5 - GRID_W / 2;
+        const cz = gz + 0.5 - GRID_L / 2;
+        const h = view.deckHeightAt(cx, cz);
+        if (h <= 0) continue;
+        const d = Math.hypot(cx - x, cz - z);
+        if (d < bestD) {
+          bestD = d;
+          best = new THREE.Vector3(cx, h + 0.02, cz);
+        }
+      }
+    }
+    return best ?? new THREE.Vector3(0, 0.02, 0);
   }
 
   /** Boat-local spot where the captain stands: the sternmost deck cell near the middle. */
@@ -261,13 +282,20 @@ export class LocalPlayer {
     if (this.moving) this.ry = lerpAngle(this.ry, Math.atan2(vx, vz), 1 - Math.exp(-f.dt * 12));
     const x = clamp(this.pos.x + vx * f.dt, -GRID_W / 2 + 0.3, GRID_W / 2 - 0.3);
     const z = clamp(this.pos.z + vz * f.dt, -GRID_L / 2 + 0.3, GRID_L / 2 - 0.3);
-    const deck = view.deckHeightAt(x, z) + 0.02;
-    // Can't walk up into tall stacks; small steps are fine.
-    if (deck - this.pos.y > 1.1) {
-      this.pos.y = view.deckHeightAt(this.pos.x, this.pos.z) + 0.02;
+    const here = view.deckHeightAt(this.pos.x, this.pos.z);
+    if (here <= 0) {
+      // The piece we stood on was removed: hop to the nearest deck.
+      this.pos.copy(this.nearestDeck(view, this.pos.x, this.pos.z));
       return;
     }
-    this.pos.set(x, deck, z);
+    const there = view.deckHeightAt(x, z);
+    // Stay on the boat (empty cells are open water) and don't walk up into
+    // tall stacks; small steps are fine.
+    if (there <= 0 || there - here > 1.1) {
+      this.pos.y = here + 0.02;
+      return;
+    }
+    this.pos.set(x, there + 0.02, z);
   }
 
   private updateHelm(f: PlayerFrame): void {
