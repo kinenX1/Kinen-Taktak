@@ -431,8 +431,9 @@ export function normalizePiece(raw: unknown, meta: PieceMeta): PieceDef {
   let s = Math.min(1, MAX_FOOTPRINT / bw, MAX_FOOTPRINT / bd, MAX_PIECE_HEIGHT / bh);
   // Drawn much smaller than the footprint it asked for (e.g. in 0..1 units):
   // blow it up to fill that footprint.
+  // (Only for multi-cell requests: small 1x1 things like lanterns stay small.)
   const fit = Math.min(wantW / bw, wantD / bd);
-  if (fit > 1.6) s = Math.min(fit, MAX_PIECE_HEIGHT / bh, MAX_FOOTPRINT / bw, MAX_FOOTPRINT / bd);
+  if (fit > 1.6 && wantW * wantD > 1) s = Math.min(fit, MAX_PIECE_HEIGHT / bh, MAX_FOOTPRINT / bw, MAX_FOOTPRINT / bd);
   // Microscopic pieces are made at least ~0.6 m big.
   const biggest = Math.max(bw, bh, bd) * s;
   if (biggest < 0.3) s *= 0.6 / biggest;
