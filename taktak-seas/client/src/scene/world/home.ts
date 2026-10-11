@@ -60,6 +60,13 @@ export function createHomeIsland(colliders: Collider[], surfaces: SurfaceSet): H
     // Pier from the beach to the stern walkway.
     const stern = at(-BAY_HALF_LENGTH - 0.6, 0);
     addPier(batch, surfaces, slip.beachX, slip.beachZ, stern.x, stern.z, 2.2, DECK_Y);
+    // Keel blocks the docked boat rests on.
+    for (const along of [-5.5, -1.8, 1.8, 5.5]) {
+      for (const across of [-2.6, 0, 2.6]) {
+        const p = at(along, across);
+        batch.add(UNIT.box, trs(p.x, -0.7, p.z, 0, slip.heading, 0, 0.9, 3.15, 1.2), across === 0 ? "#5c4430" : "#6b4f35");
+      }
+    }
     // Marker buoys at the open end of the bay.
     for (const side of [-1, 1]) {
       const p = at(BAY_HALF_LENGTH + 1.5, side * BAY_HALF_WIDTH);

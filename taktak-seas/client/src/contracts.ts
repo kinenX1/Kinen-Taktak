@@ -88,12 +88,26 @@ export interface BoatView {
   deckHeightAt(localX: number, localZ: number): number;
   /** The placed piece hit by a world-space ray, or null. */
   pickPiece(ray: THREE.Ray): PlacedPiece | null;
+  /** Nearest hit of a world-space ray on a placed piece's box or the empty build grid. */
+  hitTest(ray: THREE.Ray): BoatHit | null;
   /** Build grid overlay (cells, outline, bow arrow). */
   setGridVisible(visible: boolean): void;
   /** Tints one placed piece (e.g. red when it would be removed). null clears. */
   setHighlight(uid: string | null): void;
   dispose(): void;
 }
+
+export interface BoatHit {
+  /** The placed piece that was hit, or null for the empty build grid (y = 0). */
+  piece: PlacedPiece | null;
+  /** Hit point in boat-local space. */
+  point: THREE.Vector3;
+  /** Axis-aligned face normal in boat-local space. */
+  normal: THREE.Vector3;
+}
+
+/** Keel height of a docked boat: it sits on the slipway, just clear of the waves. */
+export const DOCKED_KEEL_Y = 0.9;
 
 export type CreateBoatView = (ownerId: string, state: GameState) => BoatView;
 
