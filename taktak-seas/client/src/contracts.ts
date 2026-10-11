@@ -56,6 +56,11 @@ export interface WorldView {
   update(dt: number, time: number, focus: THREE.Vector3): void;
   /** Static circular obstacles (buildings, trees, rocks...) walkers must not enter. */
   readonly colliders: readonly Collider[];
+  /**
+   * Height of a walkable built surface (piers, jetties) at (x, z), or null.
+   * Walkers stand on max(terrain, surface).
+   */
+  surfaceAt(x: number, z: number): number | null;
 }
 
 export type CreateWorld = (ctx: SceneContext) => WorldView;
