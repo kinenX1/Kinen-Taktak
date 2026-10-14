@@ -314,7 +314,9 @@ export class Rig {
     const pos = g.attributes.position, nor = g.attributes.normal;
     if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
     const uv = g.attributes.uv;
-    const scale = mat.userData && mat.userData.boxUV;
+    // The untextured solid bucket also gets box UVs (1.6 m per tile, the burnt material's density) so a
+    // wreck can swap it for burntMaterial() without smearing: its per-primitive UVs are meaningless.
+    const scale = (mat.userData && mat.userData.boxUV) || (mat === solidMaterial() ? 1.6 : 0);
     if (scale) {
       // Box-projected UVs in meters: same texel density everywhere, camo/paint never stretches.
       for (let i = 0; i < n; i++) {

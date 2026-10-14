@@ -14,6 +14,7 @@ import { buildM4, buildM4Lo, buildRPG, buildRPGLo, buildHand, gripMatrix, M4, RP
 const THIGH = 0.43, SHIN = 0.41, UARM = 0.29, FARM = 0.265;
 const HIP_W = 0.1, SHOULDER = [0, 0.29, 0.2]; // shoulder joint in chest space (z mirrored per side)
 const EYE = 1.62, CROUCH_EYE = 1.12;
+const CROUCH_HIPS = 0.47;
 
 // ---------- template ----------
 
@@ -455,7 +456,8 @@ export class SoldierModel {
     // Hips: height (crouch, stride drop, bob), twist with the stride.
     const drop = (stride * 0.5) ** 2 * 0.55 * mv;
     const bob = Math.abs(Math.sin(ph * 2)) * 0.03 * mv * (1 + sp);
-    const hipY = lerp(0.93, 0.62, cr) - drop - 0.02 * mv + bob * 0.6 - 0.08 * air + Math.sin(time * 1.6) * 0.003;
+    // Crouch: the head must land on the physics crouch head sphere (1.125 m), see test/models.test.mjs.
+    const hipY = lerp(0.93, CROUCH_HIPS, cr) - drop - 0.02 * mv + bob * 0.6 - 0.08 * air + Math.sin(time * 1.6) * 0.003;
     const twist = Math.sin(ph) * 0.12 * mv * dirF;
     b.hips.position.set(-0.04 * cr, hipY, 0);
     b.hips.rotation.set(Math.sin(ph) * 0.03 * mv, twist, -0.12 * cr - 0.05 * sp);
@@ -489,7 +491,8 @@ export class SoldierModel {
     const lean = -0.07 * mv * dirF - 0.22 * sp - 0.12 * cr;
     const chestPitch = lean + 0.3 * aimPitch * (1 - sp);
     b.chest.rotation.set(0, -twist * 0.8, chestPitch);
-    b.chest.position.set(0, 0.2 + Math.sin(time * 1.6) * 0.004, 0);
+    b.chest.position.set(0, 0.2 - 0.03 * cr + Math.sin(time * 1.6) * 0.004, 0);
+    b.head.position.y = 0.36 - 0.02 * cr;
     b.head.rotation.set(0, 0, clamp(aimPitch * (1 - sp) - chestPitch - 0.05, -0.9, 0.9) * 0.85 + sp * 0.2);
     // Weapon in chest space.
     const wPitch = aimPitch * (1 - sp) - chestPitch;
@@ -536,10 +539,10 @@ export class SoldierModel {
       orientLimb(b['uArm' + L], _s, _e, _front);
       orientLimb(b['fArm' + L], _e, hand.position, _front);
     }
-    // Death: fall onto the back.
+    // Death: fall onto the back (head toward -x, chest up), body centred on where it stood.
     const d = smooth(this.deadB);
-    b.root.rotation.set(0, 0, -1.45 * d);
-    b.root.position.set(-0.25 * d, 0.14 * d, 0);
+    b.root.rotation.set(0, 0, 1.45 * d);
+    b.root.position.set(0.8 * d, 0.2 * d, 0);
   }
 
   setView(mode) {
@@ -569,4 +572,11 @@ export class SoldierModel {
 
 export function soldierTriangles(suit, team, quality) {
   return soldierTemplate(suit, team, quality).tris;
+}
+
+// Frees every cached soldier template (geometry); live SoldierModels keep working until disposed because
+// three re-uploads a disposed geometry on its next draw. Called by models.js releaseModels().
+export function releaseSoldierTemplates() {
+  for (const t of templates.values()) for (const m of t.meshes) m.geometry.dispose();
+  templates.clear();
 }

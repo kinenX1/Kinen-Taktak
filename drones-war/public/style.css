@@ -1,15 +1,20 @@
+/* Drones War 3D: home, lobby, loading overlay and pause menu. The in-game HUD lives in css/hud.css. */
+
 :root {
   --bg: #11160e;
   --bg-2: #1a2116;
   --panel: rgba(28, 36, 24, 0.92);
+  --panel-solid: #1b2317;
   --line: rgba(214, 222, 180, 0.14);
   --text: #e8ecd6;
   --muted: #9aa58a;
   --accent: #f2b33d;
+  --focus: #ffd98a;
   --def: #3d8bff;
   --atk: #ff4d3d;
   --ok: #6fd36f;
   --radius: 10px;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -19,7 +24,8 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font: 600 16px/1.4 'Rajdhani', system-ui, sans-serif;
+  font: 600 16px/1.4 'Rajdhani', 'Arial Narrow', system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -30,12 +36,23 @@ body {
     var(--bg);
   background-attachment: fixed;
 }
+body.in-game { overflow: hidden; }
 
 .hidden { display: none !important; }
 .muted { color: var(--muted); }
 .error { color: var(--atk); min-height: 1.4em; margin: 10px 0 0; }
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.noscript { margin: 40px 16px; text-align: center; color: var(--atk); }
 
-h1, h2, h3 { margin: 0; font-weight: 700; }
+h1, h2, h3, h4 { margin: 0; font-weight: 700; }
 
 .eyebrow {
   margin: 0 0 4px;
@@ -44,6 +61,9 @@ h1, h2, h3 { margin: 0; font-weight: 700; }
   letter-spacing: 0.2em;
   font-size: 13px;
 }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+[tabindex='-1']:focus { outline: none; }
 
 /* ---- Buttons & inputs ---- */
 
@@ -67,10 +87,16 @@ h1, h2, h3 { margin: 0; font-weight: 700; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #1b1404; }
 .btn-primary:hover { background: #ffc65a; }
 .btn-ghost { background: rgba(0, 0, 0, 0.35); }
+.btn-danger { border-color: rgba(255, 77, 61, 0.55); color: #ffb3aa; }
+.btn-danger:hover { background: rgba(255, 77, 61, 0.16); border-color: var(--atk); }
+.btn-danger.armed { background: var(--atk); border-color: var(--atk); color: #1d0603; }
 .btn-small { padding: 6px 12px; font-size: 14px; }
 .btn-big { width: 100%; padding: 14px; font-size: 18px; }
 
-input, select {
+/* Inputs are styled per container so the in-game HUD's own chat field stays untouched. */
+.screen input:not([type='range']):not([type='checkbox']):not([type='color']),
+.screen select,
+.menu select {
   font: inherit;
   color: var(--text);
   background: rgba(0, 0, 0, 0.35);
@@ -79,13 +105,24 @@ input, select {
   padding: 10px 12px;
   outline: none;
 }
-input:focus, select:focus { border-color: var(--accent); }
+.screen input:focus, .screen select:focus, .menu select:focus { border-color: var(--accent); }
+.screen input:focus-visible, .screen select:focus-visible, .menu select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+input[type='range'] { accent-color: var(--accent); }
+input[type='checkbox'] { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
+input[type='color'] {
+  width: 38px; height: 34px; padding: 2px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
 
 /* ---- Screens ---- */
 
 .screen {
   min-height: 100%;
-  padding: 24px 16px;
+  min-height: 100dvh;
+  padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 
 #home {
@@ -150,7 +187,7 @@ input:focus, select:focus { border-color: var(--accent); }
 
 /* ---- Lobby ---- */
 
-#lobby { max-width: 1100px; margin: 0 auto; }
+#lobby { max-width: 1140px; margin: 0 auto; }
 
 .lobby-head {
   display: flex;
@@ -167,6 +204,14 @@ input:focus, select:focus { border-color: var(--accent); }
   font-size: 42px;
   letter-spacing: 0.12em;
   line-height: 1;
+}
+
+.banner {
+  background: rgba(242, 179, 61, 0.12);
+  border: 1px solid rgba(242, 179, 61, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 0 14px;
 }
 
 .teams {
@@ -192,6 +237,7 @@ input:focus, select:focus { border-color: var(--accent); }
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 .team-def { --team: var(--def); }
 .team-atk { --team: var(--atk); }
@@ -211,8 +257,28 @@ input:focus, select:focus { border-color: var(--accent); }
 }
 .roster li.me { outline: 1px solid var(--team); }
 .roster li.bots { color: var(--muted); background: transparent; border: 1px dashed var(--line); }
-.roster .pname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.roster .pname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .roster .punit { color: var(--muted); font-size: 14px; }
+.roster .chip {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--camo, #444);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+.roster .chip::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--patch, transparent);
+  border: 1px solid rgba(0, 0, 0, 0.65);
+}
 .tag {
   font-size: 11px;
   padding: 1px 6px;
@@ -224,16 +290,22 @@ input:focus, select:focus { border-color: var(--accent); }
 .tag.ready { background: rgba(111, 211, 111, 0.18); color: var(--ok); }
 
 .section-title { margin: 26px 0 10px; text-transform: uppercase; letter-spacing: 0.1em; font-size: 18px; }
+.section-title .muted { font-size: 14px; letter-spacing: 0.04em; text-transform: none; font-weight: 600; }
+
+/* ---- Unit picker (7 cards) ---- */
 
 .unit-picker {
+  --team: var(--def);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
 }
+.unit-picker[data-team='atk'] { --team: var(--atk); }
 
 .unit-card {
   text-align: left;
   display: grid;
+  align-content: start;
   gap: 6px;
   padding: 12px;
   border-radius: var(--radius);
@@ -242,14 +314,104 @@ input:focus, select:focus { border-color: var(--accent); }
   color: var(--text);
   font: inherit;
   cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, background 0.15s;
 }
-.unit-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(242, 179, 61, 0.18); }
-.unit-card canvas { width: 100%; height: 96px; background: rgba(0, 0, 0, 0.25); border-radius: 6px; }
-.unit-card h4 { margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
-.unit-card p { margin: 0; color: var(--muted); font-size: 14px; min-height: 2.8em; }
-.stat { display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.unit-card:hover { border-color: rgba(214, 222, 180, 0.4); }
+.unit-card:active { transform: translateY(1px); }
+.unit-card.active { border-color: var(--accent); background: rgba(48, 58, 34, 0.95); box-shadow: 0 0 0 3px rgba(242, 179, 61, 0.18); }
+.unit-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 74px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+}
+.unit-icon { flex: 1; min-width: 0; }
+.unit-icon svg { display: block; width: 100%; height: 56px; fill: var(--team); }
+.unit-key {
+  align-self: flex-start;
+  min-width: 22px;
+  padding: 0 6px;
+  text-align: center;
+  font: 400 14px/22px 'Black Ops One', system-ui, sans-serif;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.unit-card.active .unit-key { color: #1b1404; background: var(--accent); border-color: var(--accent); }
+.unit-card h4 { font-size: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+.unit-blurb { margin: 0; color: var(--muted); font-size: 14px; min-height: 2.8em; }
+.unit-weapons { margin: 2px 0 0; color: var(--text); font-size: 13px; opacity: 0.8; }
+.stat { display: grid; grid-template-columns: 70px 1fr 64px; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .stat i { display: block; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .stat i b { display: block; height: 100%; background: var(--accent); }
+.stat em { font-style: normal; text-align: right; color: var(--text); font-size: 12px; white-space: nowrap; }
+
+/* ---- Operator suit editor ---- */
+
+.suit-panel { margin-top: 22px; }
+.suit-panel summary {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 6px;
+}
+.suit-panel summary::-webkit-details-marker { display: none; }
+.suit-panel summary::before {
+  content: '';
+  align-self: center;
+  width: 0; height: 0;
+  border-left: 7px solid var(--accent);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transition: transform 0.15s;
+}
+.suit-panel[open] summary::before { transform: rotate(90deg); }
+.suit-panel summary > span:first-of-type { text-transform: uppercase; letter-spacing: 0.08em; font-size: 16px; font-weight: 700; }
+.suit-panel summary .muted { font-size: 14px; }
+.suit-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 22px;
+  margin-top: 14px;
+}
+.suit-canvas {
+  display: block;
+  width: 250px;
+  height: 128px;
+  max-width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.suit-hint { margin: 10px 0; font-size: 14px; }
+.suit-buttons { display: flex; gap: 8px; }
+.suit-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; align-content: start; }
+.suit-field { display: grid; gap: 5px; min-width: 0; }
+.suit-field.wide { grid-column: 1 / -1; }
+.suit-field label, .suit-label { font-size: 14px; color: var(--muted); }
+.suit-field select { width: 100%; }
+.suit-check { grid-template-columns: auto 1fr; align-items: center; gap: 10px; cursor: pointer; }
+.suit-check span { color: var(--text); }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.swatch {
+  width: 34px; height: 34px;
+  padding: 0;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s;
+}
+.swatch:hover { transform: scale(1.06); }
+.swatch[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(242, 179, 61, 0.4); }
+
+/* ---- Lobby bottom: settings + chat ---- */
 
 .lobby-bottom {
   display: grid;
@@ -267,7 +429,8 @@ input:focus, select:focus { border-color: var(--accent); }
 .panel h3 { text-transform: uppercase; letter-spacing: 0.08em; font-size: 16px; margin-bottom: 12px; }
 
 .setting { display: grid; gap: 6px; margin-bottom: 14px; }
-.setting input[type='range'] { padding: 0; accent-color: var(--accent); }
+.setting input[type='range'] { padding: 0; width: 100%; }
+.setting select { width: 100%; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .actions .btn { flex: 1; }
 #ready.on { background: rgba(111, 211, 111, 0.18); border-color: var(--ok); color: var(--ok); }
@@ -284,234 +447,34 @@ input:focus, select:focus { border-color: var(--accent); }
   flex-direction: column;
   gap: 4px;
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .chat-log .sys { color: var(--muted); font-style: italic; }
-.chat-log b.def, .game-chat b.def { color: var(--def); }
-.chat-log b.atk, .game-chat b.atk { color: var(--atk); }
+.chat-log b.def { color: var(--def); }
+.chat-log b.atk { color: var(--atk); }
 .chat-form { display: flex; gap: 8px; }
 .chat-form input { flex: 1; min-width: 0; }
 
-/* ---- Game ---- */
+/* ---- Game container (GameClient fills #game-root; the HUD brings its own CSS) ---- */
 
 #game {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  background: #000;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
   touch-action: none;
 }
-#cv { display: block; width: 100%; height: 100%; cursor: crosshair; }
-
-.hud-top {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  pointer-events: none;
-}
-.hud-center { display: grid; gap: 4px; justify-items: center; }
-.timer {
-  font-family: 'Black Ops One', system-ui, sans-serif;
-  font-size: 28px;
-  line-height: 1;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
-}
-.timer.low { color: var(--atk); }
-.score {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
-  padding: 4px 12px;
-  font-size: 14px;
-  letter-spacing: 0.1em;
-}
-.score b { font-size: 26px; font-family: 'Black Ops One', system-ui, sans-serif; font-weight: 400; }
-.score-def { color: var(--def); border-left: 3px solid var(--def); }
-.score-atk { color: var(--atk); border-right: 3px solid var(--atk); }
-
-.hq-bar, .bar {
-  position: relative;
-  height: 16px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.55);
-  overflow: hidden;
-  font-size: 12px;
-}
-.hq-bar { width: 220px; }
-.hq-bar i, .bar i { position: absolute; inset: 0 auto 0 0; width: 100%; background: var(--def); transition: width 0.2s; }
-.hq-bar span, .bar span { position: relative; display: block; text-align: center; line-height: 16px; letter-spacing: 0.06em; text-shadow: 0 1px 2px #000; }
-
-.leave-game { position: absolute; top: 10px; left: 10px; }
-.mute { position: absolute; top: 10px; left: 86px; }
-
-.killfeed {
-  position: absolute;
-  top: 56px;
-  right: 10px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-  justify-items: end;
-  pointer-events: none;
-  font-size: 14px;
-}
-.killfeed li { background: rgba(0, 0, 0, 0.55); padding: 3px 10px; border-radius: 4px; animation: fade-in 0.2s; }
-.killfeed .def { color: var(--def); }
-.killfeed .atk { color: var(--atk); }
-.killfeed em { color: var(--muted); font-style: normal; margin: 0 6px; }
-
-.game-chat {
-  position: absolute;
-  left: 10px;
-  bottom: 120px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-width: min(420px, 60vw);
-  display: grid;
-  gap: 3px;
-  pointer-events: none;
-  font-size: 15px;
-  text-shadow: 0 1px 3px #000;
-}
-.game-chat li { animation: fade-in 0.2s; }
-.game-chat .sys { color: var(--muted); }
-.game-chat-form { position: absolute; left: 10px; bottom: 84px; width: min(420px, 80vw); }
-.game-chat-form input { width: 100%; background: rgba(0, 0, 0, 0.7); }
-
-.hud-me {
-  position: absolute;
-  left: 10px;
-  bottom: 12px;
-  width: 240px;
-  display: grid;
-  gap: 5px;
-  pointer-events: none;
-}
-.me-unit { text-transform: uppercase; letter-spacing: 0.1em; text-shadow: 0 1px 3px #000; }
-.is-touch .me-unit { font-size: 13px; }
-.bar.hp i { background: var(--ok); }
-.bar.alt i { background: var(--accent); }
-
-.minimap {
-  position: absolute;
-  right: 10px;
-  bottom: 12px;
-  width: 240px;
-  height: 150px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
-
-.help {
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  transform: translateX(-50%);
-  margin: 0;
-  color: rgba(232, 236, 214, 0.55);
-  font-size: 13px;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.overlay {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 20px 24px;
-  text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  max-width: calc(100vw - 32px);
-}
-.overlay h2 { font-family: 'Black Ops One', system-ui, sans-serif; font-weight: 400; font-size: 40px; }
-.dead h2 { color: var(--atk); }
-.dead-units { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-.dead-units .btn.active { border-color: var(--accent); color: var(--accent); }
-
-.scoreboard { min-width: min(560px, calc(100vw - 32px)); pointer-events: none; }
-.board { width: 100%; border-collapse: collapse; font-size: 15px; }
-.board th { text-align: left; color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 8px; }
-.board td { padding: 3px 8px; text-align: left; border-top: 1px solid var(--line); white-space: nowrap; }
-.board td.num, .board th.num { text-align: right; }
-.board tr.me td { color: var(--accent); }
-.board .def { color: var(--def); }
-.board .atk { color: var(--atk); }
-.boards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; }
-.boards h4 { margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.1em; }
-
-.over { min-width: min(620px, calc(100vw - 32px)); }
-.over h2.win { color: var(--ok); }
-.over h2.lose { color: var(--atk); }
-#over-board { margin: 14px 0; max-height: 62vh; overflow-y: auto; }
-
-/* ---- Touch controls ---- */
-
-.touch { position: absolute; inset: 0; pointer-events: none; }
-.stick {
-  position: absolute;
-  bottom: 40px;
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(0, 0, 0, 0.2);
-  pointer-events: auto;
-  touch-action: none;
-}
-.stick i {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 56px;
-  height: 56px;
-  margin: -28px 0 0 -28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-}
-.stick-left { left: 28px; }
-.stick-right { right: 28px; }
-.stick-right i { background: rgba(255, 77, 61, 0.45); }
-.touch-alt {
-  position: absolute;
-  right: 176px;
-  bottom: 48px;
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  background: rgba(242, 179, 61, 0.25);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  pointer-events: auto;
-  touch-action: none;
-}
-.is-touch .hud-me { top: 52px; bottom: auto; width: 180px; }
-.is-touch .minimap { top: 52px; bottom: auto; width: 160px; height: 100px; }
-.is-touch .killfeed { top: 160px; }
-.is-touch .help { display: none; }
-.is-touch .game-chat { bottom: 190px; }
+#game-root { position: absolute; inset: 0; }
+#game-root > canvas { display: block; }
 
 @media (orientation: portrait) {
-  .is-touch #game::after {
+  body.is-touch.in-game #game::after {
     content: 'Turn your phone sideways for the best view';
     position: absolute;
+    z-index: 7;
     left: 50%;
     top: 46%;
     transform: translateX(-50%);
@@ -521,34 +484,160 @@ input:focus, select:focus { border-color: var(--accent); }
     font-size: 14px;
     white-space: nowrap;
     pointer-events: none;
-    animation: fade-out 0.6s 5s forwards;
+    animation: fade-out 0.6s 6s forwards;
   }
 }
-
-@media (max-width: 600px) {
-  .hud-top { top: 48px; gap: 8px; }
-  .is-touch .hud-me, .is-touch .minimap { top: 112px; }
-  .is-touch .killfeed { top: 220px; font-size: 12px; }
-  .is-touch .killfeed li:nth-child(n + 4) { display: none; }
-  .stick { width: 112px; height: 112px; bottom: 28px; }
-  .stick-left { left: 18px; }
-  .stick-right { right: 18px; }
-  .touch-alt { right: 32px; bottom: 156px; width: 76px; height: 76px; }
-}
-
-@keyframes fade-in { from { opacity: 0; transform: translateY(-4px); } }
 @keyframes fade-out { to { opacity: 0; visibility: hidden; } }
 
+/* ---- Loading overlay ---- */
+
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(242, 179, 61, 0.1), transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 14px),
+    var(--bg);
+}
+.loading-card { width: min(520px, 100%); text-align: center; }
+.loading-title {
+  font: 400 clamp(40px, 11vw, 60px)/1 'Black Ops One', system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+.loading-title span { color: var(--accent); }
+.loading-bar {
+  height: 10px;
+  margin: 24px 0 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.loading-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), #ffd98a);
+  transition: width 0.25s ease-out;
+}
+.loading-text { margin: 0; min-height: 1.4em; }
+.loading-tip { margin: 14px 0 0; color: var(--muted); min-height: 2.8em; }
+.loading .btn { margin-top: 14px; }
+
+/* ---- Pause menu ---- */
+
+#pause { position: fixed; z-index: 60; inset: 0; pointer-events: none; }
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: rgba(6, 9, 5, 0.72);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+.menu {
+  width: min(640px, 100%);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 20px 22px;
+  background: var(--panel-solid);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.menu-title { font: 400 34px/1 'Black Ops One', system-ui, sans-serif; letter-spacing: 0.03em; }
+.menu-sub { margin: 6px 0 16px; font-size: 14px; }
+.menu-grid { display: grid; gap: 12px; }
+.menu-row {
+  display: grid;
+  grid-template-columns: 12.5em 1fr 3.6em;
+  align-items: center;
+  gap: 4px 12px;
+}
+.menu-row label { color: var(--text); }
+.menu-row input[type='range'] { width: 100%; margin: 0; min-height: 28px; }
+.menu-row select { grid-column: 2 / 4; width: 100%; }
+.menu-out { text-align: right; font-variant-numeric: tabular-nums; color: var(--accent); }
+.menu-note { grid-column: 2 / 4; font-size: 13px; color: var(--muted); }
+.menu-checks { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 2px; }
+.menu-check { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.menu-help { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.menu-help summary { cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; font-size: 15px; }
+.menu-help-body { display: grid; grid-template-columns: 1.3fr 1fr; gap: 6px 26px; margin-top: 10px; }
+.menu-keys h4 { margin-bottom: 6px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; font-size: 13px; }
+.menu-keys dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; margin: 0; font-size: 14px; }
+.menu-keys dt { color: var(--text); white-space: nowrap; }
+.menu-keys dd { margin: 0; color: var(--muted); font-weight: 500; }
+.menu-extra { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.menu-actions { display: flex; gap: 10px; margin-top: 18px; }
+.menu-actions .btn { flex: 1; padding: 12px 16px; font-size: 16px; }
+
+/* ---- Touch devices ---- */
+
+@media (pointer: coarse) {
+  .btn { min-height: 44px; }
+  .btn-small { min-height: 40px; }
+  .swatch { width: 40px; height: 40px; }
+  input[type='color'] { width: 44px; height: 40px; }
+}
+
 /* ---- Small screens ---- */
+
+@media (max-width: 900px) {
+  .suit-body { grid-template-columns: 1fr; }
+  .suit-preview { display: grid; justify-items: start; }
+}
 
 @media (max-width: 820px) {
   .teams { grid-template-columns: 1fr; }
   .vs { justify-self: center; font-size: 20px; }
-  .unit-picker { grid-template-columns: repeat(2, 1fr); }
   .lobby-bottom { grid-template-columns: 1fr; }
   .room-code { font-size: 34px; }
-  .boards { grid-template-columns: 1fr; }
-  .hq-bar { width: 150px; }
-  .timer { font-size: 22px; }
-  .score b { font-size: 20px; }
+  .lobby-head { flex-direction: column-reverse; align-items: stretch; }
+  .lobby-head > .btn { align-self: flex-end; }
+}
+
+@media (max-width: 640px) {
+  .unit-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .unit-card { padding: 8px; gap: 5px; }
+  .unit-top { height: 56px; padding: 4px 8px; }
+  .unit-icon svg { height: 42px; }
+  .unit-card h4 { font-size: 17px; }
+  .unit-blurb { font-size: 12.5px; line-height: 1.25; min-height: 0; }
+  .unit-weapons { font-size: 12px; }
+  .stat { grid-template-columns: 52px 1fr 54px; gap: 6px; font-size: 12px; }
+  .suit-controls { grid-template-columns: 1fr; }
+  .menu { padding: 16px; }
+  .menu-row { grid-template-columns: 1fr 3.4em; }
+  .menu-row label { grid-column: 1 / -1; }
+  .menu-row select, .menu-note { grid-column: 1 / -1; }
+  .menu-help-body { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 380px) {
+  .unit-picker { grid-template-columns: 1fr; }
+}
+
+@media (max-height: 520px) {
+  .menu-title { font-size: 26px; }
+  .menu-sub { margin-bottom: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen *, .screen *::before, .screen *::after,
+  .loading *, .menu *, .menu-backdrop {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
