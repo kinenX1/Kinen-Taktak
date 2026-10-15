@@ -15,7 +15,7 @@ import { newUnitState } from './physics.js';
 // Quantisation. Rows are JSON, so numbers are rounded before they are sent. Positions at 1 cm and
 // angles at 1 mrad keep a client's replayed prediction within millimetres of the server.
 
-const Q = { pos: 100, ang: 1000, vel: 100, small: 10 };
+const Q = { pos: 100, ang: 1000, vel: 100, small: 10, projVel: 1 };
 const round = (v, k) => Math.round(v * k) / k;
 
 // ---------------------------------------------------------------------------------------------
@@ -143,13 +143,15 @@ export function reloadProgress(left, weapon) {
 // ---------------------------------------------------------------------------------------------
 // Projectile rows
 
+// Projectiles are only drawn, never predicted: whole m/s is plenty to orient a mesh and extrapolate
+// it for a frame or two, and it keeps a sky full of salvo rockets inside the snapshot budget.
 export function packProjectile(p) {
   return [
     p.id,
     PROJ_INDEX[p.kind],
     TEAM_INDEX[p.team],
     round(p.x, Q.pos), round(p.y, Q.pos), round(p.z, Q.pos),
-    round(p.vx, Q.vel), round(p.vy, Q.vel), round(p.vz, Q.vel),
+    round(p.vx, Q.projVel), round(p.vy, Q.projVel), round(p.vz, Q.projVel),
   ];
 }
 

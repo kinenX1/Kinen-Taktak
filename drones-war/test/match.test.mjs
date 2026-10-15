@@ -1127,14 +1127,13 @@ test('a long unattended match cannot grow the event queue without bound', () => 
 // The real Combat with scripted gunners (independent of bots.mjs): every bot aims at the nearest
 // enemy (attackers at the HQ when it is close), walks toward it and pulls both triggers.
 
-let REAL_COMBAT = null;
-try {
-  const c = await import('../combat.mjs');
-  if (typeof c.Combat === 'function') REAL_COMBAT = c.Combat;
-} catch {
-  REAL_COMBAT = null;
-}
-const realCombat = { skip: REAL_COMBAT ? false : 'combat.mjs not available' };
+// Every sibling has landed: a missing or broken combat.mjs fails these tests instead of skipping them.
+const { Combat: REAL_COMBAT } = await import('../combat.mjs');
+const realCombat = {};
+
+test('real Combat: combat.mjs exports the Combat class', () => {
+  assert.equal(typeof REAL_COMBAT, 'function');
+});
 
 class GunnerBrain {
   constructor(match, unit) {
@@ -1241,18 +1240,18 @@ test('real Combat: bad bot output is sanitized before it reaches the sim', realC
 });
 
 // ---------------------------------------------------------------------------------------------
-// The real siblings, when they exist and load
+// The real siblings
 
-let REAL = null;
-try {
-  const [c, b] = await Promise.all([import('../combat.mjs'), import('../bots.mjs')]);
-  if (typeof c.Combat === 'function' && typeof b.BotBrain === 'function' && typeof b.botTypeFor === 'function') {
-    REAL = { Combat: c.Combat, BotBrain: b.BotBrain, botTypeFor: b.botTypeFor };
-  }
-} catch {
-  REAL = null;
-}
-const real = { skip: REAL ? false : 'combat.mjs / bots.mjs not available yet' };
+// No skip any more: a missing or broken sibling must fail here.
+const [realC, realB] = await Promise.all([import('../combat.mjs'), import('../bots.mjs')]);
+const REAL = { Combat: realC.Combat, BotBrain: realB.BotBrain, botTypeFor: realB.botTypeFor };
+const real = {};
+
+test('real modules: combat.mjs and bots.mjs export what Match needs', () => {
+  assert.equal(typeof REAL.Combat, 'function');
+  assert.equal(typeof REAL.BotBrain, 'function');
+  assert.equal(typeof REAL.botTypeFor, 'function');
+});
 
 test('real modules: the default (no deps) path wires Combat and BotBrain', real, () => {
   assert.ok(depsStatus.combat && depsStatus.bots, JSON.stringify(depsStatus.errors));

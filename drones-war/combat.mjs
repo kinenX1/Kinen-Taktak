@@ -44,6 +44,7 @@ const DROP_MAX_LIFE = PROJECTILE_MAX_LIFE; // bombs have no speed, so no range /
 
 const DEFS = Object.create(null); // own-key lookup only (a type string from outside cannot hit Object.prototype)
 const BOUND = Object.create(null); // radius around the unit root that holds every hit volume
+const NO_UNITS = Object.freeze([]);
 const LOCKERS = Object.create(null); // types whose slot-1 weapon locks on (the jet)
 for (const t of UNIT_TYPES) {
   const def = UNITS[t];
@@ -168,6 +169,11 @@ export class Combat {
     this.hqMultiplier = false; // true: scale HQ damage by HQ_DAMAGE_MULT here instead of in the match
     this._warned = []; // units whose missileWarn this class raised on the previous step
     this._epoch = 0; // bumped by reset() so a step that is interrupted by it stops cleanly
+    // Alive units per team, rebuilt once per step(): each projectile scans only its enemies, from a
+    // plain array (hundreds of projectiles x 46 units through a Map iterator was the hot spot).
+    // _pos holds x, y, z and hit-volume radius per unit (units do not move during step()).
+    this._alive = { def: [], atk: [] };
+    this._pos = { def: new Float64Array(64), atk: new Float64Array(64) };
   }
 
   _fail(err) {
@@ -533,6 +539,7 @@ export class Combat {
     this._warned.length = 0;
     const list = this.projectiles;
     const epoch = this._epoch;
+    if (list.length) this._collectAlive();
     let write = 0;
     for (let i = 0; i < list.length; i++) {
       const p = list[i];
@@ -550,6 +557,31 @@ export class Combat {
       this._lockOn(dt);
     } catch (err) {
       this._fail(err);
+    }
+  }
+
+  _collectAlive() {
+    const alive = this._alive;
+    alive.def.length = 0;
+    alive.atk.length = 0;
+    for (const e of this.match.units.values()) {
+      if (!e || !e.alive || !e.s || !DEFS[e.type]) continue;
+      const team = e.team === 'def' || e.team === 'atk' ? e.team : null;
+      if (!team) continue;
+      const list = alive[team];
+      let pos = this._pos[team];
+      const k = list.length * 4;
+      if (k + 4 > pos.length) {
+        const grown = new Float64Array(pos.length * 2);
+        grown.set(pos);
+        pos = this._pos[team] = grown;
+      }
+      const es = e.s;
+      pos[k] = es.x;
+      pos[k + 1] = es.y;
+      pos[k + 2] = es.z;
+      pos[k + 3] = BOUND[e.type];
+      list.push(e);
     }
   }
 
@@ -590,22 +622,25 @@ export class Combat {
       let uHit = null;
       const prox = PROXIMITY[p.kind] || 0;
       let proxDist = Infinity;
-      for (const e of m.units.values()) {
-        if (!e.alive || e.team === p.team) continue;
-        const es = e.s;
-        const ed = DEFS[e.type];
-        if (!es || !ed) continue;
-        const R = BOUND[e.type];
-        // Closest point of the segment to the unit root.
-        const rx = es.x - ox;
-        const ry = es.y - oy;
-        const rz = es.z - oz;
+      const foeTeam = p.team === 'def' ? 'atk' : p.team === 'atk' ? 'def' : null;
+      const foes = foeTeam ? this._alive[foeTeam] : NO_UNITS;
+      const pos = foeTeam ? this._pos[foeTeam] : null;
+      for (let i = 0, k = 0; i < foes.length; i++, k += 4) {
+        // Closest point of the segment to the unit root (broad phase on the cached positions).
+        const R = pos[k + 3];
+        const rx = pos[k] - ox;
+        const ry = pos[k + 1] - oy;
+        const rz = pos[k + 2] - oz;
         const t = clamp(rx * dx + ry * dy + rz * dz, 0, len);
         const px = rx - dx * t;
         const py = ry - dy * t;
         const pz = rz - dz * t;
         const reach = R + prox;
         if (!(px * px + py * py + pz * pz <= reach * reach)) continue;
+        const e = foes[i];
+        if (!e.alive) continue; // killed earlier in this step
+        const es = e.s;
+        const ed = DEFS[e.type];
         if (prox > 0 && proxDist === Infinity) {
           // Proximity fuse: the end of the step and its midpoint (a 170 m/s missile moves 2.8 m a tick).
           if (sphereTestUnit(es, ed, nx, ny, nz, 0) <= prox) proxDist = len;

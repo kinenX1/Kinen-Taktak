@@ -45,7 +45,12 @@ npm install
 npm start          # http://localhost:3000
 ```
 
-Set `PORT` to use another port. `npm run dev` restarts the server whenever you change it, and `npm test` runs the simulation tests.
+Set `PORT` to use another port. `npm run dev` restarts the server whenever you change it, and `npm test` runs the tests.
+
+Two longer checks run outside `npm test`:
+
+- `npm run soak` plays whole 3-minute matches (seeds 1-6, 4 and 15 bots per team, two scripted players cycling every unit type, plus one full 46-unit match) at full speed without sockets and checks for errors, the tick budget (under 4 ms on average) and the snapshot size (under 12 KB).
+- `npm run e2e:protocol` starts the real server with `NODE_ENV=test` on a free port and plays two matches in a row with two WebSocket clients, checking the whole lobby and battle protocol.
 
 ### Play with friends
 
@@ -54,9 +59,9 @@ Set `PORT` to use another port. `npm run dev` restarts the server whenever you c
 
 ## How it's built
 
-- `server.mjs` serves the page and runs a WebSocket server on `/ws`. It handles lobbies, invite codes, teams, the host's settings and chat.
-- `game.mjs` is the battle simulation. It runs 30 times a second on the server: movement and wall collisions, weapons, splash damage, the HQ, respawns, the AI tankers and the win conditions. Clients only send their inputs, so nobody can cheat by editing the page.
+- `server.mjs` serves the page (and three.js under `/vendor`) and runs a WebSocket server on `/ws`. It handles lobbies, invite codes, teams, the host's settings and chat, and runs each room's match loop at 60 ticks a second with 30 snapshots a second.
+- `match.mjs` is the battle simulation: units, spawns, damage, kills and scores, the HQ and the win conditions. `combat.mjs` handles weapons, projectiles, splash damage and missile lock-on, `bots.mjs` drives the AI units and `nav.mjs` finds their paths through `city.mjs`'s generated city. Clients only send their inputs, so nobody can cheat by editing the page.
 - `public/` holds the client: the lobby UI and a canvas renderer that smooths movement between server snapshots, with particle explosions, a minimap, a kill feed and synthesized sound effects (no asset files).
 - `test/` holds the simulation tests (`npm test`).
 
-The only dependency is [`ws`](https://github.com/websockets/ws).
+The dependencies are [`ws`](https://github.com/websockets/ws) and [`three`](https://threejs.org/).

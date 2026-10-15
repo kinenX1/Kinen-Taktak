@@ -52,6 +52,9 @@ const SPOT_SECONDS = 3; // an enemy one bot saw stays known to its team's artill
 const HQ_LOOK_EVERY = 0.5; // s between line-of-fire checks on the HQ
 const HQ_SIGHT = 450; // m: farther than this the HQ is not considered visible
 const MAP_MARGIN = 12; // goals and flight destinations stay this far inside the map
+const ORBIT_EVERY = 0.25; // s between checks of the ground under a drone's attack circle
+const ORBIT_LOOK = 0.45; // rad ahead on the circle that must be open ground
+const ORBIT_MIN_K = 0.25; // tightest attack circle, as a fraction of the bot's orbit radius
 const DEFAULT_MAP = { w: 640, d: 480 };
 const DEFAULT_HQ = { x: 604, z: 240, r: 9, h: 12 };
 
@@ -124,6 +127,11 @@ function artilleryReaches(w, def, d, dy) {
   if (d / (v * c) > projectileLife(w) * 0.97) return false;
   const y = d * Math.tan(pitch) - (g * d * d) / (2 * v * v * c * c);
   return Math.abs(y - dy) < (w.splash || 4) * 0.8;
+}
+
+// Does a structure taller than `top` stand on the attack circle around `ts` at angle a, radius r?
+function orbitBlocked(index, ts, a, r, top) {
+  return groundHeightAt(index, ts.x + Math.cos(a) * r, ts.z + Math.sin(a) * r) > top;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -277,6 +285,8 @@ export class BotBrain {
 
     // Drone
     this.orbitA = r() * Math.PI * 2;
+    this.orbitK = 1;
+    this.nextOrbitT = 0;
     this.bombRun = false;
     this.nextBombT = 1 + 2 * r();
     this.bombEndT = 0;
@@ -1196,10 +1206,10 @@ export class BotBrain {
         bombZ = ts.z;
         bombY = ts.y + 0.5;
       } else {
-        // Hover-attack: circle the target at orbit radius.
-        this.orbitA = wrapAngle(this.orbitA + this.side * 0.3 * dt);
-        dx = ts.x + Math.cos(this.orbitA) * this.orbitR;
-        dz = ts.z + Math.sin(this.orbitA) * this.orbitR;
+        // Hover-attack: circle the target, over open ground only.
+        this._orbit(ts, dt);
+        dx = ts.x + Math.cos(this.orbitA) * this.orbitK * this.orbitR;
+        dz = ts.z + Math.sin(this.orbitA) * this.orbitK * this.orbitR;
       }
     } else if (u.team === 'atk') {
       if (this.bombRun) {
@@ -1345,6 +1355,29 @@ export class BotBrain {
       && ready(u, 1) && this._aligned(def, want, BotBrain._tol(3, d))) {
       rec.alt = true;
     }
+  }
+
+  // Advances the hover-attack circle around a target at `ts`. A structure under the circle that
+  // reaches into the flight level would lift the drone far above it (and cost it the line of
+  // sight), so the circle turns back at one and tightens when both ways are blocked (a street
+  // between towers); it widens again over open ground. Checked every ORBIT_EVERY s.
+  _orbit(ts, dt) {
+    this.orbitA = wrapAngle(this.orbitA + (this.side * 0.3 * dt) / Math.max(this.orbitK, 0.3));
+    const index = this.match.index;
+    if (!index || this.t < this.nextOrbitT) return;
+    this.nextOrbitT = this.t + ORBIT_EVERY;
+    const top = ts.y + this.cruise - 10;
+    const r = this.orbitK * this.orbitR;
+    const a = this.orbitA;
+    const look = this.side * ORBIT_LOOK;
+    if (!orbitBlocked(index, ts, a + look, r, top)) {
+      if (this.orbitK < 1 && !orbitBlocked(index, ts, a, r * 1.25, top) && !orbitBlocked(index, ts, a + look, r * 1.25, top)) {
+        this.orbitK = Math.min(1, this.orbitK * 1.25);
+      }
+      return;
+    }
+    if (!orbitBlocked(index, ts, a - look, r, top) && !orbitBlocked(index, ts, a, r, top)) this.side = -this.side;
+    else this.orbitK = Math.max(ORBIT_MIN_K, this.orbitK * 0.7);
   }
 
   // Seconds a bomb dropped now falls before reaching height y.

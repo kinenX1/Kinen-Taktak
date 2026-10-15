@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "soak": "node scripts/soak.mjs",
+    "e2e:protocol": "node scripts/protocol-e2e.mjs"
   },
   "dependencies": {
     "three": "^0.186.1",

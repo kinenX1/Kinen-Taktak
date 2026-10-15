@@ -160,16 +160,24 @@ test('attackers push toward the HQ: every ground type and the drone, 60 s, no en
   for (let k = 0; k < units.length; k++) {
     const u = units[k];
     assert.equal(u.brain.errors, 0, `${u.type}: no errors`);
-    assert.ok(end[k] < start[k] - 150, `${u.type} advanced: ${start[k].toFixed(0)} -> ${end[k].toFixed(0)} m from the HQ`);
+    // The MLRS (520 m reach) spawns barely out of range: it only drives to its firing position.
+    const need = u.type === 'mlrs' ? 50 : 150;
+    assert.ok(end[k] < start[k] - need, `${u.type} advanced: ${start[k].toFixed(0)} -> ${end[k].toFixed(0)} m from the HQ`);
   }
   const by = Object.fromEntries(units.map((u, k) => [u.type, end[k]]));
-  assert.ok(by.soldier < 60, `soldier reached the HQ (${by.soldier.toFixed(0)} m)`);
+  // ~570 m on foot: it sprints until the HQ is in sight (8.4 m/s), then walks in firing at it.
+  const sk = types.indexOf('soldier');
+  assert.ok(start[sk] - end[sk] > 400, `soldier sprinted toward the HQ (${start[sk].toFixed(0)} -> ${end[sk].toFixed(0)} m)`);
   assert.ok(by.jeep < 110 && by.tank < 200, `vehicles at their stand-off (jeep ${by.jeep.toFixed(0)}, tank ${by.tank.toFixed(0)})`);
   assert.ok(by.mlrs > 300 && by.mlrs < 500, `MLRS holds inside its envelope (${by.mlrs.toFixed(0)} m)`);
   assert.ok(by.drone < 100, `drone over the compound (${by.drone.toFixed(0)} m)`);
   assert.ok(droneAlt >= 20 && droneAlt <= 60, `drone flight level ${droneAlt.toFixed(1)} m`);
   assert.ok(droneBombs > 0, 'drone bombed the HQ');
   for (const t of ['soldier', 'jeep', 'tank', 'mlrs']) assert.ok(fired.has(t), `${t} fired at the HQ`);
+  // Given the time, the soldier gets to the foot of the HQ.
+  run(m, 30);
+  assert.ok(hqDist(m, units[sk]) < 40, `soldier reached the HQ (${hqDist(m, units[sk]).toFixed(0)} m)`);
+  for (const u of units) assert.equal(u.brain.errors, 0, `${u.type}: no errors`);
 });
 
 test('defenders hold posts inside the compound, then converge on an attacker when the HQ is hit', () => {
@@ -527,11 +535,12 @@ test('nav: short routes in the city never cut through solids (start / goal cell 
 });
 
 // ---------------------------------------------------------------------------------------------
-// With the real Match and Combat (skipped while a sibling module is missing).
+// With the real Match and Combat (every sibling has landed: a broken one fails, never skips).
 
-const matchMod = await import('../match.mjs').catch(() => null);
+const matchMod = await import('../match.mjs');
 
-test('real match: 15 v 15 bots fight for 60 s without errors', { skip: !matchMod || !matchMod.depsStatus.combat || !matchMod.depsStatus.bots }, () => {
+test('real match: 15 v 15 bots fight for 60 s without errors', () => {
+  assert.ok(matchMod.depsStatus.combat && matchMod.depsStatus.bots, JSON.stringify(matchMod.depsStatus.errors));
   const m = new matchMod.Match({ players: [], botsPerTeam: 15, minutes: 3, seed: 5, log: false });
   m.begin();
   const atkStart = [...m.units.values()].filter((u) => u.team === 'atk').reduce((s, u) => s + u.s.x, 0);
