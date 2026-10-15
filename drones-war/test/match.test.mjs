@@ -465,6 +465,13 @@ test('input queue: batches are capped, garbage and duplicates are rejected', () 
   assert.equal(m.setInput('p', [null, 5, 'x', {}, { seq: 'a', look: [0, 0] }, { seq: 1, look: [NaN, 0] }, { seq: -1, look: [0, 0] }]), 0);
   assert.equal(m.setInput('p', [rec({ seq: 3 }), rec({ seq: 3 }), rec({ seq: 4 })]), 2, 'consecutive duplicate dropped');
   assert.equal(m.setInput('p', rec({ seq: 9 })), 1, 'a single record object is tolerated');
+  // The record applied last is a duplicate too once the queue has drained.
+  u.queue.length = 0;
+  m.setInput('p', [rec({ seq: 10 })]);
+  m.step(TICK_DT);
+  assert.equal(u.ack, 10);
+  assert.equal(m.setInput('p', [rec({ seq: 10 }), rec({ seq: 11 })]), 1, 're-sent record dropped');
+  assert.equal(u.queue[0].seq, 11);
   assert.equal(m.setInput('missing', [rec()]), 0);
   assert.equal(m.setInput(undefined, [rec()]), 0);
   assert.equal(m.setInput({ toString: () => 'p' }, [rec()]), 0);
@@ -865,14 +872,19 @@ test('damageHq: attackers only, bullets x0.06, explosives x0.6, points from cumu
   assert.equal(m.damageHq(100, A, 'explosive'), 60);
   assert.equal(hq.hp, 4934);
   assert.equal(A.score, hqScore(66));
+  // The first hit pops up at once; everything inside POP_INTERVAL is held back and batched.
+  const popped = () => evs(m, 's').reduce((n, e) => n + e[2], 0);
+  assert.equal(evs(m, 's').length, 1);
   // tiny bullet hits still add up to points
-  m.events.length = 0;
   const before = A.score;
   for (let i = 0; i < 100; i++) m.damageHq(50, A, 'hitscan'); // 3 hp each = 300 hp
   assert.equal(A.score - before, hqScore(366) - hqScore(66));
   assert.equal(m.score.atk, A.score);
   assert.equal(m.score.def, 0);
-  assert.ok(evs(m, 's').length >= 1 && evs(m, 's').length <= 2, 'HQ popups are batched');
+  assert.equal(evs(m, 's').length, 1, 'no popup per bullet');
+  run(m, 0.6);
+  assert.equal(evs(m, 's').length, 2, 'HQ popups are batched into one');
+  assert.equal(popped(), A.score, 'every point shows up in a popup');
   assert.ok(evs(m, 's').every((e) => e[3] === 'HQ' && e[1] === A.uid && e[2] > 0));
   assert.equal(m.snapshot(1).hq, Math.ceil(hq.hp));
   assert.equal(m.damageHq(100, A), 6, 'default kind is hitscan');
@@ -882,10 +894,10 @@ test('damageHq: blasts at the hp thresholds, destruction ends the match for the 
   const { m, A } = duel('tank', 'tank');
   const hq = m.hq;
   m.events.length = 0;
-  m.damageHq(hq.max * 0.3 / 0.6, A, 'explosive'); // 30 % of max hp
+  m.damageHq(hq.max * 0.2 / 0.6, A, 'explosive'); // 20 % of max hp: now at 80 %
   const blasts = () => evs(m, 'x').filter((e) => e[6] === EXPLOSION_KIND.HQ);
   assert.equal(blasts().length, 0);
-  m.damageHq(hq.max * 0.1 / 0.6, A, 'explosive'); // now at 60 %
+  m.damageHq(hq.max * 0.2 / 0.6, A, 'explosive'); // now at 60 %
   assert.equal(blasts().length, 1, '75 % crossed');
   m.damageHq(hq.max * 0.4 / 0.6, A, 'explosive'); // 20 %: crosses 50 % and 25 % at once
   assert.equal(blasts().length, 3);
@@ -1029,7 +1041,7 @@ test('determinism: the same seed, roster and inputs give byte-identical snapshot
   assert.deepEqual(a, b);
   const c = transcript(22, STUBS);
   assert.notDeepEqual(a, c);
-  assert.ok(a.some((s) => s.includes('"k"') || s.includes('["k"')), 'the run produced kills');
+  assert.ok(a.some((s) => typeof s === 'string' && s.includes('["k",')), 'the run produced kills');
 });
 
 test('exceptions never escape a tick: failing Combat, brains and garbage input', () => {
@@ -1112,6 +1124,123 @@ test('a long unattended match cannot grow the event queue without bound', () => 
 });
 
 // ---------------------------------------------------------------------------------------------
+// The real Combat with scripted gunners (independent of bots.mjs): every bot aims at the nearest
+// enemy (attackers at the HQ when it is close), walks toward it and pulls both triggers.
+
+let REAL_COMBAT = null;
+try {
+  const c = await import('../combat.mjs');
+  if (typeof c.Combat === 'function') REAL_COMBAT = c.Combat;
+} catch {
+  REAL_COMBAT = null;
+}
+const realCombat = { skip: REAL_COMBAT ? false : 'combat.mjs not available' };
+
+class GunnerBrain {
+  constructor(match, unit) {
+    this.m = match;
+    this.u = unit;
+    this.seq = 0;
+    this.rec = rec({ seq: 0, mz: 0, look: [0, 0], aim: [0, 0, 0] });
+  }
+
+  think() {
+    const { m, u, rec: r } = this;
+    const s = u.s;
+    r.seq = ++this.seq;
+    let best = null;
+    let bd = Infinity;
+    for (const o of m.units.values()) {
+      if (!o.alive || o.team === u.team) continue;
+      const d = Math.hypot(o.s.x - s.x, o.s.z - s.z);
+      if (d < bd) { bd = d; best = o; }
+    }
+    const hq = m.hq;
+    const dHq = Math.hypot(hq.x - s.x, hq.z - s.z);
+    let t = [hq.x, 4, hq.z];
+    if (u.team === 'atk' && (dHq < 120 || !best || bd > 250)) bd = dHq;
+    else if (best) t = [best.s.x, best.s.y + UNITS[best.type].height / 2, best.s.z];
+    const eyeY = s.y + (UNITS[u.type].aim.height || 1);
+    r.look[0] = Math.atan2(t[2] - s.z, t[0] - s.x);
+    r.look[1] = Math.atan2(t[1] - eyeY, Math.hypot(t[0] - s.x, t[2] - s.z));
+    [r.aim[0], r.aim[1], r.aim[2]] = t;
+    const kind = UNITS[u.type].kind;
+    r.mz = bd > 60 ? 1 : 0;
+    r.up = kind === 'air' && s.y < 30;
+    r.down = kind === 'air' && s.y > 40;
+    r.fire = bd < 300;
+    r.alt = bd < 200 && m.rng() < 0.05;
+    r.grenade = bd < 25 && m.rng() < 0.01;
+    r.weapon = kind === 'soldier' && best && UNITS[best.type].kind !== 'soldier' ? 1 : 0;
+    return r;
+  }
+}
+
+function gunnerMatch(seed, extra = {}) {
+  return new Match({
+    players: [P('j', 'atk', 'jet'), P('h', 'def', 'heli')], botsPerTeam: 15, minutes: 3, seed, log: false,
+    deps: { Combat: REAL_COMBAT, BotBrain: GunnerBrain, botTypeFor }, ...extra,
+  });
+}
+
+test('real Combat: a full bots-only battle runs to its end with kills, HQ damage and clean output', realCombat, () => {
+  const m = gunnerMatch(6);
+  start(m);
+  const seen = {};
+  let maxProj = 0;
+  const t0 = process.hrtime.bigint();
+  let ticks = 0;
+  for (let i = 0; i < 60 * 181 && m.phase === 'playing'; i++) {
+    m.step(TICK_DT);
+    ticks++;
+    if (i % SNAPSHOT_EVERY) continue;
+    const snap = m.snapshot(i);
+    maxProj = Math.max(maxProj, snap.p.length);
+    for (const r of snap.u) assert.ok(r.length === U_LEN && r.every(Number.isFinite), `finite row at tick ${i}`);
+    for (const p of snap.p) assert.ok(p.length === 9 && p.every(Number.isFinite), `finite projectile at tick ${i}`);
+    for (const e of snap.ev) {
+      assert.ok(['f', 'b', 'x', 'h', 'k', 's', 'r'].includes(e[0]), `known event ${e[0]}`);
+      assert.ok(e.every((v) => typeof v === 'string' || Number.isFinite(v)), `finite event ${JSON.stringify(e)}`);
+      seen[e[0]] = (seen[e[0]] || 0) + 1;
+    }
+  }
+  const ms = Number(process.hrtime.bigint() - t0) / 1e6 / ticks;
+  assert.equal(m.errors, 0, m.lastError);
+  assert.equal(m.combat.errors, 0, String(m.combat.lastError));
+  assert.equal(m.phase, 'over');
+  assert.ok(m.winner === 'atk' || m.winner === 'def');
+  for (const k of ['f', 'b', 'x', 'h', 'k', 's', 'r']) assert.ok(seen[k] > 0, `saw '${k}' events`);
+  assert.ok(m.hq.hp < m.hq.max, 'the attackers hurt the HQ');
+  assert.equal(m.score.def + m.score.atk, m.board().reduce((n, r) => n + r.score, 0), 'team scores are the sum of the players');
+  assert.ok(maxProj > 0);
+  assert.ok(ms < 4, `average tick+snapshot ${ms.toFixed(3)} ms`);
+  console.log(`# real combat soak: ${ms.toFixed(3)} ms/tick, ${m.winner} by ${m.reason} at ${m.time.toFixed(1)} s, score ${JSON.stringify(m.score)}, events ${JSON.stringify(seen)}`);
+});
+
+test('real Combat: determinism with scripted gunners', realCombat, () => {
+  const deps = { Combat: REAL_COMBAT, BotBrain: GunnerBrain, botTypeFor };
+  const a = transcript(41, deps, 25);
+  const b = transcript(41, deps, 25);
+  assert.deepEqual(a, b);
+  assert.ok(a.some((s) => typeof s === 'string' && s.includes('["h",')), 'the run produced hits');
+});
+
+test('real Combat: bad bot output is sanitized before it reaches the sim', realCombat, () => {
+  const m = gunnerMatch(3, { players: [], botsPerTeam: 2 });
+  start(m);
+  const bot = [...m.units.values()].find((u) => u.isBot);
+  bot.brain.think = () => ({
+    seq: 'x', mx: NaN, mz: 7, fire: 'yes', alt: 1, up: {}, weapon: 5, look: [100, -9], aim: [1e9, 0, 0],
+  });
+  run(m, 1);
+  assert.equal(m.errors, 0, m.lastError);
+  const inp = bot.input;
+  assert.deepEqual([inp.mx, inp.mz, inp.fire, inp.alt, inp.up, inp.weapon, inp.aim], [0, 1, false, true, false, 0, null]);
+  assert.ok(Math.abs(inp.look[0]) < Math.PI * 2 && inp.look[1] === -1.5);
+  assert.ok(Number.isFinite(bot.s.x + bot.s.y + bot.s.z));
+});
+
+// ---------------------------------------------------------------------------------------------
 // The real siblings, when they exist and load
 
 let REAL = null;
@@ -1138,21 +1267,28 @@ test('real modules: determinism', real, () => {
   assert.deepEqual(a, b);
 });
 
-test('real modules: 60 s bots-only match, 15 per team, no errors', real, () => {
+test('real modules: a 3 minute bots-only match, 15 per team, runs to its end without errors', real, () => {
   const m = new Match({ players: [], botsPerTeam: 15, minutes: 3, seed: 5, log: false, deps: REAL });
   start(m);
   const t0 = process.hrtime.bigint();
   let events = 0;
-  for (let i = 0; i < 60 * 60 && m.phase === 'playing'; i++) {
+  let ticks = 0;
+  for (let i = 0; i < 60 * 181 && m.phase === 'playing'; i++) {
     m.step(TICK_DT);
+    ticks++;
     if (i % SNAPSHOT_EVERY === 0) {
       const snap = m.snapshot(i);
       events += snap.ev.length;
       for (const r of snap.u) assert.ok(r.every(Number.isFinite), `finite row at tick ${i}`);
+      for (const e of snap.ev) assert.ok(e.every((v) => typeof v === 'string' || Number.isFinite(v)), `finite event ${JSON.stringify(e)}`);
       assert.ok(Array.isArray(snap.p));
     }
   }
-  const ms = Number(process.hrtime.bigint() - t0) / 1e6 / 3600;
+  const ms = Number(process.hrtime.bigint() - t0) / 1e6 / ticks;
   assert.equal(m.errors, 0, m.lastError);
-  console.log(`# real soak: ${ms.toFixed(3)} ms avg per tick (incl. snapshots), events ${events}, score ${JSON.stringify(m.score)}, phase ${m.phase}`);
+  assert.equal(m.combat.errors, 0, String(m.combat.lastError && m.combat.lastError.stack));
+  assert.equal(m.phase, 'over');
+  assert.ok(m.winner === 'atk' || m.winner === 'def');
+  assert.ok(ms < 4, `average tick+snapshot ${ms.toFixed(3)} ms`);
+  console.log(`# real soak: ${ms.toFixed(3)} ms avg per tick (incl. snapshots), events ${events}, score ${JSON.stringify(m.score)}, ${m.winner} by ${m.reason} at ${m.time.toFixed(1)} s`);
 });

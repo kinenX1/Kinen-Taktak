@@ -7,20 +7,27 @@
 const CLEARANCES = [0.6, 3.0];
 const DIRS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
 const SQRT2 = Math.SQRT2;
+const START_CLEARANCE = 0.3; // clearance of the first leg when the start hugs an obstacle
 
 // --------------------------------------------------------------------------------------------
 // Geometry against the world index (physics.js createWorldIndex): boxes are x0..x1 / z0..z1
-// arrays bucketed in a CSR spatial hash of `CELL` meters.
+// arrays bucketed in a CSR spatial hash whose cell size the index carries as `index.cell`.
 
-const HASH = 32; // must match physics.js CELL
+// Hash cell size of indexes built before `cell` was stored on them (physics.js CELL).
+const LEGACY_HASH = 32;
+
+function hashCellOf(index) {
+  const c = index && index.cell;
+  return typeof c === 'number' && Number.isFinite(c) && c > 0 ? c : LEGACY_HASH;
+}
 
 function queryRect(nav, ax, az, bx, bz) {
-  const { index } = nav;
+  const { index, hash } = nav;
   const { ox, oz, cols, rows, cellStart, cellItems } = index;
-  const c0 = Math.max(0, Math.floor((ax - ox) / HASH));
-  const c1 = Math.min(cols - 1, Math.floor((bx - ox) / HASH));
-  const r0 = Math.max(0, Math.floor((az - oz) / HASH));
-  const r1 = Math.min(rows - 1, Math.floor((bz - oz) / HASH));
+  const c0 = Math.max(0, Math.floor((ax - ox) / hash));
+  const c1 = Math.min(cols - 1, Math.floor((bx - ox) / hash));
+  const r0 = Math.max(0, Math.floor((az - oz) / hash));
+  const r1 = Math.min(rows - 1, Math.floor((bz - oz) / hash));
   let id = ++nav.stampId;
   if (id >= 0xfffffff0) { nav.stamp.fill(0); nav.stampId = id = 1; }
   const { stamp, qbuf } = nav;
@@ -164,14 +171,15 @@ function buildGrid(nav, clearance) {
   return { clearance, free, edges, comp, sizes, main };
 }
 
-export function buildNav(world, index, { cell = 4 } = {}) {
+export function buildNav(world, index, opts = {}) {
+  const cell = Number.isFinite(opts?.cell) && opts.cell >= 1 ? opts.cell : 4;
   const w = world.map?.w ?? 640;
   const d = world.map?.d ?? 480;
   const cols = Math.ceil(w / cell);
   const rows = Math.ceil(d / cell);
   const count = cols * rows;
   const nav = {
-    cell, cols, rows, w, d, index,
+    cell, cols, rows, w, d, index, hash: hashCellOf(index),
     stamp: new Uint32Array(index.n), stampId: 0, qbuf: new Int32Array(Math.max(1, index.n)),
     // A* scratch, reused between searches (generation counters avoid clearing).
     gen: 0,
@@ -199,7 +207,8 @@ function cellOf(nav, x, z) {
   return r * nav.cols + c;
 }
 
-// Nearest free cell to (x, z) whose component passes `accept` (ring search, up to maxRing cells).
+// Nearest free cell to (x, z) whose component passes `accept(comp, cellIndex)` (ring search, up to
+// maxRing cells).
 function nearestCell(nav, grid, x, z, accept, maxRing = 40) {
   const { cols, rows, cell } = nav;
   const c0 = Math.max(0, Math.min(cols - 1, Math.floor(x / cell)));
@@ -216,7 +225,7 @@ function nearestCell(nav, grid, x, z, accept, maxRing = 40) {
       for (let c = c0 - ring; c <= c0 + ring; c += step) {
         if (c < 0 || c >= cols) continue;
         const i = r * cols + c;
-        if (grid.free[i] && accept(grid.comp[i])) {
+        if (grid.free[i] && accept(grid.comp[i], i)) {
           const dx = (c + 0.5) * cell - x;
           const dz = (r + 0.5) * cell - z;
           const d2 = dx * dx + dz * dz;
@@ -342,7 +351,19 @@ export function findPath(nav, sx, sz, tx, tz, clearance) {
   const c = grid.clearance;
   // Start: the unit's own cell, or the nearest walkable one if it is hugging a wall.
   let start = cellOf(nav, sx, sz);
-  if (!grid.free[start]) start = nearestCell(nav, grid, sx, sz, () => true, 6);
+  // A unit hugging an obstacle, or cut off from its cell's centre by a thin wall, starts from the
+  // nearest cell it can reach in a straight line (thin clearance: it is already that close), so
+  // the first leg never leads through the obstacle it is pressed against.
+  const thin = Math.min(c, START_CLEARANCE);
+  const reach = (k, i) => {
+    const cc = i % nav.cols;
+    return segmentFree(nav, sx, sz, (cc + 0.5) * nav.cell, ((i - cc) / nav.cols + 0.5) * nav.cell, thin);
+  };
+  if (!grid.free[start] || !reach(0, start)) {
+    const seen = nearestCell(nav, grid, sx, sz, reach, 6);
+    if (seen >= 0) start = seen;
+    else if (!grid.free[start]) start = nearestCell(nav, grid, sx, sz, () => true, 6);
+  }
   if (start < 0) return null;
   const comp = grid.comp[start];
   // Goal: the target's cell if reachable, else the nearest reachable cell around the target
@@ -351,7 +372,6 @@ export function findPath(nav, sx, sz, tx, tz, clearance) {
   const goalExact = grid.free[goal] && grid.comp[goal] === comp && pointFree(nav, tx, tz, c);
   if (!(grid.free[goal] && grid.comp[goal] === comp)) goal = nearestCell(nav, grid, tx, tz, (k) => k === comp, 30);
   if (goal < 0) return null;
-  const end = goalExact ? [tx, tz] : center(nav, goal);
 
   if (start !== goal && !astar(nav, grid, start, goal)) return null;
   // Cell chain from start to goal (centers), then string-pull with clearance-checked shortcuts.
@@ -360,10 +380,21 @@ export function findPath(nav, sx, sz, tx, tz, clearance) {
     for (let i = nav.parent[goal]; i !== start && i >= 0; i = nav.parent[i]) chain.push(i);
     chain.reverse();
   }
-  const pts = [[sx, sz]];
-  if (!pointFree(nav, sx, sz, c)) pts.push(center(nav, start));
+  // Only the edges between cell centres are known to be clear, so the start and goal cell centres
+  // stay in the list; the string-pull below drops them whenever a direct leg is clear.
+  const pts = [[sx, sz], center(nav, start)];
   for (const i of chain) pts.push(center(nav, i));
-  pts.push(end);
+  if (goal !== start) pts.push(center(nav, goal));
+  if (goalExact) {
+    // The exact target is somewhere inside the goal cell (possibly the start cell): a thin wall
+    // can separate it from the centre. Reach it from the centre or, failing that, straight from
+    // the previous point; when both legs are blocked the path ends at the goal cell's centre.
+    const n = pts.length;
+    const gc = pts[n - 1];
+    const prev = pts[n - 2];
+    if (segmentFree(nav, gc[0], gc[1], tx, tz, c)) pts.push([tx, tz]);
+    else if (segmentFree(nav, prev[0], prev[1], tx, tz, c)) pts[n - 1] = [tx, tz];
+  }
 
   const out = [];
   let anchor = 0;

@@ -26,6 +26,8 @@ import { sanitizeSuit, teamDefaultSuit, randomSuit } from './public/js/shared/su
 // ---------------------------------------------------------------------------------------------
 // Sibling modules, loaded lazily so this file (and its tests) work while they are being written.
 // A missing file is only reported when a Match actually needs it; a broken one is logged at load.
+// combat.mjs and bots.mjs must not import this file: with the top-level await below that cycle
+// would never settle. They receive the Match instance instead.
 
 export const depsStatus = { combat: false, bots: false, errors: {} };
 const DEPS = { Combat: null, BotBrain: null, botTypeFor: null };
@@ -117,6 +119,42 @@ const usableInput = (inp) => {
   const l = inp && inp.look;
   return Array.isArray(l) && Number.isFinite(l[0]) && Number.isFinite(l[1]);
 };
+
+const TAU = Math.PI * 2;
+const flag = (v) => v === true || v === 1;
+const axis = (v) => (typeof v === 'number' && Number.isFinite(v) ? clamp(v, -1, 1) : 0);
+
+// A brain's record is copied into the bot's own scratch record with sanitizeInput's rules (without
+// allocating), so one bad value from the AI can never reach the shared sim and the brain may
+// reuse its object freely. `src.look` has already been checked by usableInput.
+function copyBotInput(src, dst) {
+  dst.seq = Number.isInteger(src.seq) ? src.seq : dst.seq + 1;
+  dst.mx = axis(src.mx);
+  dst.mz = axis(src.mz);
+  dst.up = flag(src.up);
+  dst.down = flag(src.down);
+  dst.crouch = flag(src.crouch);
+  dst.sprint = flag(src.sprint);
+  dst.ads = flag(src.ads);
+  dst.fire = flag(src.fire);
+  dst.alt = flag(src.alt);
+  dst.reload = flag(src.reload);
+  dst.grenade = flag(src.grenade);
+  dst.weapon = src.weapon === 1 ? 1 : 0;
+  dst.look[0] = src.look[0] % TAU;
+  dst.look[1] = clamp(src.look[1], -1.5, 1.5);
+  const a = src.aim;
+  if (Array.isArray(a) && a.length === 3 && Number.isFinite(a[0]) && Number.isFinite(a[1]) && Number.isFinite(a[2])
+    && Math.abs(a[0]) < 5000 && Math.abs(a[1]) < 5000 && Math.abs(a[2]) < 5000) {
+    const buf = dst.aimBuf || (dst.aimBuf = [0, 0, 0]);
+    buf[0] = a[0];
+    buf[1] = a[1];
+    buf[2] = a[2];
+    dst.aim = buf;
+  } else {
+    dst.aim = null;
+  }
+}
 
 // Ground footprint (discs along the body axis) and the half-length that contains it.
 function footprintOf(def) {
@@ -323,7 +361,9 @@ export class Match {
     for (let i = 0; i < n; i++) {
       const rec = sanitizeInput(batch[i]);
       if (!rec) continue;
-      if (q.length && q[q.length - 1].seq === rec.seq) continue; // duplicate
+      // A re-sent record (the newest queued one, or the one applied last) is a duplicate. Seqs are
+      // not required to be monotonic across lives, so nothing stricter is enforced.
+      if (q.length ? q[q.length - 1].seq === rec.seq : u.ack > 0 && u.ack === rec.seq) continue;
       if (q.length >= INPUT_QUEUE_MAX) {
         // Keep the freshest inputs; the dropped record's one-shot presses survive on its successor.
         const old = q.shift();
@@ -403,6 +443,7 @@ export class Match {
       neutralize(u.idleInput);
       u.idleInput.look[0] = u.s.yaw;
       u.idleInput.look[1] = 0;
+      u.idleInput.aim = null;
     }
     u.brain = null;
     if (u.isBot && this.BotBrain) {
@@ -575,10 +616,8 @@ export class Match {
     }
     for (let i = 0; i < list.length; i++) {
       const u = list[i];
-      if (u.alive) {
-        if (u.popHq > 0 && this.time - u.popT >= POP_INTERVAL) this._flushPopup(u);
-        continue;
-      }
+      if (u.popHq > 0 && this.time - u.popT >= POP_INTERVAL) this._flushPopup(u);
+      if (u.alive) continue;
       try {
         this._tickDead(u, dt);
       } catch (e) {
@@ -616,8 +655,7 @@ export class Match {
       const rate = regenRate(u.type, this.time - u.lastDamageT);
       if (rate > 0) u.hp = Math.min(u.maxHp, u.hp + rate * dt);
     }
-    if (u.firing) u.firing = u.firing > dt ? u.firing - dt : 0;
-    this.combat.fireUnit(u, inp, dt);
+    this.combat.fireUnit(u, inp, dt); // Combat owns the weapon timers and the `firing` flag
     if (!u.isBot) {
       inp.reload = false; // one-shot presses are used up once
       inp.grenade = false;
@@ -642,22 +680,26 @@ export class Match {
   }
 
   _botInput(u, dt) {
-    let inp = null;
-    const brain = u.brain;
-    if (brain) {
+    const rec = u.idleInput; // the bot's own scratch record, never shared with the brain
+    let out = null;
+    if (u.brain) {
       try {
-        inp = brain.think(dt);
+        out = u.brain.think(dt);
       } catch (e) {
         this._fail('bot.think', e);
       }
     }
-    if (!usableInput(inp)) {
-      inp = u.idleInput;
-      inp.look[0] = u.s.yaw;
-      inp.look[1] = u.s.aimPitch;
+    if (usableInput(out)) {
+      copyBotInput(out, rec);
+    } else {
+      // No (usable) brain output: stand still, keep looking where the unit looks.
+      neutralize(rec);
+      rec.look[0] = u.s.yaw;
+      rec.look[1] = u.s.aimPitch;
+      rec.aim = null;
     }
-    u.input = inp;
-    return inp;
+    u.input = rec;
+    return rec;
   }
 
   _tickDead(u, dt) {
@@ -724,8 +766,9 @@ export class Match {
    * and emits the 'h' / 'k' / 's' events. Returns the hit points actually removed.
    */
   applyDamage(victim, amount, attacker = null, meta = null) {
-    if (!victim || !victim.alive || this.phase === 'over') return 0;
+    if (!victim || !victim.alive || !victim.s || this.phase === 'over') return 0;
     if (!(amount > 0) || !Number.isFinite(amount)) return 0;
+    if (attacker && (typeof attacker !== 'object' || !attacker.s || !Number.isInteger(attacker.uid))) attacker = null;
     const m = meta || NO_META;
     if (attacker && (attacker === victim || attacker.team === victim.team)) return 0; // no friendly fire
     if (victim.protectLeft > 0 && m.kind !== 'crash') return 0;
@@ -914,7 +957,8 @@ export class Match {
       n,
       time: Math.round(this.time * 1000) / 1000,
       left: this.left,
-      cd: this.cd > 0 ? Math.ceil(this.cd * 10) / 10 : 0,
+      // Tenths, rounded up, with a guard so 60 ticks of 1/60 s read 2.0 rather than 2.1.
+      cd: this.cd > 0 ? Math.max(0.1, Math.ceil(this.cd * 10 - 1e-6) / 10) : 0,
       hq: Math.ceil(this.hq.hp),
       hqMax: this.hq.max,
       score: { def: this.score.def, atk: this.score.atk },

@@ -113,7 +113,7 @@ export function createWorldIndex(world) {
   const hq = world.hq ? { x: world.hq.x, z: world.hq.z, r: world.hq.r, h: world.hq.h } : null;
   return {
     n, x0, z0, x1, z1, h, kind, map, hq,
-    ox, oz, cols, rows, cellStart, cellItems,
+    cell: CELL, ox, oz, cols, rows, cellStart, cellItems, // `cell`: hash size, read by nav.mjs
     stamp: new Uint32Array(n), stampId: 0,
     qbuf: new Int32Array(n), // scratch result list for queryBoxes
   };

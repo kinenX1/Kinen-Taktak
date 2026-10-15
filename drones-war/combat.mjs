@@ -26,7 +26,7 @@ import {
   TICK_DT, primarySlot, altSlot, PROJ_GRAVITY, GRENADE, PROXIMITY, PROJECTILE_MAX_LIFE, projectileLife,
   hitscanDamage, falloffFactor, blastDamage, splashFactor, currentSpread, loftPitch, dirFrom, HQ_DAMAGE_MULT,
 } from './public/js/shared/rules.js';
-import { packProjectile, PROJ_INDEX, SURF } from './public/js/shared/net.js';
+import { packProjectile, PROJ_INDEX, SURF, EXPLOSION_KIND } from './public/js/shared/net.js';
 
 const TAU = Math.PI * 2;
 const FIRING_SECONDS = 0.12; // how long FLAG.FIRING stays up after a shot (>= 3 snapshots)
@@ -741,33 +741,53 @@ export class Combat {
     const dz = z - oz;
     const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
     if (len > 1e-9) {
-      // The centre path shifted down by R touches the ground plane exactly when the sphere does.
-      if (segmentHitsWorld(index, ox, oy - R, oz, x, y - R, z) >= 0) {
-        const ix = dx / len;
-        const iy = dy / len;
-        const iz = dz / len;
-        const h = raycast(index, ox, oy - R, oz, ix, iy, iz, len);
-        if (h) {
-          x = ox + ix * h.dist + h.nx * R;
-          y = oy + iy * h.dist;
-          z = oz + iz * h.dist + h.nz * R;
-          const vn = vx * h.nx + vy * h.ny + vz * h.nz;
-          if (vn < 0) {
-            const tx = vx - vn * h.nx;
-            const ty = vy - vn * h.ny;
-            const tz = vz - vn * h.nz;
-            if (-vn < REST_SPEED) { // resting contact: no bounce, just rolling drag
-              const k = Math.max(0, 1 - ROLL_DRAG * dt);
-              vx = tx * k;
-              vy = ty * k;
-              vz = tz * k;
-            } else {
-              const e = -vn * GRENADE.restitution;
-              const f = GRENADE.friction;
-              vx = tx * f + e * h.nx;
-              vy = ty * f + e * h.ny;
-              vz = tz * f + e * h.nz;
-            }
+      // Sphere sweep with two probe points riding along the centre path: the lowest point (it
+      // touches floors and roofs exactly when the sphere does) and the leading point in the
+      // horizontal direction of travel (walls, the HQ). The earlier contact wins.
+      const ix = dx / len;
+      const iy = dy / len;
+      const iz = dz / len;
+      let h = null;
+      let lx = 0;
+      let ly = -R;
+      let lz = 0;
+      if (segmentHitsWorld(index, ox, oy - R, oz, x, y - R, z) >= 0) h = raycast(index, ox, oy - R, oz, ix, iy, iz, len);
+      const hl = Math.sqrt(dx * dx + dz * dz);
+      if (hl > 1e-9) {
+        const ax = (dx / hl) * R;
+        const az = (dz / hl) * R;
+        if (segmentHitsWorld(index, ox + ax, oy, oz + az, x + ax, y, z + az) >= 0) {
+          const hw = raycast(index, ox + ax, oy, oz + az, ix, iy, iz, len);
+          if (hw && (!h || hw.dist < h.dist)) {
+            h = hw;
+            lx = ax;
+            ly = 0;
+            lz = az;
+          }
+        }
+      }
+      if (h) {
+        // Centre when the probe touched, then moved along the normal to sit exactly R off the face.
+        const push = R + lx * h.nx + ly * h.ny + lz * h.nz;
+        x = ox + ix * h.dist + h.nx * push;
+        y = oy + iy * h.dist + h.ny * push;
+        z = oz + iz * h.dist + h.nz * push;
+        const vn = vx * h.nx + vy * h.ny + vz * h.nz;
+        if (vn < 0) {
+          const tx = vx - vn * h.nx;
+          const ty = vy - vn * h.ny;
+          const tz = vz - vn * h.nz;
+          if (-vn < REST_SPEED) { // resting contact: no bounce, just rolling drag
+            const k = Math.max(0, 1 - ROLL_DRAG * dt);
+            vx = tx * k;
+            vy = ty * k;
+            vz = tz * k;
+          } else {
+            const e = -vn * GRENADE.restitution;
+            const f = GRENADE.friction;
+            vx = tx * f + e * h.nx;
+            vy = ty * f + e * h.ny;
+            vz = tz * f + e * h.nz;
           }
         }
       }
@@ -796,18 +816,22 @@ export class Combat {
    */
   explode(x, y, z, opts) {
     try {
-      if (!opts || !finite(x) || !finite(y) || !finite(z)) return;
-      const owner = opts.owner || null;
+      if (!opts || typeof opts !== 'object' || !finite(x) || !finite(y) || !finite(z)) return;
+      // Only a real unit can be credited; anything else makes an ownerless (team-less) blast.
+      const o = opts.owner;
+      const owner = o && typeof o === 'object' && Number.isInteger(o.uid) && o.s ? o : null;
+      const team = opts.team === 'def' || opts.team === 'atk' ? opts.team : owner ? owner.team : null;
       const splash = finite(opts.splash) ? opts.splash : 0;
       this._explode(x, y, z, {
         dmg: opts.dmg,
         splash,
         owner,
-        team: opts.team || (owner && owner.team) || null,
+        team,
         name: typeof opts.weaponName === 'string' ? opts.weaponName : 'Explosion',
         big: opts.big === undefined ? splash >= 7 : !!opts.big,
-        kindIdx: typeof opts.kind === 'number' ? opts.kind : PROJ_INDEX[opts.kind] ?? 0,
-        direct: opts.direct || null,
+        kindIdx: Number.isInteger(opts.kind) && opts.kind >= 0 && opts.kind <= EXPLOSION_KIND.HQ ? opts.kind
+          : typeof opts.kind === 'string' && Object.hasOwn(PROJ_INDEX, opts.kind) ? PROJ_INDEX[opts.kind] : 0,
+        direct: opts.direct && typeof opts.direct === 'object' ? opts.direct : null,
         slot: -2,
       });
     } catch (err) {

@@ -294,6 +294,7 @@ test('armor scales bullets, blastArmor scales explosions (tank vs jeep vs soldie
 
 test('explode: splash curve, blastArmor, event, owner and team immunity', () => {
   const m = makeMatch();
+  m.lethal = false; // the foe must survive the first blast for the direct-hit check below
   const owner = addUnit(m, 'soldier', 'def', 190, 200);
   const mate = addUnit(m, 'soldier', 'def', 202, 200);
   const foe = addUnit(m, 'soldier', 'atk', 200, 200);
@@ -339,7 +340,8 @@ test('explode: splash curve, blastArmor, event, owner and team immunity', () => 
   foe.alive = false;
   m.combat.explode(200, 1, 200, { dmg: 100, splash: 5 });
   assert.ok(!m.damage.some((x2) => x2.victim === foe));
-  assert.ok(m.damage.some((x2) => x2.victim === owner));
+  assert.ok(m.damage.some((x2) => x2.victim === mate), 'the owner team is only immune to its own blasts');
+  assert.ok(m.damage.every((x2) => x2.attacker === null));
 });
 
 test('explode: walls shield from splash (line of sight), corners do not', () => {
@@ -570,16 +572,19 @@ test('reload: rate carry, empty mag auto-reloads for the weapon reload time, no 
   let ticks = 0;
   const before = evs(m, 'f').length;
   while (w.reloadLeft > 0) {
-    m.combat.fireUnit(u, fire, DT); // trigger held through the reload: nothing happens
+    m.combat.fireUnit(u, fire, DT); // trigger held through the reload: nothing happens...
     ticks++;
     assert.ok(ticks < 200);
+    if (w.reloadLeft > 0) assert.equal(evs(m, 'f').length, before, `no shot while reloading (tick ${ticks})`);
   }
   assert.ok(ticks >= 125 && ticks <= 128, `reload took ${ticks} ticks`);
-  assert.equal(evs(m, 'f').length, before);
-  assert.equal(w.mag, 30);
-  assert.equal(w.reserve, 180);
-  m.combat.fireUnit(u, fire, DT);
+  // ...until the tick that completes it: the held trigger fires at once, so the gap between the
+  // last shot of a magazine and the first of the next is exactly the reload time.
   assert.equal(evs(m, 'f').length, before + 1, 'fires again right after the reload');
+  assert.equal(w.mag, 29);
+  assert.equal(w.reserve, 180);
+  m.combat.fireUnit(u, input(base), DT);
+  assert.equal(evs(m, 'f').length, before + 1, 'trigger released: no more shots');
 });
 
 test('reload: manual reload tops up from the reserve, refuses when full or out of ammo', () => {
@@ -724,6 +729,7 @@ test('grenade: bounces, rolls, explodes exactly on the fuse; two per life', () =
   let ticks = 0;
   let maxX = 0;
   while (m.combat.projectiles.length > 0 && ticks < 400) {
+    m.combat.fireUnit(u, input(base), DT); // the match runs the thrower's timers every tick
     tick(m);
     ticks++;
     if (m.combat.projectiles.length) {
@@ -945,11 +951,20 @@ test('missile: turn rate is limited (a target abeam cannot be hit instantly)', (
   m.combat.fireUnit(jet, input({ alt: true }), DT);
   const mis = m.combat.projectiles[0];
   assert.equal(mis.target, abeam.uid);
-  const yaw0 = Math.atan2(mis.vz, mis.vx);
-  tick(m, 30); // 0.5 s: at most 2.6 * 0.5 = 1.3 rad of turning
-  const yaw1 = Math.atan2(mis.vz, mis.vx);
-  assert.ok(Math.abs(yaw1 - yaw0) <= 2.6 * 0.5 + 1e-6, `turned ${yaw1 - yaw0}`);
-  assert.ok(Math.abs(yaw1 - yaw0) > 1.0, 'but it does turn');
+  const v0 = [mis.vx, mis.vy, mis.vz];
+  // The turn rate bounds the 3D angle the velocity sweeps (the yaw of a diving missile can change
+  // faster than that, so it is not the measure).
+  const swept = () => Math.acos(Math.min(1, (v0[0] * mis.vx + v0[1] * mis.vy + v0[2] * mis.vz) / (170 * 170)));
+  let prev = [...v0];
+  for (let i = 0; i < 30; i++) { // 0.5 s: at most 2.6 * 0.5 = 1.3 rad of turning
+    tick(m);
+    const step = Math.acos(Math.min(1, (prev[0] * mis.vx + prev[1] * mis.vy + prev[2] * mis.vz) / (170 * 170)));
+    assert.ok(step <= 2.6 * DT + 1e-6, `turned ${step} rad in one tick`);
+    prev = [mis.vx, mis.vy, mis.vz];
+  }
+  assert.equal(m.combat.projectiles.length, 1, 'still flying');
+  assert.ok(swept() <= 2.6 * 0.5 + 1e-6, `turned ${swept()}`);
+  assert.ok(swept() > 1.0, `but it does turn (${swept()})`);
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -1083,10 +1098,18 @@ test('robustness: garbage never throws out of fireUnit, step or explode', () => 
   c.explode(0, 0, 0, { dmg: NaN, splash: -3, owner: u });
   c.explode(200, 1, 200, { dmg: Infinity, splash: 10, owner: u });
   c.explode(200, 1, 200, { dmg: 100, splash: 10, kind: 'banana' });
+  c.explode(200, 1, 200, { dmg: 50, splash: 5, owner: 'evil', team: 'nope', direct: 42, kind: 1e9, weaponName: {} });
+  c.explode(200, 1, 200, { dmg: 50, splash: 5, kind: 'constructor', owner: { uid: 'x', team: 'atk' } });
+  assert.ok(m.damage.every((d) => d.attacker === null || d.attacker === u), 'garbage owners are never credited');
+  assert.ok(evs(m, 'x').every((e) => Number.isInteger(e[6]) && e[6] >= 0 && e[6] <= 7), 'explosion kinds stay in range');
   // A projectile with poisoned numbers is dropped without noise.
-  c.projectiles.push({ id: 5, kind: 'rocket', team: 'def', owner: 1, x: NaN, y: 1, z: 1, vx: 1, vy: 1, vz: 1, g: 0, life: 5, dmg: 1, splash: 1 });
+  const poison = { id: 5, kind: 'rocket', team: 'def', owner: 1, x: NaN, y: 1, z: 1, vx: 1, vy: 1, vz: 1, g: 0, life: 5, dmg: 1, splash: 1 };
+  c.projectiles.push(poison);
+  m.events.length = 0;
   c.step(DT);
-  assert.equal(c.projectiles.length, 0);
+  assert.ok(!c.projectiles.includes(poison), 'the poisoned projectile is dropped');
+  assert.ok(!m.events.some((e) => e[0] === 'x' && !Number.isFinite(e[1])), 'and it did not explode at NaN');
+  for (const p of c.projectiles) assert.ok(Number.isFinite(p.x + p.y + p.z + p.vx + p.vy + p.vz), `finite projectile ${p.kind}`);
   // A unit with a broken state in the map does not take the tick down.
   m.units.set(500, { uid: 500, alive: true, team: 'atk', type: 'tank', s: null, weapons: [] });
   m.units.set(501, { uid: 501, alive: true, team: 'atk', type: 'jet', s: null, weapons: [] });
@@ -1095,8 +1118,9 @@ test('robustness: garbage never throws out of fireUnit, step or explode', () => 
   c.step(DT);
   c.step(DT);
   c.explode(200, 1, 200, { dmg: 100, splash: 10, owner: u });
-  assert.equal(c.errors, c.errors); // errors, if any, were counted instead of thrown
-  assert.ok(Number.isInteger(c.errors));
+  // Garbage is rejected by validation, not by exceptions caught on the way out.
+  assert.equal(c.errors, 0, String(c.lastError && c.lastError.stack));
+  for (const e of m.events) assert.ok(e.every((v) => typeof v === 'string' || Number.isFinite(v)), `finite event ${JSON.stringify(e)}`);
 });
 
 test('robustness: a throwing applyDamage is counted, not propagated, and the tick goes on', () => {
