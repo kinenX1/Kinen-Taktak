@@ -145,7 +145,7 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
         ...common, map: set.map, normalMap: set.normalMap || null, roughnessMap: set.roughnessMap, roughness: 1,
         metalness: spec.metal ? 1 : 0, metalnessMap: spec.metal ? set.roughnessMap : null,
       });
-      if (set.normalMap) m.normalScale.set(0.9, 0.9);
+      if (set.normalMap) m.normalScale.set(0.6, 0.6);
     } else {
       m = new THREE.MeshLambertMaterial({ ...common, map: set.map });
     }
@@ -335,8 +335,8 @@ uniform vec2 uMapSize;`)
   for (const [x, y, z] of ctx.beacons) ctx.fx.add(x, y, z, { mode: MODE.beacon, size: 1.2, color: [3.4, 0.2, 0.1], phase: ((x * 7 + z * 3) % 10) / 10 });
   if (q.level >= 1) {
     // ash/dust motes drifting through the air around the camera
-    const motes = q.level >= 2 ? 90 : 50;
-    for (let i = 0; i < motes; i++) ctx.fx.add(R() * 60, R() * 30, R() * 60, { mode: MODE.mote, size: 0.035 + R() * 0.05, color: world.timeOfDay === 'night' ? [0.7, 0.5, 0.3] : [0.65, 0.62, 0.58], alpha: 0.65, phase: R() });
+    const motes = q.level >= 2 ? 60 : 30;
+    for (let i = 0; i < motes; i++) ctx.fx.add(R() * 60, R() * 30, R() * 60, { mode: MODE.mote, size: 0.025 + R() * 0.03, color: world.timeOfDay === 'night' ? [0.7, 0.5, 0.3] : [0.5, 0.46, 0.4], alpha: 0.3, phase: R() });
   }
   const fxGroup = ctx.fx.build();
   group.add(fxGroup);

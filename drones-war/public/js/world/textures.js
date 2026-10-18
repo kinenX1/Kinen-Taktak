@@ -147,16 +147,33 @@ function pickWindowKind(rnd, damage = 0.12) {
 // Grime: vertical rain streaks + blotchy dirt + darker base; applied after windows.
 function weather(P, rnd, { streaks = 0.35, dirt = 0.4, seed = 1, warm = false } = {}) {
   const S = P.w;
-  const st = noiseCanvas(256, 256, blotch(24, 2, 3, seed + 11), (v) => [20, 18, 15, Math.max(0, v - 0.48) * 3 * streaks * 255]);
+  // rain streaks: tall soft stains, capped so facades stay readable
+  const st = noiseCanvas(256, 256, blotch(28, 2, 3, seed + 11), (v) => [22, 19, 16, Math.min(0.6, Math.max(0, v - 0.5) * 2.4) * streaks * 255]);
   P.overlay('a', st, 'source-over', 1, 1);
-  const bl = dirtCanvas(blotch(4, 4, 5, seed + 12), 256, { color: warm ? [60, 40, 25] : [28, 26, 24], lo: 0.5, hi: 0.85, maxA: dirt });
+  const bl = dirtCanvas(blotch(4, 4, 5, seed + 12), 256, { color: warm ? [60, 40, 25] : [34, 31, 28], lo: 0.52, hi: 0.88, maxA: dirt * 0.8 });
   P.overlay('a', bl, 'source-over', 1, 1);
-  const lt = dirtCanvas(blotch(5, 5, 4, seed + 13), 256, { color: [200, 196, 188], lo: 0.6, hi: 0.9, maxA: 0.12 });
+  const lt = dirtCanvas(blotch(5, 5, 4, seed + 13), 256, { color: [214, 208, 196], lo: 0.6, hi: 0.9, maxA: 0.14 });
   P.overlay('a', lt, 'source-over', 1, 1);
-  const gr = noiseCanvas(128, 128, grain(seed + 14, 128), (v) => [v * 255, v * 255, v * 255, 26]);
-  P.overlay('a', gr, 'overlay', 1, Math.max(1, S / 256));
-  const gh = noiseCanvas(128, 128, grain(seed + 15, 128), (v) => [v * 255, v * 255, v * 255, 40]);
+  // crisp aggregate speckle: dark and light pits at pixel scale give the surface its sharpness up close
+  const sp = noiseCanvas(256, 256, grain(seed + 14, 256), (v) => (v < 0.1 ? [18, 16, 14, 70] : v > 0.92 ? [232, 226, 214, 40] : [128, 128, 128, 22]));
+  P.overlay('a', sp, 'source-over', 1, Math.max(1, S / 256));
+  const gh = noiseCanvas(128, 128, grain(seed + 15, 128), (v) => [v * 255, v * 255, v * 255, 14]);
   P.overlay('h', gh, 'source-over', 1, Math.max(1, S / 256));
+  // hairline cracks and chipped spots
+  const k = S / 1024;
+  P.a.lineCap = 'round';
+  const nCracks = Math.round(5 + dirt * 8);
+  for (let i = 0; i < nCracks; i++) {
+    let x = rnd() * S, y = rnd() * S, an = rnd() * 6.283;
+    P.a.strokeStyle = 'rgba(14,12,10,0.5)'; P.a.lineWidth = Math.max(0.8, 1.2 * k);
+    P.hx.strokeStyle = gray(60); P.hx.lineWidth = Math.max(1, 1.6 * k);
+    for (let j = 0; j < 8 + Math.floor(rnd() * 10); j++) {
+      const nx = x + Math.cos(an) * 14 * k, ny = y + Math.sin(an) * 14 * k;
+      P.a.beginPath(); P.a.moveTo(x, y); P.a.lineTo(nx, ny); P.a.stroke();
+      P.hx.beginPath(); P.hx.moveTo(x, y); P.hx.lineTo(nx, ny); P.hx.stroke();
+      x = nx; y = ny; an += (rnd() - 0.5) * 1.1;
+    }
+  }
 }
 
 // ---------------------------------------------------------------- facades
@@ -463,8 +480,8 @@ function paintStorefront(S, seed, q) {
       const up = rnd() < 0.4 ? 0.4 : 0;
       P.rect(sx + 4 * k, top, swd - 8 * k, bot - top, { a: '#2a2b2c', h: 60, r: 0.9 });
       const sy0 = top, sy1 = bot - (bot - top) * up;
-      for (let y = sy0; y < sy1; y += 4 * k) {
-        P.rect(sx + 4 * k, y, swd - 8 * k, 3 * k, { a: shade('#8d8f8e', 0.85 + rnd() * 0.15), h: 175, r: 0.55, m: 0.5 });
+      for (let y = sy0; y < sy1; y += 8 * k) {
+        P.rect(sx + 4 * k, y, swd - 8 * k, 6.5 * k, { a: shade('#6f716f', 0.9 + rnd() * 0.12), h: 170, r: 0.7, m: 0.25 });
       }
       P.rect(sx + 4 * k, sy1 - 5 * k, swd - 8 * k, 5 * k, { a: '#4b4c4c', h: 200, r: 0.5, m: 0.6 });
       if (rnd() < 0.7) graffiti(P.a, sx + swd * 0.1, sy0 + (sy1 - sy0) * 0.3, swd * 0.8, (sy1 - sy0) * 0.5, rnd);
@@ -499,14 +516,14 @@ function paintStorefront(S, seed, q) {
 }
 
 function graffiti(ctx, x, y, w, h, rnd) {
-  const cols = ['#d8d8d0', '#c43b2e', '#2e7cc4', '#e3c13b', '#1b1b1b', '#3bb35a'];
+  const cols = ['#b8b6ac', '#8c3a30', '#35607f', '#a58f45', '#1b1b1b', '#45704f'];
   ctx.save();
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const strokes = 3 + Math.floor(rnd() * 4);
+  const strokes = 2 + Math.floor(rnd() * 3);
   for (let s = 0; s < strokes; s++) {
     ctx.strokeStyle = cols[Math.floor(rnd() * cols.length)];
     ctx.lineWidth = Math.max(1.5, h * (0.06 + rnd() * 0.08));
-    ctx.globalAlpha = 0.75;
+    ctx.globalAlpha = 0.42;
     ctx.beginPath();
     let px = x + rnd() * w * 0.3, py = y + rnd() * h;
     ctx.moveTo(px, py);
@@ -594,7 +611,7 @@ function paintRoof(S, seed, q) {
 function concreteBase(P, seed, tone = '#8f8c86', { forms = true, k = 1 } = {}) {
   const S = P.w;
   const n = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => {
-    const c = 0.82 + v * 0.3; const t = new THREE.Color(tone);
+    const c = 0.86 + v * 0.26; const t = new THREE.Color(tone);
     return [t.r * 255 * c, t.g * 255 * c, t.b * 255 * c, 255];
   });
   P.overlay('a', n, 'source-over', 1);
@@ -611,9 +628,9 @@ function concreteBase(P, seed, tone = '#8f8c86', { forms = true, k = 1 } = {}) {
 
 function paintTrim(S, seed, q) {
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#8f8c86', h: 150, r: 0.9 });
-  concreteBase(P, seed, '#9a968e', { k: S / 512 });
-  weather(P, rnd, { streaks: 0.5, dirt: 0.4, seed });
+  const P = new Painter(S, S, { a: '#a8a49b', h: 150, r: 0.9 });
+  concreteBase(P, seed, '#b0aca3', { k: S / 512 });
+  weather(P, rnd, { streaks: 0.28, dirt: 0.32, seed });
   return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
 }
 
@@ -666,12 +683,12 @@ function paintAsphalt(S, seed, q) {
   const rnd = mulberry32(seed);
   const P = new Painter(S, S, { a: '#3f3f3e', h: 128, r: 0.9 });
   const k = S / 1024;
-  const base = noiseCanvas(256, 256, blotch(6, 6, 6, seed), (v) => { const c = 50 + v * 34; return [c, c * 0.99, c * 0.97, 255]; });
+  const base = noiseCanvas(256, 256, blotch(6, 6, 6, seed), (v) => { const c = 78 + v * 46; return [c, c * 0.985, c * 0.95, 255]; });
   P.overlay('a', base, 'source-over', 1);
   const agg = noiseCanvas(256, 256, grain(seed + 1, 256), (v) => (v > 0.9 ? [100 + v * 40, 98 + v * 40, 94 + v * 38, 110] : v < 0.08 ? [22, 22, 22, 110] : [0, 0, 0, 0]));
   P.overlay('a', agg, 'source-over', 1, Math.max(1, S / 256));
   const aggh = noiseCanvas(256, 256, grain(seed + 1, 256), (v) => [v * 255, v * 255, v * 255, 255]);
-  P.overlay('h', aggh, 'source-over', 0.35, Math.max(1, S / 256));
+  P.overlay('h', aggh, 'source-over', 0.18, Math.max(1, S / 256));
   // patch repairs (darker rectangles)
   for (let i = 0; i < 5; i++) {
     const w = (80 + rnd() * 260) * k, h = (60 + rnd() * 200) * k, x = rnd() * S, y = rnd() * S;
@@ -696,7 +713,10 @@ function paintAsphalt(S, seed, q) {
   const oil = dirtCanvas(blotch(2, 8, 4, seed + 3), 256, { color: [20, 20, 20], lo: 0.55, hi: 0.85, maxA: 0.35 });
   P.overlay('a', oil, 'source-over', 1);
   P.overlay('r', noiseCanvas(256, 256, blotch(2, 8, 4, seed + 3), (v) => [0, 230 - Math.max(0, v - 0.55) * 300, 0, 255]), 'source-over', 1);
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  // wind-blown sand and dust drifting over the surface
+  const dust = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 9), (v) => [176, 163, 140, Math.max(0, v - 0.48) * 2.4 * 255 * 0.55]);
+  P.overlay('a', dust, 'source-over', 1);
+  return P.textures({ normal: 1.3, aniso: q.aniso, normals: q.normals });
 }
 
 function paintSidewalk(S, seed, q) {

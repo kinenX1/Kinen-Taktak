@@ -21,7 +21,8 @@ export const FARM = 0.37;
 const grip = (g, mirror) => gripMatrix(g, mirror);
 export const GRIPS = {
   rifleR: grip(M4.gripR, false),
-  rifleL: grip(M4.gripL, true),
+  // Left hand a little lower and further back than the third-person grip so it never hides the muzzle.
+  rifleL: grip({ p: [0.275, BORE - 0.026, 0], axis: [-1, 0, 0.05], back: [0, -0.7, -1] }, true),
   rifleMag: grip(M4.gripMag, true),
   rpgR: grip(RPG.gripR, false),
   rpgL: grip(RPG.gripL, true),
@@ -99,20 +100,20 @@ function finishes(suit, team, quality) {
 function buildArm(rig, f, side, n) {
   const L = side < 0 ? 'L' : 'R';
   const U = 'uArm' + L, Fa = 'fArm' + L, H = 'hand' + L;
-  rig.add(U, sph(0.058, 14 * n, 10 * n), f.camo);
-  rig.add(U, lathe([[0.056, 0], [0.055, -0.1], [0.051, -0.26], [0.047, -UARM]], 16 * n), f.camo);
-  rig.add(Fa, sph(0.047, 12 * n, 8 * n), f.camo);
-  rig.add(Fa, lathe([[0.046, 0], [0.047, -0.05], [0.043, -0.2], [0.04, -FARM + 0.02], [0.039, -FARM - 0.03]], 16 * n), f.camo);
+  rig.add(U, sph(0.068, 14 * n, 10 * n), f.camo);
+  rig.add(U, lathe([[0.066, 0], [0.065, -0.1], [0.06, -0.26], [0.055, -UARM]], 16 * n), f.camo);
+  rig.add(Fa, sph(0.055, 12 * n, 8 * n), f.camo);
+  rig.add(Fa, lathe([[0.054, 0], [0.056, -0.05], [0.051, -0.2], [0.048, -FARM + 0.02], [0.047, -FARM - 0.03]], 16 * n), f.camo);
   // Elbow pad and cinch strap at the wrist.
-  rig.add(Fa, rbox(0.026, 0.06, 0.07, 0.01), f.camoDark, [-0.04, -0.015, 0]);
-  rig.add(Fa, cyl(0.0425, 0.0425, 0.026, 16 * n), f.strap, [0, -FARM + 0.04, 0]);
+  rig.add(Fa, rbox(0.03, 0.07, 0.08, 0.01), f.camoDark, [-0.048, -0.015, 0]);
+  rig.add(Fa, cyl(0.0505, 0.0505, 0.028, 16 * n), f.strap, [0, -FARM + 0.04, 0]);
   if (side < 0) {
     // Team band on the left sleeve, wrist GPS on the back of the wrist.
-    rig.add(Fa, cyl(0.05, 0.047, 0.045, 18 * n, true), f.team, [0, -0.13, 0]);
-    rig.add(Fa, rbox(0.02, 0.046, 0.044, 0.006), F.blackPoly, [0.042, -FARM + 0.11, 0]);
-    rig.add(Fa, box(0.003, 0.03, 0.03), { c: 0x7cffb0, r: 0.3, m: 0, e: 1.2 }, [0.054, -FARM + 0.11, 0]);
+    rig.add(Fa, cyl(0.059, 0.056, 0.045, 18 * n, true), f.team, [0, -0.13, 0]);
+    rig.add(Fa, rbox(0.02, 0.046, 0.044, 0.006), F.blackPoly, [0.05, -FARM + 0.11, 0]);
+    rig.add(Fa, box(0.003, 0.03, 0.03), { c: 0x7cffb0, r: 0.3, m: 0, e: 1.2 }, [0.062, -FARM + 0.11, 0]);
   } else {
-    rig.add(Fa, rbox(0.006, 0.055, 0.045, 0.003), f.patch, [0.047, -0.12, 0]);
+    rig.add(Fa, rbox(0.006, 0.055, 0.045, 0.003), f.patch, [0.056, -0.12, 0]);
   }
   buildHand(rig, H, { mirror: side < 0, glove: f.gloves, knuckles: f.knuckle, trigger: side > 0, hi: n >= 1 });
 }

@@ -30,9 +30,14 @@ export class Geo {
   // colors may be one color or an array of four (per-corner tint, used for baked ambient occlusion).
   quad(p, uvs, color, lit = 0) {
     const b = this.vertexCount;
-    const ax = p[3] - p[0], ay = p[4] - p[1], az = p[5] - p[2];
-    const bx = p[9] - p[0], by = p[10] - p[1], bz = p[11] - p[2];
-    let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    // Newell's method: stays valid when two corners coincide (triangle fans such as disc centres), where a
+    // single cross product would give a zero normal and NaN lighting that bloom then smears over the screen
+    let nx = 0, ny = 0, nz = 0;
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      const x0 = p[i * 3], y0 = p[i * 3 + 1], z0 = p[i * 3 + 2], x1 = p[j * 3], y1 = p[j * 3 + 1], z1 = p[j * 3 + 2];
+      nx += (y0 - y1) * (z0 + z1); ny += (z0 - z1) * (x0 + x1); nz += (x0 - x1) * (y0 + y1);
+    }
     const l = Math.hypot(nx, ny, nz) || 1;
     nx /= l; ny /= l; nz /= l;
     const per = Array.isArray(color && color[0]);

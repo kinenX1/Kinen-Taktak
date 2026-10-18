@@ -6,11 +6,11 @@ const deg = Math.PI / 180;
 
 export const PRESETS = {
   overcast: {
-    top: '#6f777e', horizon: '#a6a9a8', below: '#8d8f8b', fog: '#9c9e9b', fogDensity: 0.0042, fogMax: 0.94,
-    cloudCover: 0.92, cloudLit: '#b4b6b5', cloudDark: '#5e6164', cloudScale: 1.0, cloudSpeed: 0.004,
-    sunColor: '#efe9df', sunIntensity: 1.25, sunElev: 52, sunAz: 215, sunDisc: 0, sunGlow: 0.15,
-    hemiSky: '#c2c9cf', hemiGround: '#5a544b', hemiIntensity: 1.15, envIntensity: 0.75, exposure: 1.05,
-    shadowStrength: 0.55, lit: 0.0, lamps: false, stars: 0, moon: 0,
+    top: '#6b8aa6', horizon: '#d2d6d4', below: '#9ea39f', fog: '#b4bcbf', fogDensity: 0.0040, fogMax: 0.94,
+    cloudCover: 0.78, cloudLit: '#f2f3f1', cloudDark: '#7a8996', cloudScale: 1.0, cloudSpeed: 0.004,
+    sunColor: '#ffe6c4', sunIntensity: 2.3, sunElev: 42, sunAz: 215, sunDisc: 0, sunGlow: 0.35,
+    hemiSky: '#b4c7d8', hemiGround: '#6f675b', hemiIntensity: 1.25, envIntensity: 0.9, exposure: 1.2,
+    shadowStrength: 0.8, lit: 0.0, lamps: false, stars: 0, moon: 0,
   },
   day: {
     top: '#3f6ea8', horizon: '#b9cbd8', below: '#9aa6ae', fog: '#aebdc7', fogDensity: 0.0024, fogMax: 0.9,

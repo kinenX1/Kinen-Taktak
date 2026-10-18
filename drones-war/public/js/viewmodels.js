@@ -13,7 +13,7 @@ import { HAND_GRIP } from './models/weapons.js';
 
 const ADS_FOV = [52, 60];
 // Game viewmodels are drawn oversized so the weapon fills the lower right of the screen like in a console shooter.
-const WEAPON_SCALE = [1.25, 1.15];
+const WEAPON_SCALE = [1.25, 1.2];
 // In ADS the eye sits this far above the sight axis (m): the window frame drops below the reticle so the
 // rear of the sight no longer covers half of it, and the reticle quad is lifted by the same amount so it
 // still lands exactly on the screen center (a collimated sight shows the dot on target wherever the eye is).
@@ -25,20 +25,20 @@ const RELOAD_PROGRESS_NONE = -1;
 // low: dropped out of sight (swap, grenade). pivot: where recoil/sway rotate the weapon (the shoulder pocket).
 const POSE = [
   {
-    hip: { p: [0.3, -0.07, 0.15], r: [0.0, 0.09, 0.0] },
+    hip: { p: [0.3, -0.075, 0.21], r: [0.0, 0.16, 0.0] },
     ads: { p: [0.16, -EYE_DROP, 0.0], r: [0, 0, 0] },
     sprint: { p: [0.33, -0.3, 0.17], r: [0.0, 0.62, 0.32] },
     low: { p: [0.34, -0.62, 0.2], r: [0.35, 0.3, -0.85] },
-    reload: { p: [0.1, 0.03, -0.03], r: [0.3, 0.05, 0.3] },
+    reload: { p: [0.08, 0.13, -0.1], r: [0.4, 0.0, 0.32] },
     pivot: [-0.3, -0.07, 0],
     mid: [0.12, -0.07, 0],
   },
   {
-    hip: { p: [0.3, -0.12, 0.2], r: [0.0, 0.07, 0.0] },
+    hip: { p: [0.3, -0.1, 0.2], r: [0.0, 0.06, 0.0] },
     ads: { p: [0.3, 0.0, 0.0], r: [0, 0, 0] },
     sprint: { p: [0.3, -0.25, 0.2], r: [0.2, 0.5, 0.25] },
     low: { p: [0.3, -0.7, 0.22], r: [0.4, 0.3, -0.8] },
-    reload: { p: [0.0, 0.0, -0.04], r: [0.0, 0.0, 0.55] },
+    reload: { p: [0.0, 0.0, -0.04], r: [0.0, 0.0, 0.35] },
     pivot: [-0.45, -0.07, 0],
     mid: [0.0, -0.07, 0],
   },
@@ -93,7 +93,7 @@ const mix3 = (a, b, t, out) => { out[0] = lerp(a[0], b[0], t); out[1] = lerp(a[1
 // back-of-the-hand direction. Hold at the side (thumb up) → cock beside the ear (palm forward) → release → follow through.
 const THROW_KEYS = [
   { t: 0.3, p: [0.46, -0.3, 0.2], k: [1, 0.15, -0.1], b: [0, 0.15, 1] },
-  { t: 0.5, p: [0.2, 0.02, 0.3], k: [-0.15, 1, 0], b: [-1, 0, 0] },
+  { t: 0.5, p: [0.32, 0.06, 0.3], k: [-0.1, 1, 0], b: [-1, 0, 0] },
   { t: 0.62, p: [0.72, 0.06, 0.12], k: [1, 0.3, -0.1], b: [0, 1, 0.1] },
   { t: 0.75, p: [0.62, -0.22, 0.16], k: [1, -0.3, 0], b: [0, 1, 0.2] },
 ].map((k) => {
@@ -209,7 +209,7 @@ class ViewModel {
       f.traverse((o) => { o.renderOrder = 12; });
       return f;
     };
-    this.flash = [mk(0.2), mk(0.45)];
+    this.flash = [mk(0.3), mk(0.55)];
     this.muzzle = [new THREE.Object3D(), new THREE.Object3D()];
     this.muzzle[0].position.set(M4.muzzle[0] + 0.035, M4.muzzle[1], 0);
     this.muzzle[1].position.set(RPG.muzzle[0] + 0.47, RPG.muzzle[1], 0);
@@ -219,7 +219,7 @@ class ViewModel {
     this.flashT = [0, 0];
     this.flashLight = null;
     if (quality !== 'low') {
-      this.flashLight = new THREE.PointLight(0xffa860, 0, 4, 2);
+      this.flashLight = new THREE.PointLight(0xffa860, 0, 2.5, 2);
       this.flashLight.position.set(0.03, 0.02, 0);
       this.muzzle[0].add(this.flashLight);
     }
@@ -299,7 +299,7 @@ class ViewModel {
     fl.visible = true;
     fl.rotation.x = Math.random() * Math.PI;
     this.flashT[s] = s === 1 ? 0.09 : 0.045;
-    if (s === 0 && this.flashLight) { this.flashLight.intensity = 9; this.flashLightT = 0.05; }
+    if (s === 0 && this.flashLight) { this.flashLight.intensity = 2.5; this.flashLightT = 0.05; }
   }
 
   ejectCasing() {
@@ -502,7 +502,7 @@ class ViewModel {
     // k: [grip blend, off x, off y, off z]
     keys(r, [
       [0.0, 0, 0, 0, 0], [0.1, 0, 0, 0, 0], [0.2, 1, 0, 0, 0], [0.3, 1, 0.0, -0.01, 0], [0.4, 1, -0.02, -0.24, 0.0],
-      [0.5, 1, -0.06, -0.42, -0.12], [0.62, 1, -0.06, -0.42, -0.12], [0.74, 1, 0.0, -0.17, 0.0], [0.82, 1, 0.0, 0.0, 0.0],
+      [0.5, 1, -0.05, -0.3, -0.1], [0.62, 1, -0.05, -0.3, -0.1], [0.74, 1, 0.0, -0.15, 0.0], [0.82, 1, 0.0, 0.0, 0.0],
       [0.86, 1, 0.0, 0.004, 0.0], [0.95, 0, 0, 0, 0],
     ], k);
     quat.slerpQuaternions(D.rifleL.q, D.rifleMag.q, k[0]);
@@ -527,7 +527,7 @@ class ViewModel {
     const k = this.tmp;
     // k: [rocket-grip blend, rocket slide x (0 = seated … 0.55 = outside), hand dy]
     keys(r, [
-      [0.0, 0, 0.55, 0.0], [0.12, 1, 0.55, -0.0], [0.3, 1, 0.55, -0.0], [0.5, 1, 0.55, -0.0], [0.62, 1, 0.55, -0.0],
+      [0.0, 0, 0.45, 0.0], [0.12, 1, 0.45, -0.0], [0.3, 1, 0.45, -0.0], [0.5, 1, 0.45, -0.0], [0.62, 1, 0.45, -0.0],
       [0.88, 1, 0.0, 0.0], [0.96, 0, 0.0, 0.0],
     ], k);
     quat.slerpQuaternions(D.rpgL.q, D.rpgRocket.q, k[0]);
@@ -597,7 +597,7 @@ class ViewModel {
     }
     if (this.flashLightT > 0) {
       this.flashLightT -= dt;
-      if (this.flashLight) this.flashLight.intensity = Math.max(0, this.flashLightT / 0.05) * 9;
+      if (this.flashLight) this.flashLight.intensity = Math.max(0, this.flashLightT / 0.05) * 2.5;
     }
     for (const c of this.casings) {
       if (c.t <= 0) continue;

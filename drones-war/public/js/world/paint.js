@@ -130,11 +130,24 @@ export function heightToNormal(src, strength, wrap = true) {
   const hd = sctx.getImageData(0, 0, w, h).data;
   const H = new Float32Array(w * h);
   for (let i = 0; i < w * h; i++) H[i] = hd[i * 4] / 255;
+  // two [1 2 1] passes per axis: per-pixel grain would otherwise turn into carpet-like sparkle in the normals,
+  // while edges of bricks, panels and cracks (several pixels wide) survive
+  const tmp = new Float32Array(w * h);
+  for (let pass = 0; pass < 2; pass++) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const xl = wrap ? (x + w - 1) % w : Math.max(0, x - 1), xr = wrap ? (x + 1) % w : Math.min(w - 1, x + 1);
+      tmp[y * w + x] = (H[y * w + xl] + 2 * H[y * w + x] + H[y * w + xr]) * 0.25;
+    }
+    for (let y = 0; y < h; y++) {
+      const yu = wrap ? (y + h - 1) % h : Math.max(0, y - 1), yd = wrap ? (y + 1) % h : Math.min(h - 1, y + 1);
+      for (let x = 0; x < w; x++) H[y * w + x] = (tmp[yu * w + x] + 2 * tmp[y * w + x] + tmp[yd * w + x]) * 0.25;
+    }
+  }
   const c = makeCanvas(w, h);
   const ctx = c.getContext('2d');
   const img = ctx.createImageData(w, h);
   const d = img.data;
-  const s = strength * (w / 256);
+  const s = strength * 1.5 * (w / 256);
   const at = (x, y) => {
     if (wrap) { x = (x + w) % w; y = (y + h) % h; } else { x = Math.max(0, Math.min(w - 1, x)); y = Math.max(0, Math.min(h - 1, y)); }
     return H[y * w + x];

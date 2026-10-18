@@ -90,6 +90,14 @@ ${lit ? 'varying float vLit;' : ''}`);
   vec2 gp = abs( vWNrm.y ) > 0.6 ? vWPos.xz : vec2( vWPos.x + vWPos.z, vWPos.y * 1.6 );
   float g = texture2D( uGrime, gp / ${grimeScale.toFixed(1)} ).r * 0.65 + texture2D( uGrime, gp / ${(grimeScale * 0.23).toFixed(2)} + 0.37 ).r * 0.35;
   diffuseColor.rgb *= mix( 1.0, 0.55 + g * 0.8, ${grime.toFixed(3)} );
+  if ( abs( vWNrm.y ) < 0.6 ) {
+    // walls: dirt splashed up from the street, rain streaks running down, dusty tint near the ground
+    float lowW = 1.0 - smoothstep( 0.0, 2.6, vWPos.y );
+    float streak = texture2D( uGrime, vec2( ( vWPos.x + vWPos.z ) * 0.42, vWPos.y * 0.018 ) ).r;
+    diffuseColor.rgb *= 1.0 - lowW * 0.38 * ${Math.min(1, grime * 2).toFixed(3)};
+    diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * vec3( 1.1, 1.02, 0.88 ), lowW * 0.35 );
+    diffuseColor.rgb *= 1.0 - ( 1.0 - streak ) * 0.34 * ${Math.min(1, grime * 2).toFixed(3)};
+  }
 }`);
     }
     if (lit) {
