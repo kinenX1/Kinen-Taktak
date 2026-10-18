@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: novacia-ai
+    runtime: node
+    plan: free
+    rootDir: novacia-ai
+    buildCommand: echo "no build step"
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false

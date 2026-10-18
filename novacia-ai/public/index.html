@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Novacia AI</title>
+<meta name="description" content="Novacia AI is a free AI assistant. Ask anything, in any language: questions, homework, writing, ideas and code. Choose Haul 1.0 or Kein 1.0.">
+<meta name="theme-color" content="#0A0C11">
+<meta property="og:title" content="Novacia AI">
+<meta property="og:description" content="The new star of artificial intelligence. Ask anything, in any language.">
+<meta property="og:type" content="website">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Unbounded:wght@500;600&display=swap">
+<style>
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+/* Layout: chat app — history sidebar on the left, one centered conversation column, choosers sit right above the message box. Dark-only by design. */
+:root{
+  color-scheme: dark;
+  --bg:#0A0C11;        /* night ground */
+  --panel:#0F1219;     /* sidebar */
+  --raise:#161A23;     /* menus, cards */
+  --line:#232835;
+  --fg:#EEF1F6;
+  --muted:#8E97AA;
+  --blue:#3B7BFF;      /* the ~20% accent */
+  --blue-hi:#7EA6FF;
+  --blue-wash:rgba(59,123,255,.13);
+  --blue-line:rgba(59,123,255,.38);
+  --warn:#FFB86B;
+  --display:"Unbounded","Figtree",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r-sm:10px; --r-md:14px; --r-lg:22px;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--blue-hi);outline-offset:2px;border-radius:8px}
+svg{flex:none}
+
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);height:100%}
+
+/* ---------- sidebar ---------- */
+.sidebar{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:18px;min-height:0;padding-block:18px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:14px}
+.brand{display:flex;align-items:center;gap:10px;padding:2px 6px}
+.brand-mark{width:30px;height:30px;border-radius:9px;background:var(--blue-wash);border:1px solid var(--blue-line);display:grid;place-items:center;color:var(--blue-hi)}
+.brand-name{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:.01em}
+.brand-name span{color:var(--blue-hi)}
+.new-chat{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border-radius:var(--r-md);background:var(--blue);color:#fff;font-weight:600;min-height:44px}
+.new-chat:hover{background:#2F6CF0}
+.side-label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:0 8px;margin:0 0 6px}
+.history{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.hist-item{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:var(--r-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.hist-item:hover{background:var(--raise);color:var(--fg)}
+.hist-item[aria-current="true"]{background:var(--raise);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line)}
+.hist-empty{color:var(--muted);font-size:13px;padding:4px 10px}
+.features{display:flex;flex-direction:column;gap:2px}
+.feat{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:var(--r-sm);color:var(--fg);font-size:14px;text-align:left}
+.feat:hover{background:var(--raise)}
+.feat svg{color:var(--muted)}
+.feat .tier{margin-left:auto;font-size:11px;font-weight:600;color:var(--blue-hi);border:1px solid var(--blue-line);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.plan-card{border:1px solid var(--line);border-radius:var(--r-md);padding:12px;display:flex;align-items:center;gap:10px}
+.plan-card .who{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+.plan-card .who b{font-weight:600;font-size:14px}
+.plan-card .who small{color:var(--muted);font-size:12px}
+.upgrade{margin-left:auto;padding:8px 12px;border-radius:999px;border:1px solid var(--blue-line);color:var(--blue-hi);font-weight:600;font-size:13px;min-height:36px}
+.upgrade:hover{background:var(--blue-wash)}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{display:none;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-block:8px;padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:var(--fg)}
+.icon-btn:hover{background:var(--raise)}
+.topbar .brand-name{flex:1;text-align:center}
+.scroll{flex:1;min-height:0;overflow-y:auto}
+.col{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* welcome */
+.welcome{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:28px;padding-block:48px}
+.hello-star{width:56px;height:56px;color:var(--blue)}
+.hello h1{font-family:var(--display);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.12;margin:16px 0 8px;text-wrap:balance;letter-spacing:-.01em}
+.hello h1 span{color:var(--blue-hi)}
+.hello p{margin:0;color:var(--muted);font-size:17px}
+.starters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.starter{text-align:left;padding:14px 16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;gap:2px;min-height:44px}
+.starter:hover{border-color:var(--blue-line);background:var(--raise)}
+.starter b{font-weight:600;font-size:14px}
+.starter span{color:var(--muted);font-size:13px}
+
+/* thread */
+.thread{display:flex;flex-direction:column;gap:26px;padding-block:28px 12px}
+.msg.user{display:flex;justify-content:flex-end}
+.bubble{max-width:min(78%,560px);background:var(--blue-wash);border:1px solid var(--blue-line);padding:10px 15px;border-radius:18px 18px 6px 18px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.ai{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px}
+.avatar{width:32px;height:32px;border-radius:10px;background:var(--raise);border:1px solid var(--line);display:grid;place-items:center;color:var(--blue)}
+.ai-meta{font-size:12.5px;color:var(--muted);margin:5px 0 4px;display:flex;gap:6px;flex-wrap:wrap}
+.ai-meta b{color:var(--fg);font-weight:600}
+.md{overflow-wrap:anywhere;min-width:0}
+.md > :first-child{margin-top:0}
+.md > :last-child{margin-bottom:0}
+.md p{margin:0 0 .8em}
+.md h1,.md h2,.md h3{font-family:var(--body);font-weight:600;line-height:1.3;margin:1.2em 0 .5em}
+.md h1{font-size:1.3em}.md h2{font-size:1.15em}.md h3{font-size:1.02em}
+.md ul,.md ol{padding-left:1.4em;margin:0 0 .8em}
+.md li{margin:.25em 0}
+.md a{color:var(--blue-hi)}
+.md code{font-family:var(--mono);font-size:.88em;background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:.1em .35em}
+.md pre{background:#07090D;border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;overflow-x:auto;margin:0 0 .9em}
+.md pre code{background:none;border:0;padding:0;font-size:13px;line-height:1.6}
+.md blockquote{margin:0 0 .8em;padding-left:14px;border-left:2px solid var(--blue-line);color:var(--muted)}
+.md table{border-collapse:collapse;display:block;overflow-x:auto;margin:0 0 .9em;max-width:100%}
+.md th,.md td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+.md th{background:var(--raise)}
+.md hr{border:0;border-top:1px solid var(--line);margin:1.2em 0}
+.thinking{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.thinking svg{color:var(--blue);animation:spin 1.6s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes spin{0%{transform:rotate(0) scale(.85);opacity:.6}50%{transform:rotate(180deg) scale(1.1);opacity:1}100%{transform:rotate(360deg) scale(.85);opacity:.6}}
+.ai-actions{display:flex;gap:4px;margin-top:6px}
+.mini{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;color:var(--muted);font-size:12.5px;min-height:32px}
+.mini:hover{background:var(--raise);color:var(--fg)}
+.note{margin:10px 0 0;padding:10px 12px;border-radius:var(--r-sm);border:1px solid rgba(255,184,107,.35);background:rgba(255,184,107,.08);color:var(--warn);font-size:13.5px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.note .mini{color:var(--fg);border:1px solid var(--line)}
+
+/* composer */
+.dock{padding-block:8px 14px;background:linear-gradient(to bottom,transparent,var(--bg) 22%)}
+.choosers{position:relative;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:13.5px;min-height:38px}
+.chip:hover,.chip[aria-expanded="true"]{border-color:var(--blue-line)}
+.chip .k{color:var(--muted)}
+.chip b{font-weight:600}
+.chip svg{color:var(--muted)}
+.menu{position:absolute;left:0;bottom:calc(100% + 8px);width:min(320px,100%);background:var(--raise);border:1px solid var(--line);border-radius:var(--r-md);padding:6px;box-shadow:0 18px 50px rgba(0,0,0,.55);z-index:20}
+.menu h2{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:6px 10px 6px}
+.opt{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;text-align:left;padding:10px;border-radius:var(--r-sm);min-height:44px}
+.opt:hover{background:#1D2230}
+.opt b{display:block;font-weight:600;font-size:14px}
+.opt small{display:block;color:var(--muted);font-size:12.5px;line-height:1.35}
+.opt .check{color:var(--blue-hi);visibility:hidden}
+.opt[aria-checked="true"] .check{visibility:visible}
+.opt .lock{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--blue-hi);border:1px solid var(--blue-line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.box{display:flex;align-items:flex-end;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 8px 8px 16px}
+.box:focus-within{border-color:var(--blue-line);box-shadow:0 0 0 4px rgba(59,123,255,.08)}
+.box textarea{flex:1;min-width:0;resize:none;border:0;outline:0;background:transparent;color:var(--fg);font:inherit;font-size:15.5px;line-height:1.5;padding:8px 0;max-height:200px}
+.box textarea::placeholder{color:var(--muted)}
+.send{width:44px;height:44px;border-radius:14px;background:var(--blue);color:#fff;display:grid;place-items:center}
+.send:hover{background:#2F6CF0}
+.send:disabled{background:var(--raise);color:var(--muted);cursor:default}
+.send.stop{background:var(--fg);color:var(--bg)}
+.fine{margin:8px 0 0;text-align:center;color:var(--muted);font-size:12px}
+.fine.alert{color:var(--warn)}
+
+/* plans */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(3,4,8,.72);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding-block:max(24px,env(safe-area-inset-top,0px)) 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{width:100%;max-width:1080px;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:28px;position:relative}
+.sheet-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
+.sheet-head h2{font-family:var(--display);font-weight:600;font-size:clamp(22px,3.4vw,30px);margin:0 0 6px;letter-spacing:-.01em}
+.sheet-head p{margin:0;color:var(--muted)}
+.sheet-head .icon-btn{margin-left:auto}
+.reason{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:7px 12px;border-radius:999px;background:var(--blue-wash);border:1px solid var(--blue-line);color:var(--blue-hi);font-size:13.5px;font-weight:500}
+.plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.plan{border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px;background:var(--bg)}
+.plan.hl{border-color:var(--blue-line);box-shadow:inset 0 0 0 1px var(--blue-line)}
+.plan h3{margin:0;font-family:var(--display);font-weight:500;font-size:18px}
+.price{display:flex;align-items:baseline;gap:4px}
+.price b{font-family:var(--display);font-weight:600;font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.price span{color:var(--muted);font-size:13px}
+.plan ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;flex:1}
+.plan li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;font-size:14px;line-height:1.4}
+.plan li svg{color:var(--blue-hi);margin-top:2px}
+.plan li.inherit{color:var(--muted)}
+.plan-btn{width:100%;padding:11px;border-radius:12px;font-weight:600;min-height:44px;border:1px solid var(--line);color:var(--muted);cursor:default}
+.plan.hl .plan-btn{border-color:var(--blue-line);color:var(--blue-hi)}
+.sheet-foot{margin:18px 0 0;color:var(--muted);font-size:13px}
+
+.scrim{display:none}
+
+@media (max-width:980px){ .plans{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .topbar{display:flex}
+  .sidebar{position:fixed;top:0;bottom:0;left:0;width:min(300px,86vw);z-index:50;transform:translateX(-102%);transition:transform .22s ease;padding-top:max(18px,env(safe-area-inset-top,0px));padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}
+  .sidebar.open{transform:none;box-shadow:20px 0 60px rgba(0,0,0,.6)}
+  .scrim.show{display:block;position:fixed;inset:0;background:rgba(3,4,8,.6);z-index:45}
+}
+@media (max-width:560px){
+  .starters{grid-template-columns:minmax(0,1fr)}
+  .plans{grid-template-columns:minmax(0,1fr)}
+  .sheet{padding:20px}
+  .bubble{max-width:88%}
+}
+@media (prefers-reduced-motion:reduce){
+  .thinking svg{animation:none}
+  .sidebar{transition:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1.5c.7 5.9 4.6 9.8 10.5 10.5-5.9.7-9.8 4.6-10.5 10.5C11.3 16.6 7.4 12.7 1.5 12 7.4 11.3 11.3 7.4 12 1.5Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h10"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></g></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m7 14 5-5 5 5"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></g></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></symbol>
+    <symbol id="i-memory" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></g></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></g></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"/></g></symbol>
+    <symbol id="i-cube" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></g></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></g></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></g></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Chats and features">
+    <div class="brand">
+      <div class="brand-mark"><svg width="18" height="18" aria-hidden="true"><use href="#i-star"/></svg></div>
+      <div class="brand-name">Novacia <span>AI</span></div>
+    </div>
+    <button class="new-chat" id="newChat" type="button"><svg width="18" height="18" aria-hidden="true"><use href="#i-plus"/></svg>New chat</button>
+
+    <div style="display:flex;flex-direction:column;min-height:0;flex:1">
+      <p class="side-label">Your chats</p>
+      <nav class="history" id="history" aria-label="Your chats"></nav>
+    </div>
+
+    <div>
+      <p class="side-label">Features</p>
+      <div class="features">
+        <button class="feat" type="button" data-feature="Novacia Code comes with the High plan." ><svg width="18" height="18" aria-hidden="true"><use href="#i-code"/></svg>Novacia Code<span class="tier">High</span></button>
+        <button class="feat" type="button" data-feature="Global memory comes with the Pro plan."><svg width="18" height="18" aria-hidden="true"><use href="#i-memory"/></svg>Memory<span class="tier">Pro</span></button>
+        <button class="feat" type="button" data-feature="Your personal database comes with the Pro plan."><svg width="18" height="18" aria-hidden="true"><use href="#i-db"/></svg>Database<span class="tier">Pro</span></button>
+        <button class="feat" type="button" data-feature="Language learning comes with the Pro plan."><svg width="18" height="18" aria-hidden="true"><use href="#i-globe"/></svg>Languages<span class="tier">Pro</span></button>
+        <button class="feat" type="button" data-feature="3D Studio comes with the Pro Max plan."><svg width="18" height="18" aria-hidden="true"><use href="#i-cube"/></svg>3D Studio<span class="tier">Pro Max</span></button>
+      </div>
+    </div>
+
+    <div class="plan-card">
+      <div class="brand-mark" style="width:34px;height:34px"><svg width="16" height="16" aria-hidden="true"><use href="#i-star"/></svg></div>
+      <div class="who"><b>Free plan</b><small>2 models</small></div>
+      <button class="upgrade" type="button" id="upgradeBtn">Upgrade</button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn" type="button" id="openSide" aria-label="Open menu"><svg width="22" height="22" aria-hidden="true"><use href="#i-menu"/></svg></button>
+      <div class="brand-name">Novacia <span>AI</span></div>
+      <button class="icon-btn" type="button" id="newChatTop" aria-label="New chat"><svg width="22" height="22" aria-hidden="true"><use href="#i-plus"/></svg></button>
+    </header>
+
+    <div class="scroll" id="scroll">
+      <section class="col welcome" id="welcome">
+        <div class="hello">
+          <svg class="hello-star" aria-hidden="true"><use href="#i-star"/></svg>
+          <h1>Hi, I'm <span>Novacia</span>.<br>How can I help you today?</h1>
+          <p>Ask anything, in any language.</p>
+        </div>
+        <div class="starters" id="starters">
+          <button class="starter" type="button" data-prompt="Explain how black holes work, simply."><b>Explain something</b><span>How do black holes work?</span></button>
+          <button class="starter" type="button" data-prompt="Help me make a study plan for my exams next week."><b>Help me study</b><span>A plan for next week's exams</span></button>
+          <button class="starter" type="button" data-prompt="Write a short story about a robot who learns to dream."><b>Write a story</b><span>A robot who learns to dream</span></button>
+          <button class="starter" type="button" data-prompt="Teach me 10 useful English phrases for travelling, with examples."><b>Learn a language</b><span>10 useful travel phrases</span></button>
+        </div>
+      </section>
+      <section class="col thread" id="thread" hidden aria-live="polite"></section>
+    </div>
+
+    <div class="dock">
+      <div class="col">
+        <div class="choosers" id="choosers">
+          <button class="chip" type="button" id="modelChip" aria-haspopup="true" aria-expanded="false" aria-controls="modelMenu">
+            <span class="k">Model</span><b id="modelLabel">Haul 1.0</b><svg width="14" height="14" aria-hidden="true"><use href="#i-chev"/></svg>
+          </button>
+          <button class="chip" type="button" id="effortChip" aria-haspopup="true" aria-expanded="false" aria-controls="effortMenu">
+            <span class="k">Effort</span><b id="effortLabel">Normal</b><svg width="14" height="14" aria-hidden="true"><use href="#i-chev"/></svg>
+          </button>
+          <div class="menu" id="modelMenu" role="menu" aria-label="Choose a model" hidden></div>
+          <div class="menu" id="effortMenu" role="menu" aria-label="Choose an effort" hidden></div>
+        </div>
+        <form class="box" id="form">
+          <label for="input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message Novacia</label>
+          <textarea id="input" rows="1" placeholder="Message Novacia…" dir="auto" autocomplete="off"></textarea>
+          <button class="send" id="send" type="submit" aria-label="Send" disabled><svg width="20" height="20" aria-hidden="true"><use href="#i-send"/></svg></button>
+        </form>
+        <p class="fine" id="fine">Novacia can make mistakes. Check important info. Answers are made with Google Gemini, so don't share private information.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="plans" role="dialog" aria-modal="true" aria-labelledby="plansTitle" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <h2 id="plansTitle">Novacia plans</h2>
+        <p>Start free. Upgrade for more power and more features.</p>
+        <div class="reason" id="reason" hidden><svg width="14" height="14" aria-hidden="true"><use href="#i-lock"/></svg><span id="reasonText"></span></div>
+      </div>
+      <button class="icon-btn" type="button" id="closePlans" aria-label="Close plans"><svg width="22" height="22" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="plans">
+      <article class="plan">
+        <h3>Free</h3>
+        <div class="price"><b>$0</b><span>/ month</span></div>
+        <ul>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Haul 1.0 and Kein 1.0</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Faible, Normal and Fast effort</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Chat history on your device</li>
+        </ul>
+        <button class="plan-btn" type="button" aria-disabled="true">Your current plan</button>
+      </article>
+      <article class="plan hl">
+        <h3>High</h3>
+        <div class="price"><b>$7</b><span>/ month</span></div>
+        <ul>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Faster AI</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>UltraMax effort</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Novacia Code: create designs</li>
+        </ul>
+        <button class="plan-btn" type="button" aria-disabled="true">Coming soon</button>
+      </article>
+      <article class="plan">
+        <h3>Pro</h3>
+        <div class="price"><b>$14</b><span>/ month</span></div>
+        <ul>
+          <li class="inherit"><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Everything in High</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Strong global memory</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Personal database for your info, links, designs and websites</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Language learning with an AI tutor</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Study help, and tools to help others study</li>
+        </ul>
+        <button class="plan-btn" type="button" aria-disabled="true">Coming soon</button>
+      </article>
+      <article class="plan">
+        <h3>Pro Max</h3>
+        <div class="price"><b>$30</b><span>/ month</span></div>
+        <ul>
+          <li class="inherit"><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Everything in High and Pro</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Learn technical skills</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Create 3D technical models</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Voice chat</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>First access to new models</li>
+          <li><svg width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>Bigger file uploads and the fastest speed</li>
+        </ul>
+        <button class="plan-btn" type="button" aria-disabled="true">Coming soon</button>
+      </article>
+    </div>
+    <p class="sheet-foot">Payments aren't open yet. Paid plans unlock when Novacia launches them.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  const MODELS = {
+    haul: { name: "Haul 1.0", desc: "Our most capable model. Thinks deeply." },
+    kein: { name: "Kein 1.0", desc: "Fast and light, for everyday chats." }
+  };
+  const EFFORTS = {
+    faible: { name: "Faible", desc: "Short, simple answers" },
+    normal: { name: "Normal", desc: "Balanced, complete answers" },
+    fast:   { name: "Fast",   desc: "The quickest replies" },
+    ultra:  { name: "UltraMax", desc: "Maximum power for hard problems", locked: "High plan" }
+  };
+  const KEY = "novacia.v1";
+
+  const state = { chats: [], currentId: null, model: "haul", effort: "normal", busy: false, ctl: null };
+
+  // ---------- storage (this browser only) ----------
+  function load(){
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (Array.isArray(d.chats)) state.chats = d.chats.filter(c => c && Array.isArray(c.turns));
+      if (MODELS[d.model]) state.model = d.model;
+      if (EFFORTS[d.effort] && !EFFORTS[d.effort].locked) state.effort = d.effort;
+    } catch (e) {}
+  }
+  function save(){
+    try {
+      const chats = state.chats.slice().sort((a,b) => b.updated - a.updated).slice(0, 60);
+      localStorage.setItem(KEY, JSON.stringify({ chats, model: state.model, effort: state.effort }));
+    } catch (e) {}
+  }
+
+  // ---------- server connection ----------
+  fetch("/api/status").then(r => r.json()).then(s => {
+    if (!s.ready) { const f = $("fine"); f.textContent = "Novacia is being set up. Check back soon."; f.classList.add("alert"); }
+  }).catch(() => {});
+
+  function trimTurns(turns){
+    const out = []; let total = 0;
+    for (let i = turns.length - 1; i >= 0; i--) {
+      const len = (turns[i].content || "").length;
+      if (out.length && total + len > 40000) break;
+      out.unshift(turns[i]); total += len;
+    }
+    while (out.length && out[0].role !== "user") out.shift();
+    return out;
+  }
+  function copyFor(code){
+    switch (code) {
+      case "busy": return "Novacia is very busy right now. Wait a minute, then try again.";
+      case "locked": return "UltraMax is part of the High plan.";
+      case "not_configured": return "Novacia is being set up. Check back soon.";
+      case "refused": return "Novacia can't help with that one. Try asking in a different way.";
+      case "empty": return "Novacia didn't write anything. Try rephrasing your message.";
+      case "too_long": return "This chat got too long. Start a new chat to keep going.";
+      case "offline": return "You seem to be offline. Check your connection, then try again.";
+      default: return "Connection problem. Your message is saved, so you can try again.";
+    }
+  }
+
+  // ---------- markdown ----------
+  const canMd = !!(window.marked && window.DOMPurify);
+  if (canMd) {
+    try { marked.setOptions({ gfm: true, breaks: true }); } catch (e) {}
+    DOMPurify.addHook("afterSanitizeAttributes", node => {
+      if (node.tagName === "A") { node.setAttribute("target", "_blank"); node.setAttribute("rel", "noopener noreferrer"); }
+    });
+  }
+  function paint(el, text){
+    if (canMd) {
+      try { el.innerHTML = DOMPurify.sanitize(marked.parse(text)); return; } catch (e) {}
+    }
+    el.textContent = text; el.style.whiteSpace = "pre-wrap";
+  }
+
+  // ---------- chats ----------
+  const current = () => state.chats.find(c => c.id === state.currentId) || null;
+  function newChat(){
+    if (state.busy && state.ctl) state.ctl.abort();
+    state.currentId = null;
+    renderAll();
+    closeSide();
+    $("input").focus();
+  }
+  function ensureChat(firstText){
+    let c = current();
+    if (!c) {
+      c = { id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2,6), title: firstText.replace(/\s+/g," ").trim().slice(0, 48) || "New chat", turns: [], updated: Date.now() };
+      state.chats.push(c); state.currentId = c.id;
+    }
+    return c;
+  }
+
+  // ---------- rendering ----------
+  function renderHistory(){
+    const h = $("history"); h.textContent = "";
+    const list = state.chats.slice().sort((a,b) => b.updated - a.updated);
+    if (!list.length) {
+      const p = document.createElement("p"); p.className = "hist-empty"; p.textContent = "Your chats will appear here.";
+      h.append(p); return;
+    }
+    for (const c of list) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "hist-item"; b.textContent = c.title; b.dir = "auto";
+      b.setAttribute("aria-current", c.id === state.currentId ? "true" : "false");
+      b.addEventListener("click", () => {
+        if (state.busy) return;
+        state.currentId = c.id; renderAll(); closeSide();
+      });
+      h.append(b);
+    }
+  }
+  function userEl(text){
+    const w = document.createElement("div"); w.className = "msg user";
+    const b = document.createElement("div"); b.className = "bubble"; b.dir = "auto"; b.textContent = text;
+    w.append(b); return w;
+  }
+  function aiEl(meta){
+    const w = document.createElement("div"); w.className = "msg ai";
+    w.innerHTML = '<div class="avatar"><svg width="16" height="16" aria-hidden="true"><use href="#i-star"/></svg></div><div class="ai-body"><div class="ai-meta"><b>Novacia</b><span></span></div><div class="md" dir="auto"></div></div>';
+    w.querySelector(".ai-meta span").textContent = meta;
+    return w;
+  }
+  function metaFor(model, effort){ return "· " + (MODELS[model] || MODELS.haul).name + " · " + (EFFORTS[effort] || EFFORTS.normal).name; }
+  function addActions(w, text){
+    const bar = document.createElement("div"); bar.className = "ai-actions";
+    const copy = document.createElement("button"); copy.type = "button"; copy.className = "mini";
+    copy.innerHTML = '<svg width="14" height="14" aria-hidden="true"><use href="#i-copy"/></svg><span>Copy</span>';
+    copy.addEventListener("click", () => {
+      const done = () => { copy.querySelector("span").textContent = "Copied"; setTimeout(() => copy.querySelector("span").textContent = "Copy", 1400); };
+      try {
+        navigator.clipboard.writeText(text).then(done, () => selectText(w));
+      } catch (e) { selectText(w); }
+    });
+    bar.append(copy);
+    w.querySelector(".ai-body").append(bar);
+  }
+  function selectText(w){
+    try { const r = document.createRange(); r.selectNodeContents(w.querySelector(".md")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } catch (e) {}
+  }
+  function addNote(w, msg, retryChat){
+    const n = document.createElement("p"); n.className = "note"; n.setAttribute("role", "status");
+    const s = document.createElement("span"); s.textContent = msg; n.append(s);
+    if (retryChat) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "mini";
+      b.innerHTML = '<svg width="14" height="14" aria-hidden="true"><use href="#i-retry"/></svg>Try again';
+      b.addEventListener("click", () => { if (state.busy) return; w.remove(); generate(retryChat); });
+      n.append(b);
+    }
+    w.querySelector(".ai-body").append(n);
+  }
+  function renderThread(){
+    const c = current();
+    const has = !!(c && c.turns.length);
+    $("welcome").hidden = has;
+    $("thread").hidden = !has;
+    const t = $("thread"); t.textContent = "";
+    if (!has) return;
+    for (const turn of c.turns) {
+      if (turn.role === "user") t.append(userEl(turn.content));
+      else {
+        const w = aiEl(metaFor(turn.model, turn.effort));
+        paint(w.querySelector(".md"), turn.content);
+        addActions(w, turn.content);
+        if (turn.interrupted) addNote(w, "This answer was interrupted.", null);
+        t.append(w);
+      }
+    }
+    const last = c.turns[c.turns.length - 1];
+    if (last && last.role === "user" && !state.busy) {
+      const w = aiEl(metaFor(state.model, state.effort));
+      addNote(w, "No answer yet.", c);
+      t.append(w);
+    }
+  }
+  function renderAll(){ renderHistory(); renderThread(); scrollDown(true); }
+  function scrollDown(force){
+    const s = $("scroll");
+    const near = s.scrollHeight - s.scrollTop - s.clientHeight < 160;
+    if (force || near) s.scrollTop = s.scrollHeight;
+  }
+
+  // ---------- sending ----------
+  function setBusy(b){
+    state.busy = b;
+    const btn = $("send");
+    btn.classList.toggle("stop", b);
+    btn.setAttribute("aria-label", b ? "Stop" : "Send");
+    btn.innerHTML = '<svg width="20" height="20" aria-hidden="true"><use href="#i-' + (b ? "stop" : "send") + '"/></svg>';
+    syncSend();
+  }
+  function syncSend(){ $("send").disabled = !state.busy && !$("input").value.trim(); }
+
+  async function send(text){
+    text = text.trim();
+    if (!text || state.busy) return;
+    const c = ensureChat(text);
+    c.turns.push({ role: "user", content: text });
+    c.updated = Date.now();
+    save();
+    $("input").value = ""; autosize();
+    renderHistory();
+    $("welcome").hidden = true; $("thread").hidden = false;
+    $("thread").append(userEl(text));
+    scrollDown(true);
+    generate(c);
+  }
+
+  async function generate(c){
+    const model = state.model, effort = state.effort;
+    const w = aiEl(metaFor(model, effort));
+    const md = w.querySelector(".md");
+    md.innerHTML = '<div class="thinking"><svg width="18" height="18" aria-hidden="true"><use href="#i-star"/></svg><span></span></div>';
+    md.querySelector(".thinking span").textContent = MODELS[model].name + " is thinking…";
+    $("thread").hidden = false; $("welcome").hidden = true;
+    $("thread").append(w); scrollDown(true);
+    setBusy(true);
+    const ctl = new AbortController(); state.ctl = ctl;
+    const turns = trimTurns(c.turns).map(t => ({ role: t.role, content: t.content }));
+    let text = "", raf = 0, done = false, code = null;
+    const ERR = "\u0000ERR:";
+    try {
+      const r = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ model, effort, turns }), signal: ctl.signal });
+      if (!r.ok) { let j = {}; try { j = await r.json(); } catch (e) {} throw { code: j.error || (r.status === 429 ? "busy" : "upstream") }; }
+      const reader = r.body.getReader(), dec = new TextDecoder();
+      for (;;) {
+        const { value, done: end } = await reader.read();
+        if (end) break;
+        text += dec.decode(value, { stream: true });
+        const k = text.indexOf(ERR);
+        const shown = k >= 0 ? text.slice(0, k) : text;
+        if (shown.trim() && !raf) raf = requestAnimationFrame(() => { raf = 0; if (!done) { paint(md, shown); scrollDown(false); } });
+      }
+      text += dec.decode();
+      const k = text.indexOf(ERR);
+      if (k >= 0) { code = text.slice(k + ERR.length).trim() || "upstream"; text = text.slice(0, k).trim(); }
+      done = true; cancelAnimationFrame(raf);
+      if (!text.trim()) throw { code: code || "empty" };
+      paint(md, text);
+      c.turns.push(code ? { role: "assistant", content: text, model, effort, interrupted: true } : { role: "assistant", content: text, model, effort });
+      addActions(w, text);
+      if (code) addNote(w, "This answer was interrupted.", null);
+    } catch (e) {
+      done = true; cancelAnimationFrame(raf);
+      const aborted = e && e.name === "AbortError";
+      const cc = aborted ? "cancelled" : (e && e.code) || (navigator.onLine === false ? "offline" : "upstream");
+      const partial = text && text.indexOf(ERR) < 0 ? text.trim() : "";
+      if (partial) { paint(md, partial); c.turns.push({ role: "assistant", content: partial, model, effort, interrupted: true }); addActions(w, partial); }
+      else md.textContent = "";
+      if (cc === "cancelled") addNote(w, partial ? "Stopped." : "Stopped before Novacia answered.", partial ? null : c);
+      else addNote(w, copyFor(cc), (!partial && cc !== "locked" && cc !== "refused") ? c : null);
+    } finally {
+      state.ctl = null;
+      c.updated = Date.now();
+      save(); renderHistory();
+      setBusy(false);
+      scrollDown(false);
+    }
+  }
+
+  // ---------- choosers ----------
+  function buildMenu(menuId, items, selected, onPick, heading){
+    const m = $(menuId); m.textContent = "";
+    const h = document.createElement("h2"); h.textContent = heading; m.append(h);
+    for (const [key, it] of Object.entries(items)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "opt"; b.setAttribute("role", "menuitemradio");
+      b.setAttribute("aria-checked", key === selected ? "true" : "false");
+      const left = document.createElement("span");
+      const name = document.createElement("b"); name.textContent = it.name;
+      const desc = document.createElement("small"); desc.textContent = it.desc;
+      left.append(name, desc);
+      const right = document.createElement("span");
+      if (it.locked) right.innerHTML = '<span class="lock"><svg width="12" height="12" aria-hidden="true"><use href="#i-lock"/></svg>' + it.locked + '</span>';
+      else right.innerHTML = '<svg class="check" width="18" height="18" aria-hidden="true"><use href="#i-check"/></svg>';
+      b.append(left, right);
+      b.addEventListener("click", () => onPick(key, it));
+      m.append(b);
+    }
+  }
+  function syncChoosers(){
+    $("modelLabel").textContent = MODELS[state.model].name;
+    $("effortLabel").textContent = EFFORTS[state.effort].name;
+    buildMenu("modelMenu", MODELS, state.model, (k) => { state.model = k; save(); closeMenus(); syncChoosers(); }, "Model");
+    buildMenu("effortMenu", EFFORTS, state.effort, (k, it) => {
+      closeMenus();
+      if (it.locked) { openPlans("UltraMax is part of the High plan."); return; }
+      state.effort = k; save(); syncChoosers();
+    }, "Effort");
+  }
+  function closeMenus(){
+    for (const [chip, menu] of [["modelChip","modelMenu"],["effortChip","effortMenu"]]) {
+      $(menu).hidden = true; $(chip).setAttribute("aria-expanded", "false");
+    }
+  }
+  function toggleMenu(chip, menu){
+    const open = $(menu).hidden;
+    closeMenus();
+    if (open) {
+      $(menu).hidden = false; $(chip).setAttribute("aria-expanded", "true");
+      const first = $(menu).querySelector('[aria-checked="true"]') || $(menu).querySelector(".opt");
+      if (first) first.focus();
+    }
+  }
+  $("modelChip").addEventListener("click", (e) => { e.stopPropagation(); toggleMenu("modelChip", "modelMenu"); });
+  $("effortChip").addEventListener("click", (e) => { e.stopPropagation(); toggleMenu("effortChip", "effortMenu"); });
+  document.addEventListener("click", (e) => { if (!e.target.closest("#choosers")) closeMenus(); });
+
+  // ---------- plans ----------
+  let lastFocus = null;
+  function openPlans(reason){
+    lastFocus = document.activeElement;
+    $("reason").hidden = !reason;
+    $("reasonText").textContent = reason || "";
+    $("plans").hidden = false;
+    closeSide();
+    $("closePlans").focus();
+  }
+  function closePlans(){
+    $("plans").hidden = true;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  $("upgradeBtn").addEventListener("click", () => openPlans(""));
+  $("closePlans").addEventListener("click", closePlans);
+  $("plans").addEventListener("click", (e) => { if (e.target === $("plans")) closePlans(); });
+  document.querySelectorAll("[data-feature]").forEach(b => b.addEventListener("click", () => openPlans(b.dataset.feature)));
+
+  // ---------- sidebar (phone) ----------
+  function openSide(){ $("sidebar").classList.add("open"); $("scrim").classList.add("show"); }
+  function closeSide(){ $("sidebar").classList.remove("open"); $("scrim").classList.remove("show"); }
+  $("openSide").addEventListener("click", openSide);
+  $("scrim").addEventListener("click", closeSide);
+  $("newChat").addEventListener("click", newChat);
+  $("newChatTop").addEventListener("click", newChat);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    if (!$("plans").hidden) { closePlans(); return; }
+    if (!$("modelMenu").hidden || !$("effortMenu").hidden) { closeMenus(); return; }
+    closeSide();
+  });
+
+  // ---------- composer ----------
+  const input = $("input");
+  function autosize(){ input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 200) + "px"; syncSend(); }
+  input.addEventListener("input", autosize);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!state.busy) send(input.value); }
+  });
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (state.busy) { if (state.ctl) state.ctl.abort(); return; }
+    send(input.value);
+  });
+  document.querySelectorAll("[data-prompt]").forEach(b => b.addEventListener("click", () => send(b.dataset.prompt)));
+
+  // ---------- start ----------
+  load();
+  state.currentId = null;
+  syncChoosers();
+  renderAll();
+})();
+</script>
+</body>
+</html>
