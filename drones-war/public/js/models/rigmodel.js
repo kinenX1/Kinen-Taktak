@@ -9,7 +9,8 @@ export const wrapPi = (a) => { a %= TAU; return a > Math.PI ? a - TAU : a <= -Ma
 
 export class RigModel {
   // views: { first: { hide: [bone...] }, gunner: { hide: [...] } } — bones scaled to zero while that view is active.
-  constructor(type, team, tpl, { views = {}, flashScale = 0.4 } = {}) {
+  // cabin: { bone, p: [x, y, z], i, d } adds a soft fill light while the interior view is active (own unit only).
+  constructor(type, team, tpl, { views = {}, flashScale = 0.4, cabin = null } = {}) {
     this.type = type;
     this.team = team;
     this.tpl = tpl;
@@ -38,6 +39,8 @@ export class RigModel {
     this.flashScale = flashScale;
     this.ownMaterials = []; // per-instance clones released by dispose()
     this.hidden = new Set();
+    this.cabin = cabin;
+    this.cabinLight = null;
   }
 
   // Attach an anchor to a bone at a model-space offset (relative to the bone).
@@ -62,6 +65,21 @@ export class RigModel {
     for (const n of hide) this.setBoneVisible(n, false);
     this.hidden = hide;
     this.onView?.(mode);
+    this.setCabinLight(!!this.cabin && mode === 'first');
+  }
+
+  // The interiors are lit by the sun through small openings, so the camera view gets a dim fill light.
+  setCabinLight(on) {
+    if (on && !this.cabinLight) {
+      const c = this.cabin;
+      this.cabinLight = new THREE.PointLight(c.color ?? 0xe6ead8, c.i, c.d, 2);
+      this.cabinLight.position.set(c.p[0], c.p[1], c.p[2]);
+      this.b[c.bone].add(this.cabinLight);
+    } else if (!on && this.cabinLight) {
+      this.cabinLight.removeFromParent();
+      this.cabinLight.dispose();
+      this.cabinLight = null;
+    }
   }
 
   setWrecked(on) { this.wreckFlag = !!on; }
@@ -128,6 +146,7 @@ export class RigModel {
   animate() {}
 
   dispose() {
+    this.setCabinLight(false);
     this.inst.skeleton.dispose();
     for (const m of this.ownMaterials) { m.map?.dispose?.(); m.normalMap?.dispose?.(); m.dispose(); }
     this.object.removeFromParent();

@@ -662,4 +662,18 @@ export function vehiclePaint(suit, team) {
   return m;
 }
 
+// Aircraft skin: cool grey (defenders) or dark slate green-grey (attackers); camo when the suit paints vehicles.
+const AIR_PAINT = { def: '#8a939a', atk: '#6a7068' };
+export function airPaint(suit, team) {
+  const s = suit ? sanitizeSuit(suit) : null;
+  if (s && s.paintVehicles) return vehiclePaint(suit, team);
+  const key = 'air|' + (team === 'atk' ? 'atk' : 'def');
+  let m = paintCache.get(key);
+  if (m) return m;
+  m = std({ map: paintTexture(AIR_PAINT[team === 'atk' ? 'atk' : 'def']), roughness: 0.52, metalness: 0.22, roughnessMap: wearTexture(), name: 'paint-air-' + team });
+  tagUV(m, 2.6);
+  paintCache.set(key, m);
+  return m;
+}
+
 export { TEAM_HEX, shade, luminance, mulberry32, makeCanvas, makeFbm, hashStr };

@@ -255,7 +255,7 @@ function template(suit, team, quality) {
 
 export class JeepModel extends RigModel {
   constructor({ team, suit, quality }) {
-    super('jeep', team, template(suit, team, quality), { views: { first: { hide: ['turret', 'gun', 'pod'] } } });
+    super('jeep', team, template(suit, team, quality), { cabin: { bone: 'body', p: [0.0, 1.65, 0], i: 4, d: 6 }, views: { first: { hide: ['turret', 'gun', 'pod'] } } });
     const b = this.b;
     this.anchor(this.anchors.first, 'body', [-0.16, 1.47, -0.45]);
     this.anchor(this.anchors.muzzle[0], 'gun', [1.3, 0.01, 0]);

@@ -64,7 +64,7 @@ export function bevelBox(w, h, d, r = 0.02) {
   g.computeVertexNormals();
   return g;
 }
-export function rbox(w, h, d, r = 0.02, s = 2) {
+export function rbox(w, h, d, r = 0.02, s = 1) {
   if (detail <= 1) return new THREE.BoxGeometry(w, h, d);
   if (detail === 2) return bevelBox(w, h, d, r);
   return new RoundedBoxGeometry(w, h, d, s, Math.min(r, w / 2 - 1e-4, h / 2 - 1e-4, d / 2 - 1e-4));
@@ -305,10 +305,10 @@ export const F = {
   heat: { c: 0x5b5249, r: 0.38, m: 0.85 }, // heat-tinted exhaust metal
   soot: { c: 0x151312, r: 0.95, m: 0.1 },
   interior: { c: 0xbfc2b4, r: 0.72, m: 0.05, e: 0.35 }, // off-white crew compartment paint
-  interiorGreen: { c: 0x56604a, r: 0.75, m: 0.08, e: 0.4 },
-  interiorDark: { c: 0x3a3e3a, r: 0.8, m: 0.1, e: 0.55 },
-  seat: { c: 0x3c3e32, r: 0.95, m: 0, e: 0.5 },
-  panel: { c: 0x2c3032, r: 0.7, m: 0.2, e: 0.55 },
+  interiorGreen: { c: 0x66724f, r: 0.75, m: 0.08, e: 0.45 },
+  interiorDark: { c: 0x565a52, r: 0.8, m: 0.1, e: 0.6 },
+  seat: { c: 0x4a4c3a, r: 0.95, m: 0, e: 0.55 },
+  panel: { c: 0x464d52, r: 0.7, m: 0.2, e: 0.6 },
   carbon: { c: 0x1d1f21, r: 0.38, m: 0.25 },
   lens: { c: 0x0a1418, r: 0.04, m: 0.6 },
   mirror: { c: 0x9aa3a6, r: 0.06, m: 1 },

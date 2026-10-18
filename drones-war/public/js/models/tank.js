@@ -363,8 +363,8 @@ function template(suit, team, quality) {
 
 export class TankModel extends RigModel {
   constructor({ team, suit, quality }) {
-    super('tank', team, template(suit, team, quality), { views: { first: { hide: ['cmdMG'] }, gunner: { hide: ['barrel', 'cmdMG'] } }, flashScale: 0.45 });
-    this.anchor(this.anchors.first, 'turret', [0.55, 0.66, 0.86]);
+    super('tank', team, template(suit, team, quality), { cabin: { bone: 'turret', p: [0.1, 0.85, 0.15], i: 5, d: 6 }, views: { first: { hide: ['cmdMG'] }, gunner: { hide: ['barrel', 'cmdMG'] } }, flashScale: 0.45 });
+    this.anchor(this.anchors.first, 'turret', [0.1, 0.68, 0.12]);
     this.anchors.gunner = new THREE.Object3D();
     this.anchor(this.anchors.gunner, 'gun', [0.7, 0.42, 0.52]);
     this.anchor(this.anchors.muzzle[0], 'gun', [5.05, 0, 0]);

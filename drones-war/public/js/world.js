@@ -16,6 +16,7 @@ import { buildGround } from './world/ground.js';
 import { buildProps } from './world/props.js';
 import { buildCompound } from './world/compound.js';
 import { buildHorizon } from './world/horizon.js';
+import { gradeOf } from './world/grade.js';
 
 const LIT_GEOS = new Set(['brick', 'concrete', 'office', 'apartment', 'glass', 'warehouse', 'tower', 'storefront', 'lobby', 'industrial']);
 // Materials that never cast shadows (flat ground layers and thin stuff).
@@ -448,6 +449,8 @@ uniform vec2 uMapSize;`)
 
   return {
     group, sun, update, setHqDamage, dispose,
+    // post-processing hints for the game's composer (see world/grade.js)
+    grade: gradeOf(world.timeOfDay),
     // diagnostics for tests: how long the build took and how many meshes it produced
     stats: { buildMs, meshes: staticMeshes.length, chunks: chunkSets.size, decals: ctx.decals.count, fires: fires.length },
   };
