@@ -216,8 +216,9 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
 
   // Height and style by how central the block is.
   const floorsFor = (t, avenueFront) => {
-    const lo = 2 + t * 4;
-    const hi = 4 + t * 13 + (avenueFront ? 2 : 0);
+    const u = t ** 1.5; // steeper toward the center: a real skyline, low outskirts
+    const lo = 2 + u * 6;
+    const hi = 3.5 + u * 17 + (avenueFront ? 2 : 0);
     return Math.round(range(lo, hi) * (chance(0.12) ? 1.5 : 1));
   };
   const styleFor = (t, h, w, d) => {
@@ -254,7 +255,7 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
     const frontline = clamp(1 - Math.abs(blk.cx - 300) / 260, 0, 1);
     let floors = floorsFor(blk.t, blk.avenue);
     // Small footprints stay low so the city doesn't turn into needles.
-    floors = Math.min(floors, Math.floor(Math.min(bw, bd) * 0.55));
+    floors = Math.min(floors, Math.floor(Math.min(bw, bd) * 0.8));
     floors = clamp(floors, 2, 18);
     let h = floors * 3.3 + 0.8;
     let ruined = damage(frontline);
@@ -280,7 +281,7 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
       addBuilding(tx, tz, tw, tw, range(72, 90), pick(['tower', 'tower', 'glass']), chance(0.35) ? range(0.1, 0.3) : 0);
       // Annex along the far side from the avenue.
       const north = blk.cz < AVENUE_Z;
-      const annexD = Math.max(5, (north ? tz - z0 : z0 + d - (tz + tw)) - 2.5);
+      const annexD = (north ? tz - z0 : z0 + d - (tz + tw)) - 2.5;
       if (annexD > 4.5) {
         const az = north ? z0 : tz + tw + 2.5;
         addBuilding(x0 + 2, az, w - 4, annexD, range(7, 11), 'shop', chance(0.4) ? range(0.2, 0.5) : 0);
@@ -306,8 +307,8 @@ export function generateCity(seed = 1, { timeOfDay = 'overcast' } = {}) {
           parts.push([0, L]);
         }
         for (const [o, len] of parts) {
-          // Attached buildings of 9 - 18 m frontage.
-          const k = Math.max(1, Math.round(len / range(10, 18)));
+          // Attached buildings of 12 - 20 m frontage.
+          const k = Math.max(1, Math.round(len / range(12, 20)));
           for (let q = 0; q < k; q++) {
             const a = o + (len / k) * q;
             const s2 = { ...sides };

@@ -482,18 +482,19 @@ function paintTexture(hex) {
     }
   }
   ctx.putImageData(img, 0, 0);
-  for (let i = 0; i < 70; i++) {
-    const x = rand() * S, y = rand() * S, L = 15 + rand() * 70;
+  // Soft grime runs (rain streaks), wide and faint so they read as weathering, not wood grain.
+  for (let i = 0; i < 26; i++) {
+    const x = rand() * S, y = rand() * S, L = 20 + rand() * 60, w = 3 + rand() * 7;
     const gr = ctx.createLinearGradient(x, y, x, y + L);
-    gr.addColorStop(0, 'rgba(25,20,12,0.28)');
-    gr.addColorStop(1, 'rgba(25,20,12,0)');
+    gr.addColorStop(0, 'rgba(30,24,16,0.11)');
+    gr.addColorStop(1, 'rgba(30,24,16,0)');
     ctx.fillStyle = gr;
-    wrapped(S, (ox, oy) => ctx.fillRect(x + ox, y + oy, 1 + rand() * 2.5, L));
+    wrapped(S, (ox, oy) => ctx.fillRect(x + ox - w / 2, y + oy, w, L));
   }
-  // Paint chips showing darker primer.
-  for (let i = 0; i < 60; i++) {
-    const x = rand() * S, y = rand() * S, R = 0.6 + rand() * 1.8;
-    ctx.fillStyle = `rgba(40,38,34,${0.35 + rand() * 0.4})`;
+  // Paint chips showing darker primer, mostly small.
+  for (let i = 0; i < 38; i++) {
+    const x = rand() * S, y = rand() * S, R = 0.5 + rand() * rand() * 2.2;
+    ctx.fillStyle = `rgba(48,44,38,${0.25 + rand() * 0.3})`;
     ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
   }
   tex = finishTexture(new THREE.CanvasTexture(canvas));

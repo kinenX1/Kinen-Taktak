@@ -65,7 +65,7 @@ export class BuildingBuilder {
     const x0 = b.x, z0 = b.z, x1 = b.x + b.w, z1 = b.z + b.d, h = Math.max(3, b.h);
     const ruin = decor ? (rnd() < 0.25 ? rnd() * 0.6 : 0) : clamp(b.ruined || 0, 0, 1);
     const tint = hexColor(st.tints[Math.floor(rnd() * st.tints.length)], 0.93 + rnd() * 0.12);
-    const groundKind = b.style === 'concrete' && rnd() < 0.35 ? null : st.ground;
+    const groundKind = decor || (b.style === 'concrete' && rnd() < 0.35) ? null : st.ground;
     const gH = groundKind ? Math.min(GROUND_FLOOR_H[groundKind], h - PARAPET - 0.5) : 0;
     const top = h - ROOF_DROP;                // roof surface height
     const facadeTop = h - PARAPET - 0.2 > gH ? h - PARAPET - 0.2 : h; // parapet band starts here

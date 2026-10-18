@@ -23,9 +23,51 @@ export const segs = (n, min = 3) => Math.max(min, Math.round(n * [0.5, 0.75, 1, 
 // ---------- primitives (all centered at the origin, y-up) ----------
 
 export const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+// Chamfered box (44 triangles): the cheap stand-in for a rounded box. Edges catch light like a real bevel.
+export function bevelBox(w, h, d, r = 0.02) {
+  const hx = w / 2, hy = h / 2, hz = d / 2;
+  r = Math.min(r, hx * 0.9, hy * 0.9, hz * 0.9);
+  const H = [hx, hy, hz];
+  const pos = [];
+  // Corner vertex (signs) displaced for the face along axis fa: that coordinate stays full, the others are inset.
+  const P = (sg, fa) => [0, 1, 2].map((i) => sg[i] * (i === fa ? H[i] : H[i] - r));
+  const emit = (pts) => { // fan of pts, winding fixed so the normal points away from the box center
+    const [a, b, c] = pts;
+    const nx = (b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1]);
+    const ny = (b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]);
+    const nz = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    const m = [0, 1, 2].map((i) => pts.reduce((t, p) => t + p[i], 0));
+    const out = nx * m[0] + ny * m[1] + nz * m[2] >= 0;
+    const q = out ? pts : pts.slice().reverse();
+    for (let i = 1; i < q.length - 1; i++) pos.push(...q[0], ...q[i], ...q[i + 1]);
+  };
+  const S = [-1, 1];
+  for (let a = 0; a < 3; a++) {
+    const o = [(a + 1) % 3, (a + 2) % 3];
+    for (const sa of S) {
+      const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => { const sg = [0, 0, 0]; sg[a] = sa; sg[o[0]] = u; sg[o[1]] = v; return P(sg, a); });
+      emit(corners);
+    }
+  }
+  for (let a = 0; a < 3; a++) {
+    for (let b = a + 1; b < 3; b++) {
+      const c = 3 - a - b;
+      for (const sa of S) for (const sb of S) {
+        const mk = (sc, fa) => { const sg = [0, 0, 0]; sg[a] = sa; sg[b] = sb; sg[c] = sc; return P(sg, fa); };
+        emit([mk(-1, a), mk(1, a), mk(1, b), mk(-1, b)]);
+      }
+    }
+  }
+  for (const sx of S) for (const sy of S) for (const sz of S) emit([P([sx, sy, sz], 0), P([sx, sy, sz], 1), P([sx, sy, sz], 2)]);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
 export function rbox(w, h, d, r = 0.02, s = 2) {
-  if (detail === 0) return new THREE.BoxGeometry(w, h, d);
-  return new RoundedBoxGeometry(w, h, d, detail >= 2 ? s : 1, Math.min(r, w / 2 - 1e-4, h / 2 - 1e-4, d / 2 - 1e-4));
+  if (detail <= 1) return new THREE.BoxGeometry(w, h, d);
+  if (detail === 2) return bevelBox(w, h, d, r);
+  return new RoundedBoxGeometry(w, h, d, s, Math.min(r, w / 2 - 1e-4, h / 2 - 1e-4, d / 2 - 1e-4));
 }
 export const cyl = (rt, rb, h, n = 12, open = false) => new THREE.CylinderGeometry(rt, rb, h, segs(n), 1, open);
 export const cylArc = (rt, rb, h, n, start, len, open = false) => new THREE.CylinderGeometry(rt, rb, h, segs(n), 1, open, start, len);
@@ -151,16 +193,18 @@ export function cached(key, make) {
   return m;
 }
 
-// Patch a MeshStandardMaterial so per-vertex `rm` = (roughness, metalness) multiplies the material's
+// Patch a MeshStandardMaterial so per-vertex `rm` = (roughness, metalness, emission) multiplies the material's
 // values (uber materials use roughness = metalness = 1, so `rm` is absolute).
 function patchRM(shader) {
   shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nattribute vec2 rm;\nvarying vec2 vRM;')
+    .replace('#include <common>', '#include <common>\nattribute vec3 rm;\nvarying vec3 vRM;')
     .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRM = rm;');
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec2 vRM;')
+    .replace('#include <common>', '#include <common>\nvarying vec3 vRM;')
     .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor *= vRM.x;')
-    .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= vRM.y;');
+    .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= vRM.y;')
+    // vRM.z = self-illumination: that share of the albedo is emitted (keeps cabs readable inside roof shadow).
+    .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vRM.z;');
 }
 
 const uberCache = new WeakMap();
@@ -180,6 +224,14 @@ export function uber(base, { vertexColors = true } = {}) {
   m.name = (base.name || 'm') + '+uber';
   byVc[k] = m;
   return m;
+}
+
+// Per-instance copy of a (uber) material, e.g. to scroll a texture on one vehicle without touching the others.
+export function cloneUber(m) {
+  const c = m.clone();
+  c.onBeforeCompile = m.onBeforeCompile;
+  c.customProgramCacheKey = m.customProgramCacheKey;
+  return c;
 }
 
 // The one material for every untextured part (colors/roughness/metalness come from vertex attributes).
@@ -252,11 +304,11 @@ export const F = {
   grey: { c: 0x6d7173, r: 0.62, m: 0.2 },
   heat: { c: 0x5b5249, r: 0.38, m: 0.85 }, // heat-tinted exhaust metal
   soot: { c: 0x151312, r: 0.95, m: 0.1 },
-  interior: { c: 0xbfc2b4, r: 0.72, m: 0.05 }, // off-white crew compartment paint
-  interiorGreen: { c: 0x56604a, r: 0.75, m: 0.08 },
-  interiorDark: { c: 0x2a2d29, r: 0.8, m: 0.1 },
-  seat: { c: 0x30322a, r: 0.95, m: 0 },
-  panel: { c: 0x1c1f20, r: 0.7, m: 0.2 },
+  interior: { c: 0xbfc2b4, r: 0.72, m: 0.05, e: 0.35 }, // off-white crew compartment paint
+  interiorGreen: { c: 0x56604a, r: 0.75, m: 0.08, e: 0.4 },
+  interiorDark: { c: 0x3a3e3a, r: 0.8, m: 0.1, e: 0.55 },
+  seat: { c: 0x3c3e32, r: 0.95, m: 0, e: 0.5 },
+  panel: { c: 0x2c3032, r: 0.7, m: 0.2, e: 0.55 },
   carbon: { c: 0x1d1f21, r: 0.38, m: 0.25 },
   lens: { c: 0x0a1418, r: 0.04, m: 0.6 },
   mirror: { c: 0x9aa3a6, r: 0.06, m: 1 },
@@ -301,10 +353,10 @@ export class Rig {
   add(boneName, g, f, p = null, r = null, s = null) {
     const bi = this.byName.get(boneName);
     if (bi === undefined) throw new Error('Rig.add: unknown bone ' + boneName);
-    let mat, c = 0xffffff, rough = 1, metal = 0, intensity = 1, isGlow = false;
+    let mat, c = 0xffffff, rough = 1, metal = 0, intensity = 1, isGlow = false, emit = 0;
     if (f && f.isMaterial) mat = f;
     else if (f && f.glow) { mat = glowMaterial(); c = f.c; intensity = f.i; isGlow = true; }
-    else { mat = f.mat || solidMaterial(); c = f.c ?? 0xffffff; rough = f.r ?? 0.7; metal = f.m ?? 0; }
+    else { mat = f.mat || solidMaterial(); c = f.c ?? 0xffffff; rough = f.r ?? 0.7; metal = f.m ?? 0; emit = f.e ?? 0; }
     xf(g, p, r, s);
     g.applyMatrix4(this.boneDefs[bi].world);
     if (g.index) { const ng = g.toNonIndexed(); g.dispose(); g = ng; }
@@ -326,7 +378,7 @@ export class Rig {
       }
     }
     _col.set(c);
-    const col = new Float32Array(n * 3), rm = new Float32Array(n * 2);
+    const col = new Float32Array(n * 3), rm = new Float32Array(n * 3);
     const skI = new Uint16Array(n * 4), skW = new Float32Array(n * 4);
     for (let i = 0; i < n; i++) {
       let ao = 1;
@@ -341,11 +393,11 @@ export class Rig {
         ao = 1 - (1 - ao) * this.ao;
       }
       col[i * 3] = _col.r * ao * intensity; col[i * 3 + 1] = _col.g * ao * intensity; col[i * 3 + 2] = _col.b * ao * intensity;
-      rm[i * 2] = rough; rm[i * 2 + 1] = metal;
+      rm[i * 3] = rough; rm[i * 3 + 1] = metal; rm[i * 3 + 2] = emit;
       skI[i * 4] = bi; skW[i * 4] = 1;
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    g.setAttribute('rm', new THREE.BufferAttribute(rm, 2));
+    g.setAttribute('rm', new THREE.BufferAttribute(rm, 3));
     g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skI, 4));
     g.setAttribute('skinWeight', new THREE.BufferAttribute(skW, 4));
     let list = this.buckets.get(mat);
@@ -458,7 +510,7 @@ export function screenMaterial(kind) {
     }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
-    const m = new THREE.MeshStandardMaterial({ color: 0x050505, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.5,
+    const m = new THREE.MeshStandardMaterial({ color: 0x050505, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.0,
       roughness: 0.25, metalness: 0, name: 'screen-' + kind });
     m.userData.glow = true;
     return m;

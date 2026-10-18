@@ -220,8 +220,15 @@ export function buildGrenade(rig, bone, { hi = true } = {}) {
 // pinky for the right hand (mirror = left hand). `trigger` straightens the index finger.
 export const HAND_GRIP = [0.082, -0.036, 0];
 
-export function buildHand(rig, bone, { mirror = false, glove, cuff, trigger = false, hi = true, knuckles = null } = {}) {
+export function buildHand(rig, bone, { mirror = false, glove, cuff, trigger = false, hi = true, knuckles = null, lo = false } = {}) {
   const sz = mirror ? -1 : 1;
+  if (lo) { // third-person hand: palm, one curled finger block, thumb (viewed from meters away)
+    const put = (g, p, r = null) => rig.add(bone, g, glove, [p[0], p[1], p[2] * sz], r);
+    put(box(0.088, 0.034, 0.08), [0.047, -0.004, 0.004]);
+    put(box(0.034, 0.046, 0.078), [0.1, -0.03, 0.004]);
+    put(box(0.04, 0.02, 0.016), [0.04, -0.03, -0.045], [0, 0, -0.6]);
+    return;
+  }
   const add = (g, f, p, r = null) => {
     const rr = r ? [mirror ? -r[0] : r[0], mirror ? -r[1] : r[1], r[2]] : null;
     rig.add(bone, g, f, [p[0], p[1], p[2] * sz], rr);

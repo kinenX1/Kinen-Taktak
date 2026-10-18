@@ -253,7 +253,7 @@ function buildArm(rig, f, side, hi) {
   rig.add(Fa, cyl(0.046, 0.044, 0.035, 12 * n), f.camoDark, [0, -0.205, 0]);
   rig.add(Fa, rbox(0.03, 0.06, 0.07, 0.012), f.pouchDark, [-0.04, -0.01, 0]); // elbow pad
   if (side < 0) rig.add(Fa, rbox(0.03, 0.012, 0.03, 0.005), F.blackPoly, [0.0, -0.21, -0.042]); // wrist GPS
-  buildHand(rig, side < 0 ? 'handL' : 'handR', { mirror: side < 0, glove: f.gloves, knuckles: f.knuckle, trigger: side > 0, hi: false });
+  buildHand(rig, side < 0 ? 'handL' : 'handR', { mirror: side < 0, glove: f.gloves, knuckles: f.knuckle, trigger: side > 0, lo: true });
 }
 
 function buildLeg(rig, f, side, s, hi) {
@@ -336,8 +336,8 @@ function soldierTemplate(suit, team, quality) {
     addPouch(rig, 'hips', f, [0.06, 0.01, -0.17], [0.07, 0.09, 0.04]);
   }
   // Weapons: detailed in the hands, simplified on the back.
-  if (hi) buildM4(rig, 'rifle', { hi: false }); else buildM4Lo(rig, 'rifle');
-  if (hi) buildRPG(rig, 'rpg', { hi: false }); else buildRPGLo(rig, 'rpg');
+  if (q >= 2) buildM4(rig, 'rifle', { hi: false }); else buildM4Lo(rig, 'rifle');
+  if (q >= 3) buildRPG(rig, 'rpg', { hi: false }); else buildRPGLo(rig, 'rpg');
   buildM4Lo(rig, 'slungRifle');
   buildRPGLo(rig, 'slungRpg');
   t = rig.build({ margin: 0.6 });
