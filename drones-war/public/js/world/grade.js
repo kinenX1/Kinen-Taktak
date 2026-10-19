@@ -4,7 +4,7 @@
 // internally so the same numbers behave sensibly on both sides of tone mapping.
 export const GRADES = {
   // CoD: Ghosts overcast: muted, slightly cold shadows, dusty warm highlights, heavy vignette, soft bloom on the sky
-  overcast: { saturation: 0.74, contrast: 1.14, shadows: [0.93, 1.0, 1.08], highlights: [1.07, 1.02, 0.93], lift: 0.012, vignette: 0.42, grain: 0.05, bloom: { strength: 0.32, radius: 0.55, threshold: 0.82 } },
+  overcast: { saturation: 0.7, contrast: 1.2, shadows: [0.86, 0.98, 1.1], highlights: [1.08, 1.02, 0.9], lift: 0.012, vignette: 0.46, grain: 0.055, bloom: { strength: 0.32, radius: 0.55, threshold: 0.82 } },
   day: { saturation: 0.9, contrast: 1.1, shadows: [0.95, 1.0, 1.06], highlights: [1.06, 1.02, 0.94], lift: 0.008, vignette: 0.32, grain: 0.04, bloom: { strength: 0.3, radius: 0.5, threshold: 0.88 } },
   sunset: { saturation: 0.9, contrast: 1.16, shadows: [0.9, 0.97, 1.1], highlights: [1.14, 1.0, 0.86], lift: 0.01, vignette: 0.42, grain: 0.05, bloom: { strength: 0.42, radius: 0.6, threshold: 0.78 } },
   night: { saturation: 0.8, contrast: 1.12, shadows: [0.88, 0.98, 1.14], highlights: [1.1, 1.02, 0.92], lift: 0.004, vignette: 0.5, grain: 0.07, bloom: { strength: 0.6, radius: 0.7, threshold: 0.62 } },

@@ -19,6 +19,13 @@ export function hash2(x, y) {
   return (h >>> 0) / 4294967296;
 }
 
+// Fraction of the street-level haze density seen by a camera at height y (average along a ray down to the ground).
+export function fogAltitudeFactor(y) {
+  const k = 1 / 55;
+  if (y < 2) return 1;
+  return Math.max(0.12, (1 - Math.exp(-k * y)) / (k * y));
+}
+
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -29,15 +36,15 @@ export const QUALITY = {
     props: 0.45, debris: 0.4, ledges: false, roofDetail: 0.3, lampLights: 0, fireLights: 0, skyline: 0.5, aniso: 2,
   },
   medium: {
-    level: 1, tex: 512, groundTex: 512, normals: true, standard: true, shadows: true, shadowSize: 1024, shadowRange: 70,
+    level: 1, tex: 512, groundTex: 512, normalDiv: 1, normals: true, standard: true, shadows: true, shadowSize: 1024, shadowRange: 70,
     props: 0.75, debris: 0.7, ledges: false, roofDetail: 0.7, lampLights: 2, fireLights: 2, skyline: 0.8, aniso: 4,
   },
   high: {
-    level: 2, tex: 1024, groundTex: 1024, normals: true, standard: true, shadows: true, shadowSize: 2048, shadowRange: 110,
+    level: 2, tex: 1024, groundTex: 1024, normalDiv: 2, normals: true, standard: true, shadows: true, shadowSize: 2048, shadowRange: 110,
     props: 1, debris: 1, ledges: true, roofDetail: 1, lampLights: 4, fireLights: 3, skyline: 1, aniso: 8,
   },
   ultra: {
-    level: 3, tex: 1024, groundTex: 1024, normals: true, standard: true, shadows: true, shadowSize: 4096, shadowRange: 150,
+    level: 3, tex: 1024, groundTex: 1024, normalDiv: 1, normals: true, standard: true, shadows: true, shadowSize: 4096, shadowRange: 150,
     props: 1, debris: 1.5, ledges: true, roofDetail: 1, lampLights: 8, fireLights: 4, skyline: 1.2, aniso: 16,
   },
 };
@@ -45,6 +52,7 @@ export const qualityOf = (q) => QUALITY[q] || QUALITY.high;
 
 // Shared uniforms so the haze curve can be tuned per time-of-day after the materials compiled.
 export const sharedUniforms = {
+  uFogBase: { value: 0.004 },   // ground-level haze density (scene.fog.density is lowered with altitude for the particle shaders)
   uFogMax: { value: 0.97 },     // never fully fog out: distant silhouettes stay faintly readable
   uLitBoost: { value: 1 },      // multiplies lit-window emission (0 by day)
   uGrime: { value: null },      // large-scale tileable dirt texture, breaks up texture repetition
@@ -54,23 +62,26 @@ export const sharedUniforms = {
 //  - grime: multiplies albedo by a world-space low-frequency noise (amount 0..1)
 //  - lit: emission is multiplied by the per-vertex `aLit` attribute (lit windows only on chosen buildings)
 //  - fogScale: distance multiplier for the haze (skyline/hills use < 1 so they survive on the horizon)
-export function patchMaterial(mat, { grime = 0, grimeScale = 48, lit = false, fogScale = 1, instanced = false } = {}) {
-  const key = `w:${grime}:${grimeScale}:${lit}:${fogScale}:${instanced}`;
+const FOG_HEIGHT_K = (1 / 55).toFixed(5);
+
+export function patchMaterial(mat, { grime = 0, grimeScale = 48, lit = false, fogScale = 1, instanced = false, baseFade = 0, fine = 0.35 } = {}) {
+  const key = `w:${grime}:${grimeScale}:${lit}:${fogScale}:${instanced}:${baseFade}:${fine}`;
   mat.customProgramCacheKey = () => key;
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uFogMax = sharedUniforms.uFogMax;
+    shader.uniforms.uFogBase = sharedUniforms.uFogBase;
     shader.uniforms.uLitBoost = sharedUniforms.uLitBoost;
     shader.uniforms.uGrime = sharedUniforms.uGrime;
     let vs = shader.vertexShader;
     let fs = shader.fragmentShader;
-    const needWorld = grime > 0;
+    const needWorld = true; // world position feeds grime, base fade and the height fog
     vs = vs.replace('#include <common>', `#include <common>
 ${needWorld ? 'varying vec3 vWPos; varying vec3 vWNrm;' : ''}
 ${lit ? 'attribute float aLit; varying float vLit;' : ''}`);
     vs = vs.replace('#include <project_vertex>', `#include <project_vertex>
 ${needWorld ? `{
   vec4 wp = vec4( transformed, 1.0 );
-  vec3 wn = objectNormal;
+  vec3 wn = normal;
   #ifdef USE_INSTANCING
     wp = instanceMatrix * wp;
     wn = mat3( instanceMatrix ) * wn;
@@ -81,14 +92,15 @@ ${needWorld ? `{
 ${lit ? 'vLit = aLit;' : ''}`);
     fs = fs.replace('#include <common>', `#include <common>
 uniform float uFogMax;
+uniform float uFogBase;
 uniform float uLitBoost;
 ${needWorld ? 'uniform sampler2D uGrime; varying vec3 vWPos; varying vec3 vWNrm;' : ''}
 ${lit ? 'varying float vLit;' : ''}`);
-    if (needWorld) {
+    if (grime > 0) {
       fs = fs.replace('#include <map_fragment>', `#include <map_fragment>
 {
   vec2 gp = abs( vWNrm.y ) > 0.6 ? vWPos.xz : vec2( vWPos.x + vWPos.z, vWPos.y * 1.6 );
-  float g = texture2D( uGrime, gp / ${grimeScale.toFixed(1)} ).r * 0.65 + texture2D( uGrime, gp / ${(grimeScale * 0.23).toFixed(2)} + 0.37 ).r * 0.35;
+  float g = texture2D( uGrime, gp / ${grimeScale.toFixed(1)} ).r * ${(1 - fine).toFixed(2)} + texture2D( uGrime, gp / ${(grimeScale * 0.23).toFixed(2)} + 0.37 ).r * ${fine.toFixed(2)};
   diffuseColor.rgb *= mix( 1.0, 0.55 + g * 0.8, ${grime.toFixed(3)} );
   if ( abs( vWNrm.y ) < 0.6 ) {
     // walls: dirt splashed up from the street, rain streaks running down, dusty tint near the ground
@@ -107,10 +119,15 @@ totalEmissiveRadiance *= vLit * uLitBoost;`);
     fs = fs.replace('#include <fog_fragment>', `#ifdef USE_FOG
   #ifdef FOG_EXP2
     float fogD = vFogDepth * ${fogScale.toFixed(3)};
-    float fogFactor = 1.0 - exp( - fogDensity * fogDensity * fogD * fogD );
+    // height fog: the haze is densest at street level and thins with altitude, so aircraft can see the battlefield
+    float yc = max( cameraPosition.y, 0.0 ), yf = max( vWPos.y, 0.0 ), dy = yf - yc;
+    float hAvg = abs( dy ) < 0.05 ? exp( - ${FOG_HEIGHT_K} * yc ) : ( exp( - ${FOG_HEIGHT_K} * yc ) - exp( - ${FOG_HEIGHT_K} * yf ) ) / ( ${FOG_HEIGHT_K} * dy );
+    fogD *= clamp( hAvg, 0.12, 1.0 );
+    float fogFactor = 1.0 - exp( - uFogBase * uFogBase * fogD * fogD );
   #else
     float fogFactor = smoothstep( fogNear, fogFar, vFogDepth * ${fogScale.toFixed(3)} );
   #endif
+  ${baseFade > 0 ? `fogFactor = max( fogFactor, ( 1.0 - smoothstep( 0.0, ${baseFade.toFixed(1)}, vWPos.y ) ) * 0.97 );` : ''}
   gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, min( fogFactor, uFogMax ) );
 #endif`);
     shader.vertexShader = vs;

@@ -6,11 +6,11 @@ const deg = Math.PI / 180;
 
 export const PRESETS = {
   overcast: {
-    top: '#6b8aa6', horizon: '#d2d6d4', below: '#9ea39f', fog: '#b4bcbf', fogDensity: 0.0040, fogMax: 0.94,
-    cloudCover: 0.78, cloudLit: '#f2f3f1', cloudDark: '#7a8996', cloudScale: 1.0, cloudSpeed: 0.004,
-    sunColor: '#ffe6c4', sunIntensity: 2.3, sunElev: 42, sunAz: 215, sunDisc: 0, sunGlow: 0.35,
-    hemiSky: '#b4c7d8', hemiGround: '#6f675b', hemiIntensity: 1.25, envIntensity: 0.9, exposure: 1.2,
-    shadowStrength: 0.8, lit: 0.0, lamps: false, stars: 0, moon: 0,
+    top: '#5d7e9d', horizon: '#b4c0c6', below: '#a3adb1', fog: '#b0bcc2', fogDensity: 0.0044, fogMax: 0.95,
+    cloudCover: 0.8, cloudLit: '#eef1f2', cloudDark: '#70808f', cloudScale: 1.0, cloudSpeed: 0.004,
+    sunColor: '#ffdcb0', sunIntensity: 3.1, sunElev: 38, sunAz: 215, sunDisc: 0, sunGlow: 0.35,
+    hemiSky: '#9fb6cc', hemiGround: '#5a5955', hemiIntensity: 1.0, envIntensity: 0.8, exposure: 1.1,
+    shadowStrength: 0.85, lit: 0.0, lamps: false, stars: 0, moon: 0, tintDesat: 0.5,
   },
   day: {
     top: '#3f6ea8', horizon: '#b9cbd8', below: '#9aa6ae', fog: '#aebdc7', fogDensity: 0.0024, fogMax: 0.9,
@@ -27,11 +27,11 @@ export const PRESETS = {
     shadowStrength: 1, lit: 0.6, lamps: true, stars: 0, moon: 0,
   },
   night: {
-    top: '#05080f', horizon: '#1b2433', below: '#0e131b', fog: '#121925', fogDensity: 0.0036, fogMax: 0.96,
+    top: '#05080f', horizon: '#1b2433', below: '#0e131b', fog: '#18202e', fogDensity: 0.0036, fogMax: 0.96,
     cloudCover: 0.45, cloudLit: '#3a4252', cloudDark: '#0b0e14', cloudScale: 1.0, cloudSpeed: 0.003,
-    sunColor: '#9fb6ff', sunIntensity: 0.45, sunElev: 38, sunAz: 120, sunDisc: 0, sunGlow: 0.0,
-    hemiSky: '#4a5a80', hemiGround: '#151515', hemiIntensity: 0.32, envIntensity: 0.55, exposure: 1.25,
-    shadowStrength: 0.8, lit: 1.0, lamps: true, stars: 1, moon: 1,
+    sunColor: '#9db4ff', sunIntensity: 1.5, sunElev: 38, sunAz: 120, sunDisc: 0, sunGlow: 0.0,
+    hemiSky: '#5a70b0', hemiGround: '#26262c', hemiIntensity: 0.85, envIntensity: 0.85, exposure: 1.45,
+    shadowStrength: 0.8, lit: 1.0, lamps: true, stars: 1, moon: 1, litShare: 0.5,
   },
 };
 

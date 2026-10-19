@@ -8,6 +8,7 @@ import { face4, Templates, hull } from './shapes.js';
 import { DecalBatch } from './decals.js';
 import { Flag, MODE } from './fx.js';
 import { CURB } from './ground.js';
+import { addTruck, addJeepProp, addWatchtower, addFuelTank, addHut } from './camp.js';
 
 const TAU = Math.PI * 2;
 
@@ -176,9 +177,11 @@ export function buildCompound(ctx) {
     const a = comp;
     g.flat(a.x + 1, a.z + 1, a.x + a.w - 1, a.z + a.d - 1, 0.006, 12, [0.78, 0.78, 0.78]);
     for (const h of world.helipads) {
-      if (h.team !== 'def') continue;
-      pad.flat(h.x - 9, h.z - 9, h.x + 9, h.z + 9, 0.02, 6, [0.9, 0.9, 0.88]);
+      // concrete pads for both teams (the attackers' pads sit on bare earth, so they get a slab and a skirt of dust)
+      pad.flat(h.x - 9, h.z - 9, h.x + 9, h.z + 9, 0.02, 6, h.team === 'def' ? [0.9, 0.9, 0.88] : [0.78, 0.76, 0.72]);
+      pad.box(h.x - 9, 0, h.z - 9, h.x + 9, 0.02, h.z + 9, 6, [0.7, 0.69, 0.66], { top: false, bottom: false });
       ctx.decals.ground(h.x, h.z, 15, 0, DECAL.helipad, 0.9, { y: 0.034 });
+      if (h.team !== 'def') ctx.decals.ground(h.x, h.z, 26, rnd() * TAU, DECAL.dust, 0.5, { y: 0.03 });
     }
     // painted vehicle lanes toward the HQ
     ctx.decals.rect(hq.x - 20, hq.z, 0.25, 30, 0, DECAL.paint, { alpha: 0.7, y: 0.014, color: [0.9, 0.75, 0.1] });
@@ -276,6 +279,31 @@ export function buildCompound(ctx) {
   ctx.fx.add(camp.x + 36, 21.2, 160, { size: 0.55, mode: MODE.beacon, color: [3.2, 0.2, 0.1], phase: 0.3 });
   // campfires: two small fires with smoke between tents (cosmetic)
   ctx.extraFires.push({ x: camp.x + 20, y: 0.1, z: 190, size: 0.7 }, { x: camp.x + 44, y: 0.1, z: 292, size: 0.7 });
+  // vehicles, huts, fuel and watchtowers: kept off the spawn rectangles and mirrored north/south of the axis
+  const mid = world.map.d / 2;
+  const both = (fn) => { fn(1); fn(-1); };
+  const mirZ = (z, side) => (side > 0 ? z : 2 * mid - z);
+  const myaw = (yaw, side) => (side > 0 ? yaw : -yaw);
+  const atkBody = [0.52, 0.46, 0.32], atkTarp = [0.5, 0.45, 0.32];
+  both((side) => {
+    addHut(ctx, { x: camp.x + 20, z: mirZ(camp.z + 17, side), yaw: 0, len: 12, r: 3.1, col: [0.48, 0.46, 0.34] });
+    addHut(ctx, { x: camp.x + 46, z: mirZ(camp.z + 17, side), yaw: 0, len: 12, r: 3.1, col: [0.5, 0.5, 0.38] });
+    addTruck(ctx, tpl, { x: camp.x + 15, z: mirZ(camp.z + 48, side), yaw: myaw(0.12, side), body: atkBody, tarp: atkTarp });
+    addTruck(ctx, tpl, { x: camp.x + 40, z: mirZ(camp.z + 52, side), yaw: myaw(-0.08, side), body: atkBody, tarp: atkTarp });
+    addJeepProp(ctx, tpl, { x: camp.x + 56, z: mirZ(camp.z + 47, side), yaw: myaw(0.6, side), body: atkBody });
+    addFuelTank(ctx, tpl, { x: camp.x + 12, z: mirZ(camp.z + 32, side), yaw: 0, col: [0.42, 0.4, 0.34] });
+    addWatchtower(ctx, tpl, { x: camp.x + 62, z: mirZ(camp.z + 6, side), yaw: myaw(0.0, side), sand: [0.7, 0.62, 0.45] });
+    addWatchtower(ctx, tpl, { x: camp.x + 5, z: mirZ(camp.z + 5, side), yaw: myaw(0.0, side), sand: [0.7, 0.62, 0.45] });
+    // defenders' compound
+    addHut(ctx, { x: comp.x + 36, z: mirZ(comp.z + 8, side), yaw: 0, len: 14, r: 3.4, col: [0.42, 0.46, 0.4] });
+    addTruck(ctx, tpl, { x: comp.x + 72, z: mirZ(comp.z + 41, side), yaw: myaw(-Math.PI / 2, side), body: [0.3, 0.35, 0.28], tarp: [0.33, 0.38, 0.3] });
+    addTruck(ctx, tpl, { x: comp.x + 72, z: mirZ(comp.z + 55, side), yaw: myaw(-Math.PI / 2, side), body: [0.3, 0.35, 0.28], tarp: [0.33, 0.38, 0.3] });
+    addJeepProp(ctx, tpl, { x: comp.x + 7, z: mirZ(comp.z + 46, side), yaw: myaw(0.35, side), body: [0.32, 0.38, 0.3] });
+    addJeepProp(ctx, tpl, { x: comp.x + 7, z: mirZ(comp.z + 58, side), yaw: myaw(-0.25, side), body: [0.32, 0.38, 0.3] });
+    addFuelTank(ctx, tpl, { x: comp.x + 70, z: mirZ(comp.z + 148, side), yaw: Math.PI / 2, col: [0.4, 0.44, 0.4] });
+    addWatchtower(ctx, tpl, { x: comp.x + 4, z: mirZ(comp.z + 4, side), yaw: myaw(Math.PI, side), sand: [0.62, 0.6, 0.5] });
+    addWatchtower(ctx, tpl, { x: comp.x + comp.w - 4, z: mirZ(comp.z + 4, side), yaw: myaw(Math.PI, side), sand: [0.62, 0.6, 0.5] });
+  });
   // tracks and trampled earth
   for (let i = 0; i < 70; i++) {
     const x = R(camp.x + 2, camp.x + camp.w), z = R(camp.z, camp.z + camp.d);

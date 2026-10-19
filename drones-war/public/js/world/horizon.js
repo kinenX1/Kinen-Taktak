@@ -70,6 +70,34 @@ export function buildHorizon(ctx, bb) {
     }
   }
 
+  // --- far suburbs: plain merged boxes out to ~900 m so the city does not stop at a hard edge
+  {
+    const sky = ctx.global.get('suburb');
+    const M3 = FACADE_METRICS.tower;
+    const bwF = (L) => Math.max(1, Math.round(L / (M3.bay * FACADE_BAYS) * 2) / 2);
+    const step2 = 56;
+    const reach = 880 * (0.55 + q.skyline * 0.45);
+    const inner = 250;
+    for (let gx = -reach; gx < M.w + reach; gx += step2) {
+      for (let gz = -reach; gz < M.d + reach; gz += step2) {
+        const ox = Math.max(-gx - 0, gx - M.w, 0), oz = Math.max(-gz, gz - M.d, 0);
+        if (Math.hypot(ox, oz) < inner) continue;
+        if (rnd() > 0.62 * (q.skyline > 0.6 ? 1 : 0.6)) continue;
+        const w = R(16, 34), d = R(16, 34), x0 = gx + R(0, 14), z0 = gz + R(0, 14);
+        const dist = Math.hypot(ox, oz);
+        const h = R(9, 26) + (rnd() < 0.16 ? R(14, 46) : 0) + dist * 0.012;
+        const t = 0.7 + rnd() * 0.3;
+        const col = [t * 0.96, t, t * 1.03];
+        const vv = h / (M3.floor * FACADE_FLOORS);
+        sky.wall(x0, z0 + d, x0 + w, z0 + d, 0, h, 0, bwF(w), 0, vv, col);
+        sky.wall(x0 + w, z0 + d, x0 + w, z0, 0, h, 0, bwF(d), 0, vv, col);
+        sky.wall(x0 + w, z0, x0, z0, 0, h, 0, bwF(w), 0, vv, col);
+        sky.wall(x0, z0, x0, z0 + d, 0, h, 0, bwF(d), 0, vv, col);
+        sky.flat(x0, z0, x0 + w, z0 + d, h, 12, [0.5, 0.5, 0.5]);
+      }
+    }
+  }
+
   // --- hills: polar grid around the map centre, rising out of the flat ground from r ≈ 800 m
   const rings = 14, spokes = 120;
   const pos = [], col = [], uv = [], idx = [];

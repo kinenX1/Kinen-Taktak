@@ -5,7 +5,7 @@
 // Look: procedural PBR textures, one haze curve shared by every material, sky dome + PMREM environment,
 // four time-of-day presets (overcast default, day, sunset, night with lit windows, lamps and moonlight).
 import * as THREE from 'three';
-import { QUALITY, qualityOf, patchMaterial, sharedUniforms, mulberry32, clamp } from './world/util.js';
+import { QUALITY, qualityOf, patchMaterial, sharedUniforms, mulberry32, clamp, fogAltitudeFactor } from './world/util.js';
 import { GeoSet } from './world/geo.js';
 import { TextureLibrary, TILE } from './world/textures.js';
 import { presetOf, sunDirection, createSky, createEnvironment } from './world/atmosphere.js';
@@ -20,15 +20,15 @@ import { gradeOf } from './world/grade.js';
 
 const LIT_GEOS = new Set(['brick', 'concrete', 'office', 'apartment', 'glass', 'warehouse', 'tower', 'storefront', 'lobby', 'industrial']);
 // Materials that never cast shadows (flat ground layers and thin stuff).
-const NO_SHADOW = new Set(['ground', 'asphalt', 'sidewalk', 'plaza', 'grass', 'dirt', 'wire', 'lampglow', 'hqglow', 'skyline']);
+const NO_SHADOW = new Set(['ground', 'asphalt', 'sidewalk', 'plaza', 'grass', 'dirt', 'wire', 'lampglow', 'hqglow', 'skyline', 'suburb']);
 
 // Material table: texture set, grime amount, metalness from the roughness map's blue channel, per-vertex lit windows.
 const MATS = {
   brick: { tex: 'brick', grime: 0.3, lit: true },
   concrete: { tex: 'concrete', grime: 0.3, lit: true },
-  office: { tex: 'office', grime: 0.2, lit: true, metal: true },
+  office: { tex: 'office', grime: 0.2, lit: true, metal: 0.8 },
   apartment: { tex: 'apartment', grime: 0.3, lit: true },
-  glass: { tex: 'glass', grime: 0.12, lit: true, metal: true },
+  glass: { tex: 'glass', grime: 0.2, lit: true, metal: 0.4 },
   warehouse: { tex: 'warehouse', grime: 0.25, lit: true, metal: true },
   tower: { tex: 'tower', grime: 0.25, lit: true, metal: true },
   storefront: { tex: 'storefront', grime: 0.1, lit: true, metal: true },
@@ -52,7 +52,8 @@ const MATS = {
   grass: { tex: 'grass', grime: 0.5, grimeScale: 60, offset: -1 },
   dirt: { tex: 'dirt', grime: 0.4, grimeScale: 60, offset: -1 },
   hq: { tex: 'trim', grime: 0.4 },
-  skyline: { tex: 'tower', grime: 0, fogScale: 0.32, metal: true },
+  suburb: { tex: 'tower', grime: 0, fogScale: 0.75, metal: true },
+  skyline: { tex: 'tower', grime: 0, fogScale: 0.5, metal: true, baseFade: 70 },
 };
 
 export function buildWorld({ renderer, scene, world: input, quality = 'high' }) {
@@ -73,6 +74,7 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
   if (renderer.toneMapping === THREE.NoToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = preset.exposure;
   sharedUniforms.uFogMax.value = preset.fogMax;
+  sharedUniforms.uFogBase.value = preset.fogDensity;
   sharedUniforms.uLitBoost.value = preset.lit;
 
   const sky = createSky(preset);
@@ -143,9 +145,9 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
     if (q.standard) {
       m = new THREE.MeshStandardMaterial({
         ...common, map: set.map, normalMap: set.normalMap || null, roughnessMap: set.roughnessMap, roughness: 1,
-        metalness: spec.metal ? 1 : 0, metalnessMap: spec.metal ? set.roughnessMap : null,
+        metalness: spec.metal ? (spec.metal === true ? 1 : spec.metal) : 0, metalnessMap: spec.metal ? set.roughnessMap : null,
       });
-      if (set.normalMap) m.normalScale.set(0.6, 0.6);
+      if (set.normalMap) m.normalScale.setScalar(name === 'asphalt' || name === 'sidewalk' ? 0.32 : 0.6);
     } else {
       m = new THREE.MeshLambertMaterial({ ...common, map: set.map });
     }
@@ -155,7 +157,7 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
       m.emissiveIntensity = 2.4;
     }
     if (spec.offset) { m.polygonOffset = true; m.polygonOffsetFactor = spec.offset; m.polygonOffsetUnits = spec.offset; }
-    return patchMaterial(m, { grime: spec.grime || 0, grimeScale: spec.grimeScale || 48, lit: !!spec.lit, fogScale: spec.fogScale || 1 });
+    return patchMaterial(m, { grime: spec.grime || 0, grimeScale: spec.grimeScale || 48, lit: !!spec.lit, fogScale: spec.fogScale || 1, baseFade: spec.baseFade || 0 });
   }
 
   // Terrain: grass outside the map, dirt and rubble inside, blended by large-scale noise.
@@ -163,9 +165,9 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
     const set = clampAniso(lib.get('grass'));
     const dirt = dirtTexture();
     const m = q.standard
-      ? new THREE.MeshStandardMaterial({ vertexColors: true, map: set.map, normalMap: set.normalMap || null, roughnessMap: set.roughnessMap, roughness: 1, metalness: 0 })
+      ? new THREE.MeshStandardMaterial({ vertexColors: true, map: set.map, normalMap: dirt.normalMap || null, roughnessMap: set.roughnessMap, roughness: 1, metalness: 0 })
       : new THREE.MeshLambertMaterial({ vertexColors: true, map: set.map });
-    patchMaterial(m, { grime: 0.55, grimeScale: 90 });
+    patchMaterial(m, { grime: 0.55, grimeScale: 90, fine: 0.1 });
     const base = m.onBeforeCompile;
     m.customProgramCacheKey = () => 'w:ground';
     m.onBeforeCompile = (shader) => {
@@ -204,12 +206,25 @@ uniform vec2 uMapSize;`)
   }
 
   // ---------------------------------------------------------------- build context
+  // Chunk cells differ per material: facades use small cells (tight culling, they carry most triangles) while
+  // flat ground layers and small props use large cells, which keeps the number of draw calls down.
   const chunkSize = q.level === 0 ? 320 : 200;
+  const COARSE = new Set(['bark', 'foliage', 'wire', 'lampglow', 'asphalt', 'sidewalk', 'plaza', 'grass', 'dirt', 'ground']);
+  const MID = new Set(['roof', 'trim', 'interior', 'rubble', 'metal', 'canvas', 'sandbag', 'hesco', 'container', 'burnt']);
+  const cellOf = (name) => (COARSE.has(name) ? chunkSize * 2.6 : MID.has(name) ? chunkSize * 1.6 : chunkSize * 1.8);
   const chunkSets = new Map();
   class ChunkSet extends GeoSet {
     get(name, opts) { return super.get(name, LIT_GEOS.has(name) ? { lit: true } : opts); }
   }
   const globalSet = new ChunkSet();
+  const setAt = (name, x, z) => {
+    const outside = x < -40 || x > M.w + 40 || z < -40 || z > M.d + 40;
+    const cs = cellOf(name);
+    const key = outside ? `o${Math.floor((x + 400) / 760)}:${Math.floor((z + 400) / 760)}` : `${cs}:${Math.floor(x / cs)}:${Math.floor(z / cs)}`;
+    let set = chunkSets.get(key);
+    if (!set) { set = new ChunkSet(); chunkSets.set(key, set); }
+    return set;
+  };
   const ctx = {
     seed: world.seed | 0, q, preset, world, quality,
     global: globalSet,
@@ -219,13 +234,8 @@ uniform vec2 uMapSize;`)
     chunks: [], beacons: [], lamps: [], extraFires: [], parks: [], rubbleBlocks: [],
     fx: new BillboardField(),
     mat, decalMaterial,
-    geoAt(x, z) {
-      const outside = x < -40 || x > M.w + 40 || z < -40 || z > M.d + 40;
-      const key = outside ? `o${Math.floor((x + 400) / 420)}:${Math.floor((z + 400) / 420)}` : `${Math.floor(x / chunkSize)}:${Math.floor(z / chunkSize)}`;
-      let s = chunkSets.get(key);
-      if (!s) { s = new ChunkSet(); chunkSets.set(key, s); }
-      return s;
-    },
+    // a position-bound view that routes each material to the chunk cell sized for it
+    geoAt(x, z) { return { get: (name, opts) => setAt(name, x, z).get(name, opts) }; },
   };
   ctx.geos = ctx.geoAt(0, 0);
 
@@ -293,8 +303,8 @@ uniform vec2 uMapSize;`)
     const cm = patchMaterial(q.standard
       ? new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap || null, roughness: 1, metalness: 0 })
       : new THREE.MeshLambertMaterial({ map: set.map }), { grime: 0.4 });
-    const geo = new THREE.IcosahedronGeometry(1, 0);
-    const n = Math.min(ctx.chunks.length, 4000);
+    const geo = chunkGeometry();
+    const n = Math.min(ctx.chunks.length, 6000);
     chunkMesh = new THREE.InstancedMesh(geo, cm, n);
     const mtx = new THREE.Matrix4(), qt = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
     for (let i = 0; i < n; i++) {
@@ -302,11 +312,11 @@ uniform vec2 uMapSize;`)
       e.set(r * 3, yaw, r * 5);
       qt.setFromEuler(e);
       p.set(x, 0.05 + size * 0.35, z);
-      s.set(size * (0.8 + r * 0.6), size * (0.45 + r * 0.3), size * (0.9 + (1 - r) * 0.5));
+      s.set(size * (0.5 + r * 0.4), size * (0.3 + r * 0.2), size * (0.55 + (1 - r) * 0.35));
       mtx.compose(p, qt, s);
       chunkMesh.setMatrixAt(i, mtx);
-      const v = 0.55 + r * 0.45;
-      chunkMesh.setColorAt(i, c.setRGB(v, v * (0.92 + r * 0.1), v * (0.86 + r * 0.08)));
+      const v = 1.7 + r * 0.8;
+      chunkMesh.setColorAt(i, c.setRGB(v, v * (0.94 + r * 0.08), v * (0.88 + r * 0.06)));
     }
     chunkMesh.castShadow = false;
     chunkMesh.receiveShadow = q.shadows;
@@ -323,7 +333,7 @@ uniform vec2 uMapSize;`)
       ctx.fx.add(f.x + (R() - 0.5) * 0.5 * f.size, f.y, f.z + (R() - 0.5) * 0.5 * f.size, { mode: MODE.flame, size: 0.85 * f.size, color: [2.6, 1.2, 0.3], alpha: 0.95, phase: i / nF + R() * 0.1, speed: 0.95 + R() * 0.3, height: 1.4 });
     }
     for (let i = 0; i < nS; i++) {
-      ctx.fx.add(f.x + (R() - 0.5) * 0.4, f.y + 0.5, f.z + (R() - 0.5) * 0.4, { mode: MODE.smoke, size: 1.2 * f.size, color: [0.17, 0.16, 0.15], alpha: 0.7, phase: i / nS + R() * 0.1, speed: 0.11, height: 1.25 });
+      ctx.fx.add(f.x + (R() - 0.5) * 0.4, f.y + 0.5, f.z + (R() - 0.5) * 0.4, { mode: MODE.smoke, size: 1.7 * f.size, color: [0.085, 0.08, 0.075], alpha: 0.9, phase: i / nS + R() * 0.1, speed: 0.09, height: 1.8 });
     }
     // ground glow below the flames (always on, stronger at night)
     ctx.fx.add(f.x, f.y + 0.4, f.z, { mode: MODE.glow, size: 3.4 * f.size, color: [1.5, 0.55, 0.15], alpha: 0.38 });
@@ -369,6 +379,7 @@ uniform vec2 uMapSize;`)
   function update(dt, time, camera) {
     if (camera.far < 3200) { camera.far = 3200; camera.updateProjectionMatrix(); }
     const cam = camera.position;
+    scene.fog.density = preset.fogDensity * fogAltitudeFactor(cam.y);
     sky.position.copy(cam);
     sky.material.uniforms.uTime.value = time;
     ctx.fx.update(time, camera, scene.fog.color, scene.fog.density);
@@ -452,8 +463,26 @@ uniform vec2 uMapSize;`)
     // post-processing hints for the game's composer (see world/grade.js)
     grade: gradeOf(world.timeOfDay),
     // diagnostics for tests: how long the build took and how many meshes it produced
-    stats: { buildMs, meshes: staticMeshes.length, chunks: chunkSets.size, decals: ctx.decals.count, fires: fires.length },
+    stats: { buildMs, meshes: staticMeshes.length, chunks: chunkSets.size, decals: ctx.decals.count, fires: fires.length, rubblePieces: ctx.chunks.length },
   };
+}
+
+// Broken-concrete chunk: a coarse box with jittered vertices and flat facets (reads as a slab fragment, not a boulder).
+function chunkGeometry() {
+  const g = new THREE.BoxGeometry(1, 1, 1, 2, 2, 2);
+  const p = g.attributes.position;
+  const jit = (x, y, z, k) => {
+    const h = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + k * 19.3) * 43758.5453;
+    return (h - Math.floor(h)) - 0.5;
+  };
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    p.setXYZ(i, x + jit(x, y, z, 0) * 0.42, y + jit(x, y, z, 1) * 0.36, z + jit(x, y, z, 2) * 0.42);
+  }
+  const flat = g.toNonIndexed();
+  g.dispose();
+  flat.computeVertexNormals();
+  return flat;
 }
 
 function mix3(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }

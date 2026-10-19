@@ -6,6 +6,8 @@ import { mulberry32, clamp } from './util.js';
 import { trs, hexColor } from './geo.js';
 import { DECAL } from './textures.js';
 import { hull, taperBox, extrude, Templates, face4 } from './shapes.js';
+import { addCarWreck } from './vehicles.js';
+import { addTent } from './camp.js';
 import { CURB, vnoise } from './ground.js';
 
 const TAU = Math.PI * 2;
@@ -28,7 +30,9 @@ export function buildProps(ctx, bb) {
   const onRoad = (x, z, m = 0) => world.roads.some((r) => x > r.x - m && x < r.x + r.w + m && z > r.z - m && z < r.z + r.d + m);
   const baseY = (x, z) => (onRoad(x, z) ? 0.01 : CURB);
 
+  const sites = canopySites();
   buildTrees();
+  buildWeeds();
   buildLamps();
   buildWrecks();
   buildDebris();
@@ -38,6 +42,7 @@ export function buildProps(ctx, bb) {
   buildDressing();
   buildWalls();
   buildTents();
+  buildCanopies();
   tpl.dispose();
 
   // ------------------------------------------------------------------ trees
@@ -55,33 +60,57 @@ export function buildProps(ctx, bb) {
       return g;
     }));
     const trunk = tpl.cyl(0.11, 0.2, 1, 7);
-    const greens = [[0.36, 0.5, 0.2], [0.45, 0.5, 0.22], [0.3, 0.42, 0.17], [0.52, 0.48, 0.2], [0.4, 0.4, 0.2]];
+    const limb = tpl.get('limb', () => new THREE.CylinderGeometry(0.5, 1, 1, 4, 1, true).translate(0, 0.5, 0)); // open 4-sided: unit-length tapered limb: scale x/z by the base radius, y by the length
+    const greens = [[0.4, 0.44, 0.24], [0.46, 0.45, 0.26], [0.34, 0.38, 0.2], [0.5, 0.45, 0.24], [0.42, 0.4, 0.24]];
+    const deadChance = world.timeOfDay === 'overcast' ? 0.7 : 0.45;
+    // a limb from (x,y,z) along direction (dx,dy,dz) (unit), with a fork of twigs at its end
+    const branch = (bark, x, y, z, dx, dy, dz, len, r, depth) => {
+      const yawA = Math.atan2(dx, dz), tilt = Math.acos(clamp(dy, -1, 1));
+      bark.add(limb, trs(x, y, z, yawA, r, len, r, tilt, 0), [0.9, 0.84, 0.77]);
+      if (depth <= 0) return;
+      const ex = x + dx * len, ey = y + dy * len, ez = z + dz * len;
+      const n = depth > 1 ? 3 : 2;
+      for (let i = 0; i < n; i++) {
+        const a = rnd() * TAU, sp = 0.45 + rnd() * 0.55;
+        let ndx = dx + Math.cos(a) * sp, ndy = dy * 0.7 + 0.35 + rnd() * 0.3, ndz = dz + Math.sin(a) * sp;
+        const l = Math.hypot(ndx, ndy, ndz);
+        ndx /= l; ndy /= l; ndz /= l;
+        branch(bark, ex, ey, ez, ndx, ndy, ndz, len * (0.62 + rnd() * 0.2), r * 0.6, depth - 1);
+      }
+    };
     for (const [x, z, s] of P.trees) {
       if (rnd() > q.props + 0.2) continue;
       const bark = at(x, z).get('bark');
       const y0 = baseY(x, z) - 0.02;
-      const dead = rnd() < 0.2 || (world.timeOfDay === 'overcast' && rnd() < 0.12);
+      const dead = rnd() < deadChance;
       const lean = (rnd() - 0.5) * 0.08;
       const hgt = (3.6 + rnd() * 1.4) * s;
-      bark.add(trunk, trs(x, y0, z, rnd() * TAU, s * 1.2, hgt, s * 1.2, lean, lean * 0.5), [0.7, 0.62, 0.55]);
-      // root flare
-      bark.add(tpl.cyl(0.3, 0.45, 0.35, 7), trs(x, y0, z, 0, s), [0.65, 0.58, 0.5]);
-      const nb = dead ? 0 : 4 + Math.floor(rnd() * 2);
-      const g = at(x, z).get('foliage');
-      const gc = pick(greens);
-      for (let i = 0; i < nb; i++) {
-        const a = rnd() * TAU, r = (0.4 + rnd() * 0.9) * s;
-        const rad = (1.3 + rnd() * 0.9) * s;
-        const c = [gc[0] * (0.8 + rnd() * 0.4), gc[1] * (0.85 + rnd() * 0.3), gc[2] * (0.8 + rnd() * 0.4)];
-        g.add(blobs[i % 4], trs(x + Math.cos(a) * r, y0 + hgt * (0.72 + rnd() * 0.32), z + Math.sin(a) * r, rnd() * TAU, rad, rad * (0.8 + rnd() * 0.3), rad), c, 1.3);
-      }
-      // branches: visible on dead trees, a few stubs on live ones
-      const br = dead ? 6 : 2;
-      for (let i = 0; i < br; i++) {
-        const a = rnd() * TAU, up = 0.5 + rnd() * 0.7;
-        const by = y0 + hgt * (0.45 + rnd() * 0.5);
-        bark.add(tpl.cyl(0.03, 0.08, 1, 5), trs(x, by, z, a, s * 0.8, (1.1 + rnd() * 1.4) * s * (dead ? 1.2 : 0.7), s * 0.8, 0, 0), [0.55, 0.5, 0.45]);
-        void up;
+      bark.add(trunk, trs(x, y0, z, rnd() * TAU, s * 1.2, hgt, s * 1.2, lean, lean * 0.5), [1.1, 1.0, 0.9]);
+      bark.add(tpl.cyl(0.3, 0.45, 0.35, 7), trs(x, y0, z, 0, s), [1.0, 0.9, 0.8]); // root flare
+      if (dead) {
+        // bare crown: a few scaffold limbs forking into twigs
+        const nl = q.level >= 1 ? 4 : 3;
+        for (let i = 0; i < nl; i++) {
+          const a = (i / nl) * TAU + rnd();
+          const sp = 0.5 + rnd() * 0.4;
+          const dx = Math.cos(a) * sp, dz = Math.sin(a) * sp, dy = 0.8 + rnd() * 0.3;
+          const l = Math.hypot(dx, dy, dz);
+          branch(bark, x, y0 + hgt * (0.7 + rnd() * 0.25), z, dx / l, dy / l, dz / l, (1.5 + rnd() * 1.2) * s, 0.07 * s, q.level >= 2 ? 2 : 1);
+        }
+      } else {
+        const nb = 4 + Math.floor(rnd() * 2);
+        const g = at(x, z).get('foliage');
+        const gc = pick(greens);
+        for (let i = 0; i < nb; i++) {
+          const a = rnd() * TAU, r = (0.4 + rnd() * 0.9) * s;
+          const rad = (1.3 + rnd() * 0.9) * s;
+          const c = [gc[0] * (0.8 + rnd() * 0.4), gc[1] * (0.85 + rnd() * 0.3), gc[2] * (0.8 + rnd() * 0.4)];
+          g.add(blobs[i % 4], trs(x + Math.cos(a) * r, y0 + hgt * (0.72 + rnd() * 0.32), z + Math.sin(a) * r, rnd() * TAU, rad, rad * (0.8 + rnd() * 0.3), rad), c, 1.3);
+        }
+        for (let i = 0; i < 2; i++) {
+          const a = rnd() * TAU;
+          branch(bark, x, y0 + hgt * (0.5 + rnd() * 0.3), z, Math.cos(a) * 0.6, 0.75, Math.sin(a) * 0.6, (1 + rnd()) * s, 0.06 * s, 0);
+        }
       }
       // shadow-ish ground stain
       decals.ground(x, z, 5.5 * s, rnd() * TAU, DECAL.dust, 0.35, { y: baseY(x, z) + 0.005, color: [0.2, 0.2, 0.15] });
@@ -118,8 +147,9 @@ export function buildProps(ctx, bb) {
   // ------------------------------------------------------------------ burned-out wrecks
   function buildWrecks() {
     const wheel = tpl.cyl(0.33, 0.33, 0.24, seg + 2);
-    const bodyCols = [[0.2, 0.17, 0.15], [0.16, 0.15, 0.15], [0.32, 0.14, 0.1], [0.12, 0.15, 0.2], [0.22, 0.2, 0.12], [0.28, 0.27, 0.26], [0.3, 0.22, 0.14]];
+    const bodyCols = [[0.62, 0.58, 0.54], [0.5, 0.5, 0.52], [0.7, 0.36, 0.26], [0.42, 0.5, 0.62], [0.58, 0.54, 0.36], [0.66, 0.66, 0.64], [0.72, 0.52, 0.34], [0.48, 0.24, 0.2]];
     for (const [x, z, yaw, kind] of P.wrecks) {
+      if (sites.some((c) => Math.abs(x - c.x) < 11 && Math.abs(z - c.z) < 8)) continue;
       const g = at(x, z).get('burnt');
       const m = metal(x, z);
       const burn = pick(bodyCols);
@@ -134,51 +164,18 @@ export function buildProps(ctx, bb) {
       const T = 3;
       const wheelY = 0.33;
       const missing = rnd() < 0.3 ? Math.floor(rnd() * 4) : -1;
-      // wheels (flat, black) — tyres burned away on some, leaving rims
-      const wheelsAt = kind === 2 ? [[-hl + 1.6, -hw], [-hl + 1.6, hw], [hl - 1.6, -hw], [hl - 1.6, hw]] : [[-hl + 0.95, -hw + 0.05], [-hl + 0.95, hw - 0.05], [hl - 0.95, -hw + 0.05], [hl - 0.95, hw - 0.05]];
-      wheelsAt.forEach(([lx, lz], i) => {
-        const wp = Q(lx, wheelY * (kind === 2 ? 1.5 : 1) - 0.0, lz);
-        const s = kind === 2 ? 1.5 : kind === 1 ? 1.15 : 1;
-        if (i === missing) return;
-        g.add(wheel, trs(wp[0], wp[1] - 0.33 * s, wp[2], -yaw, s, s, s, Math.PI / 2, 0), [0.06, 0.06, 0.06]);
-        m.add(tpl.cyl(0.16, 0.16, 0.3, 6), trs(wp[0], wp[1] - 0.16 * s, wp[2], -yaw, s, s, s, Math.PI / 2, 0), [0.25, 0.2, 0.15]);
-      });
       if (kind === 0 || kind === 1) {
-        const bodyY0 = 0.3, bodyY1 = kind === 1 ? 1.1 : 0.88;
-        const frontCut = kind === 1 ? hl * 0.55 : hl * 0.5;
-        // lower body: front hood wedge + body block
-        const c0 = burn;
-        hull(g, [Q(-hl, bodyY0, -hw), Q(hl, bodyY0, -hw), Q(hl, bodyY0, hw), Q(-hl, bodyY0, hw),
-          Q(-hl + 0.05, bodyY1, -hw + 0.06), Q(hl - 0.06, bodyY1 - 0.16, -hw + 0.1), Q(hl - 0.06, bodyY1 - 0.16, hw - 0.1), Q(-hl + 0.05, bodyY1, hw - 0.06)],
-        T, c0);
-        // greenhouse: roof slab on pillars, interior dark
-        const gy0 = bodyY1, gy1 = kind === 1 ? dim.H : bodyY1 + 0.58;
-        const gx0 = kind === 1 ? -hl + 0.15 : -hl * 0.45, gx1 = kind === 1 ? hl - 0.9 : hl * 0.38;
-        const gw = hw - 0.12;
-        const roofC = [burn[0] * 0.8, burn[1] * 0.8, burn[2] * 0.8];
-        const roofY = gy1;
-        const sag = rnd() < 0.5 ? 0.12 : 0;
-        hull(g, [Q(gx0, roofY - 0.06 - sag, -gw), Q(gx1, roofY - 0.06 - sag, -gw), Q(gx1, roofY - 0.06 - sag, gw), Q(gx0, roofY - 0.06 - sag, gw),
-          Q(gx0 + 0.15, roofY, -gw + 0.1), Q(gx1 - 0.25, roofY - sag, -gw + 0.1), Q(gx1 - 0.25, roofY - sag, gw - 0.1), Q(gx0 + 0.15, roofY, gw - 0.1)], T, roofC);
-        for (const [px, pz] of [[gx0, -gw], [gx0, gw], [gx1, -gw], [gx1, gw], [(gx0 + gx1) / 2, -gw], [(gx0 + gx1) / 2, gw]]) {
-          const a = Q(px - 0.05, gy0, pz - 0.05), b = Q(px + 0.05, gy0, pz + 0.05);
-          g.box(Math.min(a[0], b[0]) - 0.02, gy0 - 0.02, Math.min(a[2], b[2]) - 0.02, Math.max(a[0], b[0]) + 0.02, roofY - 0.06, Math.max(a[2], b[2]) + 0.02, T, [burn[0] * 0.5, burn[1] * 0.5, burn[2] * 0.5], { top: false });
-        }
-        // charred seats
-        if (q.level >= 1) {
-          for (const lz of [-hw * 0.4, hw * 0.4]) {
-            const a = Q((gx0 + gx1) / 2 - 0.1, bodyY1, lz - 0.25), b = Q((gx0 + gx1) / 2 + 0.3, bodyY1 + 0.4, lz + 0.25);
-            g.box(Math.min(a[0], b[0]), bodyY1 - 0.05, Math.min(a[2], b[2]), Math.max(a[0], b[0]), bodyY1 + 0.4, Math.max(a[2], b[2]), 2, [0.05, 0.04, 0.04]);
-          }
-        }
-        // open door / bonnet panel hanging up
-        if (rnd() < 0.5) {
-          const p = Q(hl * 0.2, bodyY1 + 0.25, rnd() < 0.5 ? -hw - 0.2 : hw + 0.2);
-          g.add(tpl.box(1.0, 0.04, 0.8), trs(p[0], p[1], p[2], -yaw + (rnd() - 0.5), 1, 1, 1, 0, 0.9 * (rnd() < 0.5 ? 1 : -1)), c0);
-        }
-        // front bumper / grille shadow
-        m.add(tpl.box(0.15, 0.22, hw * 1.7), trs(...Q(hl + 0.02, 0.32, 0).slice(0, 3), -yaw), [0.18, 0.17, 0.16]);
+        addCarWreck({ g, m, tpl, Q, yaw, kind, burn, rnd, T });
       } else {
+        // wheels (flat, black) — tyres burned away on some, leaving rims
+        const wheelsAt = kind === 2 ? [[-hl + 1.6, -hw], [-hl + 1.6, hw], [hl - 1.6, -hw], [hl - 1.6, hw]] : [[-hl + 0.95, -hw + 0.05], [-hl + 0.95, hw - 0.05], [hl - 0.95, -hw + 0.05], [hl - 0.95, hw - 0.05]];
+        wheelsAt.forEach(([lx, lz], i) => {
+          const wp = Q(lx, wheelY * (kind === 2 ? 1.5 : 1) - 0.0, lz);
+          const s = kind === 2 ? 1.5 : kind === 1 ? 1.15 : 1;
+          if (i === missing) return;
+          g.add(wheel, trs(wp[0], wp[1] - 0.33 * s, wp[2], -yaw, s, s, s, Math.PI / 2, 0), [0.06, 0.06, 0.06]);
+          m.add(tpl.cyl(0.16, 0.16, 0.3, 6), trs(wp[0], wp[1] - 0.16 * s, wp[2], -yaw, s, s, s, Math.PI / 2, 0), [0.25, 0.2, 0.15]);
+        });
         // bus: roof, floor, side pillars with window openings, interior dark
         const top = dim.H - 0.1, floor = 0.55;
         const c0 = burn;
@@ -209,15 +206,16 @@ export function buildProps(ctx, bb) {
         const a = Q(-hl + 0.1, floor - 0.25, -hw + 0.1), b = Q(hl - 0.1, floor, hw - 0.1);
         g.box(Math.min(a[0], b[0]), floor - 0.25, Math.min(a[2], b[2]), Math.max(a[0], b[0]), floor, Math.max(a[2], b[2]), T, [0.05, 0.045, 0.04]);
       }
-      // soot staining on the ground beneath
+      // soot staining and a soft contact shadow on the ground beneath
       decals.ground(x, z, dim.L * 1.5, -yaw, DECAL.scorch, 0.5, { y: baseY(x, z) + 0.008 });
+      decals.rect(x, z, dim.W + 1.4, dim.L + 1.2, yaw, DECAL.oil, { alpha: 0.6, y: baseY(x, z) + 0.012 });
     }
   }
 
   // ------------------------------------------------------------------ debris piles
   function buildDebris() {
     const block = tpl.box(1, 1, 1);
-    const rebar = tpl.cyl(0.02, 0.02, 1, 4);
+    const rebar = tpl.get('rebar', () => new THREE.CylinderGeometry(0.5, 0.5, 1, 3, 1, true).translate(0, 0.5, 0));
     for (const [x, z, s, yaw] of P.debris) {
       if (rnd() > q.debris) continue;
       const g = at(x, z).get('rubble');
@@ -236,7 +234,7 @@ export function buildProps(ctx, bb) {
         const m = metal(x, z);
         for (let i = 0; i < 3 + Math.round(s * 2); i++) {
           const a = rnd() * TAU;
-          m.add(rebar, trs(x + Math.cos(a) * r * 0.5, y0 + 0.2, z + Math.sin(a) * r * 0.5, rnd() * TAU, 1.3, R(0.8, 2.2), 1.3, (rnd() - 0.5) * 1.3, (rnd() - 0.5) * 1.3), [0.4, 0.22, 0.13]);
+          m.add(rebar, trs(x + Math.cos(a) * r * 0.5, y0 + 0.2, z + Math.sin(a) * r * 0.5, rnd() * TAU, 0.04, R(0.8, 2.2), 0.04, (rnd() - 0.5) * 1.3, (rnd() - 0.5) * 1.3), [0.5, 0.3, 0.18]);
         }
         if (rnd() < 0.35) {
           // twisted sheet metal
@@ -434,6 +432,8 @@ export function buildProps(ctx, bb) {
       const y0 = onRoad(cx, cz) || w.style === 'rubble' ? 0.0 : CURB * 0.5;
       const yaw = alongX ? 0 : Math.PI / 2; // rotation.y of a model whose +x is the long axis
       const jitter = (rnd() - 0.5) * 0.02;
+      // soft contact shadow so cover sits on the ground instead of floating on it
+      if (w.style !== 'rubble') decals.rect(cx, cz, thick + 1.6, len + 1.4, alongX ? 0 : Math.PI / 2, DECAL.oil, { alpha: 0.5, y: y0 + 0.012 });
       switch (w.style) {
         case 'sandbag': sandbags(w, cx, cz, len, thick, alongX, y0); break;
         case 'barrier': jersey(w, cx, cz, len, thick, alongX, y0); break;
@@ -573,49 +573,110 @@ export function buildProps(ctx, bb) {
       g.add(block, trs(cx + Math.cos(a) * d * (w.w / Math.max(w.w, w.d)), y0 + w.h * (1 - d / r) * 0.6, cz + Math.sin(a) * d * (w.d / Math.max(w.w, w.d)), rnd() * TAU, s, s * 0.6, s * 0.8, (rnd() - 0.5), (rnd() - 0.5)), [0.8, 0.77, 0.73], 0.8);
     }
     const m = at(cx, cz).get('metal');
-    for (let i = 0; i < 4; i++) m.add(tpl.cyl(0.02, 0.02, 1, 4), trs(cx + R(-1, 1) * w.w * 0.4, y0 + w.h * 0.6, cz + R(-1, 1) * w.d * 0.4, rnd() * TAU, 1.3, R(1, 2.2), 1.3, (rnd() - 0.5) * 1.2, (rnd() - 0.5) * 1.2), [0.4, 0.22, 0.13]);
+    for (let i = 0; i < 4; i++) m.add(tpl.get('rebar', () => new THREE.CylinderGeometry(0.5, 0.5, 1, 3, 1, true).translate(0, 0.5, 0)), trs(cx + R(-1, 1) * w.w * 0.4, y0 + w.h * 0.6, cz + R(-1, 1) * w.d * 0.4, rnd() * TAU, 0.04, R(1, 2.2), 0.04, (rnd() - 0.5) * 1.2, (rnd() - 0.5) * 1.2), [0.5, 0.3, 0.18]);
     decals.ground(cx, cz, r * 3, rnd() * TAU, DECAL.chunks, 0.9, { y: y0 + 0.01 });
+  }
+
+  // ------------------------------------------------------------------ weeds and dead grass pushing through the pavement
+  function buildWeeds() {
+    const dryCols = [[0.66, 0.62, 0.4], [0.56, 0.54, 0.34], [0.46, 0.5, 0.28], [0.7, 0.66, 0.46]];
+    const tuft = (x, y, z, s) => {
+      const g = at(x, z).get('foliage');
+      const base = pick(dryCols);
+      const n = q.level >= 2 ? 6 : 4;
+      for (let i = 0; i < n; i++) {
+        const a = rnd() * TAU, off = rnd() * 0.12 * s, lean = 0.1 + rnd() * 0.35;
+        const bx = x + Math.cos(a) * off, bz = z + Math.sin(a) * off;
+        const hgt = (0.28 + rnd() * 0.45) * s, w = 0.035 * s;
+        const tx = bx + Math.cos(a) * lean * hgt, tz = bz + Math.sin(a) * lean * hgt;
+        const px = -Math.sin(a) * w, pz = Math.cos(a) * w;
+        const f = 0.8 + rnd() * 0.35;
+        const c = [base[0] * f, base[1] * f, base[2] * f];
+        g.quad([bx - px, y, bz - pz, bx + px, y, bz + pz, tx, y + hgt, tz, tx, y + hgt, tz], [0.1, 0.1, 0.14, 0.1, 0.12, 0.2, 0.12, 0.2], c);
+        g.quad([bx + px, y, bz + pz, bx - px, y, bz - pz, tx, y + hgt, tz, tx, y + hgt, tz], [0.1, 0.1, 0.14, 0.1, 0.12, 0.2, 0.12, 0.2], c);
+      }
+    };
+    for (const b of world.blocks) {
+      if (b.kind === 'park') continue;
+      const per = (b.w + b.d) * 2;
+      const n = Math.round((per / 5) * (b.kind === 'rubble' || b.kind === 'lot' ? 0.9 : 0.45) * q.props);
+      for (let i = 0; i < n; i++) {
+        const side = Math.floor(rnd() * 4), t = rnd(), inset = 0.12 + rnd() * 0.5;
+        const x = side < 2 ? b.x + t * b.w : side === 2 ? b.x + inset : b.x + b.w - inset;
+        const z = side < 2 ? (side === 0 ? b.z + inset : b.z + b.d - inset) : b.z + t * b.d;
+        if (solid(x, z, 0.3)) continue;
+        tuft(x, CURB, z, 0.8 + rnd() * 1.1);
+        if (rnd() < 0.3) decals.ground(x, z, 1.6, rnd() * TAU, DECAL.leaves, 0.5, { y: CURB + 0.011 });
+      }
+      if (b.kind === 'rubble' || b.kind === 'lot') {
+        for (let i = 0; i < Math.round(8 * q.props); i++) {
+          const x = b.x + rnd() * b.w, z = b.z + rnd() * b.d;
+          if (!solid(x, z, 0.3)) tuft(x, CURB, z, 1 + rnd());
+        }
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------ collapsed filling-station canopies
+  // One per interior parking lot: a slab sagging off two surviving columns, toppled pumps, scorch and glass.
+  function canopySites() {
+    const out = [];
+    for (const b of world.blocks) {
+      if (b.kind !== 'lot' || b.x < 90 || b.x + b.w > world.map.w - 90 || b.w < 24 || b.d < 22) continue;
+      out.push({ x: b.x + b.w / 2, z: b.z + b.d / 2, yaw: b.w >= b.d ? 0 : Math.PI / 2 });
+    }
+    return out.slice(0, 2);
+  }
+
+  function buildCanopies() {
+    for (const c of sites) {
+      const m = metal(c.x, c.z), g = at(c.x, c.z).get('burnt'), tr = at(c.x, c.z).get('trim');
+      const cy = Math.cos(-c.yaw), sy = Math.sin(-c.yaw);
+      const Lc = (lx, ly, lz) => [c.x + lx * cy + lz * sy, ly, c.z - lx * sy + lz * cy];
+      const hx = 6.6, hz = 3.4, thick = 0.5;
+      // roof heights at the four corners (+x+z, +x-z, -x-z, -x+z): two stand, one sags, one lies on the ground
+      const hts = [4.7, 4.5, 1.2, 3.6];
+      const corner = [[hx, hz], [hx, -hz], [-hx, -hz], [-hx, hz]];
+      const red = [0.62, 0.17, 0.13];
+      const bot = corner.map(([lx, lz], i) => Lc(lx, hts[i] - thick, lz));
+      const top = corner.map(([lx, lz], i) => Lc(lx, hts[i], lz));
+      hull(m, [...bot, ...top], 3, red);
+      // fascia band in a pale colour along the long edges
+      for (const s2 of [-1, 1]) {
+        const i0 = s2 > 0 ? 0 : 1, i1 = s2 > 0 ? 3 : 2;
+        const a = Lc(corner[i0][0], hts[i0] - thick - 0.05, corner[i0][1] + s2 * 0.04), b = Lc(corner[i1][0], hts[i1] - thick - 0.05, corner[i1][1] + s2 * 0.04);
+        const a2 = [a[0], a[1] + thick + 0.1, a[2]], b2 = [b[0], b[1] + thick + 0.1, b[2]];
+        face4(m, a, b, b2, a2, Lc(0, 2, 0), 3, [0.85, 0.83, 0.78]);
+      }
+      // columns: two upright, one snapped
+      for (const [lx, lz, h, lean] of [[hx - 0.3, hz - 0.3, 4.2, 0], [hx - 0.3, -hz + 0.3, 4.0, 0], [-hx + 0.3, hz - 0.3, 3.1, 0.25]]) {
+        const p = Lc(lx, 0, lz);
+        tr.add(tpl.box(0.5, 1, 0.5), trs(p[0], 0, p[2], -c.yaw, 1, h, 1, lean, 0), [0.72, 0.7, 0.66], 1);
+      }
+      // pumps (one knocked over), kiosk stub and a bent price sign
+      for (let i = 0; i < 4; i++) {
+        const p = Lc(-3.5 + i * 2.4, 0, 0.2);
+        const down = i === 2;
+        const col = pick([[0.7, 0.68, 0.64], [0.6, 0.2, 0.16], [0.35, 0.4, 0.45]]);
+        m.add(tpl.box(0.7, 1.5, 0.5), trs(p[0], down ? 0.3 : 0.05, p[2], -c.yaw + (down ? 0.6 : 0), 1, 1, 1, down ? 1.4 : 0, 0), col, 0.8);
+        decals.ground(p[0], p[2], 2.6, rnd() * TAU, DECAL.oil, 0.6, { y: 0.03 });
+      }
+      const sp = Lc(-hx - 2.2, 0, -hz - 1.5);
+      m.add(tpl.cyl(0.12, 0.12, 7, 6), trs(sp[0], 0, sp[2], 0, 1, 1, 1, 0.1, 0.05), [0.4, 0.4, 0.4]);
+      m.add(tpl.box(1.8, 1.6, 0.2), trs(sp[0], 5.2, sp[2], -c.yaw + 0.3, 1, 1, 1, 0.25, 0.4), [0.7, 0.16, 0.12]);
+      // scorch, glass, bricks and a few chunks around the wreck
+      decals.ground(c.x, c.z, 20, c.yaw, DECAL.scorch, 0.7, { y: 0.028 });
+      decals.ground(c.x, c.z, 16, rnd() * TAU, DECAL.bricks, 0.6, { y: 0.03 });
+      decals.rect(c.x, c.z, 4, 12, c.yaw, DECAL.glass, { alpha: 0.7, y: 0.031 });
+      const f = Lc(0, 0.25, 0);
+      ctx.extraFires.push({ x: f[0], y: f[1], z: f[2], size: 0.9 });
+      for (let i = 0; i < 10 * q.debris; i++) ctx.chunks.push([c.x + R(-8, 8), c.z + R(-5, 5), 0.25 + rnd() * 0.5, rnd() * TAU, rnd()]);
+    }
   }
 
   // ------------------------------------------------------------------ tents
   function buildTents() {
     const cols = [[0.42, 0.45, 0.3], [0.5, 0.48, 0.34], [0.55, 0.5, 0.36], [0.38, 0.4, 0.28]];
-    for (const [x, z, yaw, w, d] of P.tents || []) {
-      const g = at(x, z).get('canvas');
-      const m = metal(x, z);
-      const c = pick(cols);
-      const wallH = 1.7, ridge = 3.3;
-      const hx = w / 2, hz = d / 2;
-      // local frame: x along the ridge. rotation.y = -yaw
-      const cy = Math.cos(-yaw), sy = Math.sin(-yaw);
-      const L = (lx, ly, lz) => [x + lx * cy + lz * sy, ly, z - lx * sy + lz * cy];
-      const cc = (f) => [c[0] * f, c[1] * f, c[2] * f];
-      const T = 3;
-      const mid = L(0, 1.5, 0);
-      // side walls
-      face4(g, L(-hx, 0, hz), L(hx, 0, hz), L(hx, wallH, hz), L(-hx, wallH, hz), mid, T, [cc(0.7), cc(0.7), cc(1), cc(1)]);
-      face4(g, L(hx, 0, -hz), L(-hx, 0, -hz), L(-hx, wallH, -hz), L(hx, wallH, -hz), mid, T, [cc(0.7), cc(0.7), cc(1), cc(1)]);
-      // roof planes
-      face4(g, L(-hx - 0.3, wallH - 0.1, hz + 0.3), L(hx + 0.3, wallH - 0.1, hz + 0.3), L(hx + 0.3, ridge, 0), L(-hx - 0.3, ridge, 0), mid, T, cc(1.05));
-      face4(g, L(hx + 0.3, wallH - 0.1, -hz - 0.3), L(-hx - 0.3, wallH - 0.1, -hz - 0.3), L(-hx - 0.3, ridge, 0), L(hx + 0.3, ridge, 0), mid, T, cc(0.95));
-      // gable ends (one open with a dark interior)
-      for (const s of [-1, 1]) {
-        const dark = s > 0 && rnd() < 0.7;
-        const col = dark ? [0.05, 0.05, 0.04] : cc(0.85);
-        const tri = (a, b, e) => g.quad([...a, ...b, ...e, ...e], null, col);
-        const ex = s * hx;
-        tri(L(ex, 0, s > 0 ? -hz : hz), L(ex, 0, s > 0 ? hz : -hz), L(ex, ridge, 0));
-        face4(g, L(ex, 0, -hz), L(ex, 0, hz), L(ex, wallH, hz), L(ex, wallH, -hz), mid, T, col);
-      }
-      // poles and guy ropes
-      for (const s of [-1, 1]) {
-        const p = L(s * (hx + 0.3), 0, 0);
-        m.add(tpl.cyl(0.04, 0.05, 1, 5), trs(p[0], 0, p[2], 0, 1, ridge, 1), [0.3, 0.25, 0.2]);
-        const r = L(s * (hx + 1.7), 0, 0);
-        m.add(tpl.cyl(0.012, 0.012, 1, 3), trs(p[0], ridge * 0.9, p[2], 0, 1, 1, 1), [0.5, 0.45, 0.35]);
-        void r;
-      }
-      decals.ground(x, z, Math.max(w, d) + 5, rnd() * TAU, DECAL.dust, 0.55, { y: 0.02 });
-    }
+    for (const [x, z, yaw, w, d] of P.tents || []) addTent(ctx, tpl, { x, z, yaw, w, d, c: pick(cols), open: rnd() < 0.7 });
   }
 }

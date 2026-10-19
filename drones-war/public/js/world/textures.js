@@ -219,7 +219,7 @@ function paintBrick(S, seed, q) {
     }
   }
   weather(P, rnd, { streaks: 0.4, dirt: 0.45, seed, warm: true });
-  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintConcrete(S, seed, q) {
@@ -251,7 +251,7 @@ function paintConcrete(S, seed, q) {
     }
   }
   weather(P, rnd, { streaks: 0.55, dirt: 0.5, seed });
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintOffice(S, seed, q) {
@@ -274,7 +274,7 @@ function paintOffice(S, seed, q) {
     for (let i = 0; i <= sub; i++) P.rect(i * pw - 3 * k, gy - 2 * k, 6 * k, gh + 4 * k, { a: '#3a3d40', h: 175, r: 0.4, m: 0.6 });
   }
   weather(P, rnd, { streaks: 0.45, dirt: 0.35, seed });
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintApartment(S, seed, q) {
@@ -338,12 +338,12 @@ function paintApartment(S, seed, q) {
     }
   }
   weather(P, rnd, { streaks: 0.5, dirt: 0.45, seed, warm: true });
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintGlass(S, seed, q) {
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#3a4650', h: 120, r: 0.08, m: 0.85 }, { emissive: true });
+  const P = new Painter(S, S, { a: '#4a5a66', h: 120, r: 0.12, m: 0.7 }, { emissive: true });
   const k = S / 1024;
   const fh = S / FACADE_FLOORS, sub = FACADE_BAYS * 2, pw = S / sub;
   for (let f = 0; f < FACADE_FLOORS; f++) {
@@ -351,7 +351,7 @@ function paintGlass(S, seed, q) {
       const x = i * pw, y = f * fh;
       const t = 0.85 + rnd() * 0.25;
       const g = P.a.createLinearGradient(x, y, x + pw * 0.3, y + fh);
-      g.addColorStop(0, shade('#6f8796', t)); g.addColorStop(0.5, shade('#42535f', t)); g.addColorStop(1, shade('#2a353d', t));
+      g.addColorStop(0, shade('#9ba8a8', t)); g.addColorStop(0.5, shade('#65726f', t)); g.addColorStop(1, shade('#434d4b', t));
       P.a.fillStyle = g; P.a.fillRect(x, y, pw, fh);
       const r = rnd();
       if (r < 0.07) {
@@ -383,7 +383,7 @@ function paintGlass(S, seed, q) {
   for (let f = 0; f <= FACADE_FLOORS; f++) P.rect(0, f * fh - 3 * k, S, 6 * k, { a: '#4b5157', h: 190, r: 0.35, m: 0.8 });
   const st = dirtCanvas(blotch(8, 2, 4, seed + 4), 256, { color: [40, 38, 35], lo: 0.55, hi: 0.9, maxA: 0.35 });
   P.overlay('a', st, 'source-over', 1);
-  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintWarehouse(S, seed, q) {
@@ -410,7 +410,7 @@ function paintWarehouse(S, seed, q) {
   P.overlay('a', rs, 'source-over', 1);
   P.overlay('r', noiseCanvas(256, 256, blotch(20, 2, 4, seed + 5), (v) => [0, 230, 0, Math.max(0, v - 0.5) * 2 * 255]), 'source-over', 1);
   weather(P, rnd, { streaks: 0.3, dirt: 0.4, seed });
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintTower(S, seed, q) {
@@ -433,7 +433,7 @@ function paintTower(S, seed, q) {
     P.rect(b * bw + bw * 0.05, 0, 3 * k, S, { a: 'rgba(0,0,0,0.25)', h: 150 });
   }
   weather(P, rnd, { streaks: 0.45, dirt: 0.35, seed });
-  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 // ---------------------------------------------------------------- ground floors (one floor tall strips)
@@ -512,7 +512,7 @@ function paintStorefront(S, seed, q) {
     P.rect(sx, bot, swd, H - bot, { a: '#555350', h: 175, r: 0.9 });
   }
   weather(P, rnd, { streaks: 0.2, dirt: 0.55, seed });
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function graffiti(ctx, x, y, w, h, rnd) {
@@ -554,7 +554,7 @@ function paintLobby(S, seed, q) {
   P.rect(0, 0, W, H * 0.08, { a: '#2a2b2c', h: 210, r: 0.4, m: 0.5 });
   P.rect(0, H * 0.9, W, H * 0.1, { a: '#262626', h: 190, r: 0.5 });
   weather(P, rnd, { streaks: 0.15, dirt: 0.4, seed });
-  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintIndustrial(S, seed, q) {
@@ -585,7 +585,7 @@ function paintIndustrial(S, seed, q) {
   }
   P.rect(0, H * 0.92, W, H * 0.08, { a: '#59584f', h: 180 });
   weather(P, rnd, { streaks: 0.3, dirt: 0.6, seed, warm: true });
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 // ---------------------------------------------------------------- surfaces
@@ -605,7 +605,7 @@ function paintRoof(S, seed, q) {
   P.overlay('a', pud, 'source-over', 1);
   P.overlay('r', noiseCanvas(256, 256, blotch(3, 3, 4, seed + 2), (v) => [0, v > 0.66 ? 60 : 240, 0, 255]), 'source-over', 1);
   weather(P, rnd, { streaks: 0, dirt: 0.4, seed });
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function concreteBase(P, seed, tone = '#8f8c86', { forms = true, k = 1 } = {}) {
@@ -631,7 +631,7 @@ function paintTrim(S, seed, q) {
   const P = new Painter(S, S, { a: '#a8a49b', h: 150, r: 0.9 });
   concreteBase(P, seed, '#b0aca3', { k: S / 512 });
   weather(P, rnd, { streaks: 0.28, dirt: 0.32, seed });
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintInterior(S, seed, q) {
@@ -646,37 +646,59 @@ function paintInterior(S, seed, q) {
   const k = S / 512;
   // rebar stubs
   for (let i = 0; i < 10; i++) P.rect(rnd() * S, rnd() * S, (30 + rnd() * 60) * k, 3 * k, { a: '#5a3a26', h: 230, r: 0.6, m: 0.6 });
-  return P.textures({ normal: 3.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 3.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintRubble(S, seed, q) {
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#6e6a63', h: 100, r: 0.95 });
+  const P = new Painter(S, S, { a: '#4d473f', h: 90, r: 0.95 });
   const k = S / 512;
-  // layered chunks: big pale concrete, bricks, dark gaps
-  const draw = (count, rmin, rmax, cols, hmin) => {
-    for (let i = 0; i < count; i++) {
-      const x = rnd() * S, y = rnd() * S, r = (rmin + rnd() * (rmax - rmin)) * k;
-      const col = cols[Math.floor(rnd() * cols.length)];
-      const f = 0.75 + rnd() * 0.4, hv = hmin + rnd() * 60, ang = rnd() * 6.28, sides = 4 + Math.floor(rnd() * 3);
-      P.wrap((dx, dy) => {
-        if (x + dx < -r || x + dx > S + r || y + dy < -r || y + dy > S + r) return;
-        const pts = [];
-        for (let j = 0; j < sides; j++) { const a = ang + (j / sides) * 6.28; const rr = r * (0.6 + ((j * 7919 + i) % 5) * 0.1); pts.push([x + dx + Math.cos(a) * rr, y + dy + Math.sin(a) * rr]); }
-        const poly = (ctx, style) => { ctx.fillStyle = style; ctx.beginPath(); pts.forEach(([px, py], j) => (j ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.fill(); };
-        poly(P.a, shade(col, f));
-        const g = P.hx.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, r);
-        g.addColorStop(0, gray(hv + 40)); g.addColorStop(1, gray(hv - 20));
-        poly(P.hx, g);
-      });
-    }
+  const soil = noiseCanvas(256, 256, blotch(5, 5, 6, seed + 2), (v) => { const c = 60 + v * 40; return [c * 1.05, c, c * 0.88, 255]; });
+  P.overlay('a', soil, 'source-over', 1);
+  // Broken masonry: irregular, elongated, bevel-lit chunks stacked from big to small, each throwing a soft shadow onto the pile.
+  const chunk = (x, y, r, col, hmin) => {
+    const sides = 5 + Math.floor(rnd() * 4), ang = rnd() * 6.28, stretch = 0.55 + rnd() * 0.9, f = 0.7 + rnd() * 0.5;
+    const hv = hmin + rnd() * 70;
+    P.wrap((dx, dy) => {
+      if (x + dx < -r * 1.6 || x + dx > S + r * 1.6 || y + dy < -r * 1.6 || y + dy > S + r * 1.6) return;
+      const pts = [];
+      for (let j = 0; j < sides; j++) {
+        const t = ang + (j / sides) * 6.283 + (rnd() - 0.5) * 0.5, rr = r * (0.55 + rnd() * 0.45);
+        pts.push([x + dx + Math.cos(t) * rr * stretch, y + dy + Math.sin(t) * rr]);
+      }
+      const path = (ctx) => { ctx.beginPath(); pts.forEach(([px, py], j) => (j ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.closePath(); };
+      // contact shadow
+      P.a.save(); P.a.translate(r * 0.12, r * 0.14); path(P.a); P.a.fillStyle = 'rgba(14,12,10,0.4)'; P.a.fill(); P.a.restore();
+      path(P.a);
+      const g = P.a.createLinearGradient(x + dx - r, y + dy - r, x + dx + r, y + dy + r);
+      g.addColorStop(0, shade(col, f * 1.15)); g.addColorStop(1, shade(col, f * 0.7));
+      P.a.fillStyle = g; P.a.fill();
+      P.a.strokeStyle = 'rgba(235,228,214,0.18)'; P.a.lineWidth = Math.max(1, k); P.a.stroke();
+      path(P.hx);
+      const hg = P.hx.createLinearGradient(x + dx - r, y + dy - r, x + dx + r, y + dy + r);
+      hg.addColorStop(0, gray(hv + 45)); hg.addColorStop(1, gray(hv - 15));
+      P.hx.fillStyle = hg; P.hx.fill();
+    });
   };
-  draw(Math.round(900 * k * k), 3, 8, ['#4a4741', '#5c5850'], 60);
-  draw(Math.round(260 * k * k), 6, 18, ['#9b968c', '#8a857c', '#a8a397', '#7d4a3a', '#8a5240'], 120);
-  draw(Math.round(70 * k * k), 14, 30, ['#a6a296', '#938e84', '#b0aa9e'], 150);
-  const dust = dirtCanvas(blotch(4, 4, 4, seed + 1), 256, { color: [150, 140, 125], lo: 0.4, hi: 0.8, maxA: 0.35 });
+  const draw = (count, rmin, rmax, cols, hmin) => {
+    for (let i = 0; i < count; i++) chunk(rnd() * S, rnd() * S, (rmin + rnd() * (rmax - rmin)) * k, cols[Math.floor(rnd() * cols.length)], hmin);
+  };
+  draw(Math.round(40 * k * k), 26, 44, ['#9a958b', '#8d8880', '#a39e92', '#7e7a72'], 80);
+  draw(Math.round(150 * k * k), 11, 24, ['#8f8a80', '#7a756c', '#99948a', '#85503f', '#7b4a3a', '#6f6a62'], 100);
+  draw(Math.round(520 * k * k), 4, 10, ['#7a756c', '#68645b', '#8a857b', '#7d4a3a', '#5e5a52'], 110);
+  // splintered planks, pipes and rebar lying across the pile
+  for (let i = 0; i < 24 * k * k; i++) {
+    const x = rnd() * S, y = rnd() * S, l = (16 + rnd() * 56) * k, an = rnd() * 6.28, c = rnd() < 0.45 ? '#5e5446' : rnd() < 0.5 ? '#37332f' : '#6a4a32';
+    P.wrap((dx, dy) => { P.a.strokeStyle = c; P.a.lineWidth = (1.5 + rnd() * 2.5) * k; P.a.beginPath(); P.a.moveTo(x + dx, y + dy); P.a.lineTo(x + dx + Math.cos(an) * l, y + dy + Math.sin(an) * l); P.a.stroke(); });
+  }
+  // fine concrete grit over everything, then a coat of pale plaster dust and dark soot
+  const grit = noiseCanvas(256, 256, grain(seed + 7, 256), (v) => (v < 0.08 ? [20, 18, 16, 120] : v > 0.93 ? [230, 224, 212, 90] : [0, 0, 0, 0]));
+  P.overlay('a', grit, 'source-over', 1, Math.max(1, S / 256));
+  const dust = dirtCanvas(blotch(4, 4, 4, seed + 1), 256, { color: [138, 130, 116], lo: 0.35, hi: 0.72, maxA: 0.5 });
   P.overlay('a', dust, 'source-over', 1);
-  return P.textures({ normal: 4, aniso: q.aniso, normals: q.normals });
+  const sootC = dirtCanvas(blotch(7, 7, 4, seed + 5), 256, { color: [36, 32, 28], lo: 0.52, hi: 0.8, maxA: 0.5 });
+  P.overlay('a', sootC, 'source-over', 1);
+  return P.textures({ normal: 4, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintAsphalt(S, seed, q) {
@@ -685,14 +707,14 @@ function paintAsphalt(S, seed, q) {
   const k = S / 1024;
   const base = noiseCanvas(256, 256, blotch(6, 6, 6, seed), (v) => { const c = 78 + v * 46; return [c, c * 0.985, c * 0.95, 255]; });
   P.overlay('a', base, 'source-over', 1);
-  const agg = noiseCanvas(256, 256, grain(seed + 1, 256), (v) => (v > 0.9 ? [100 + v * 40, 98 + v * 40, 94 + v * 38, 110] : v < 0.08 ? [22, 22, 22, 110] : [0, 0, 0, 0]));
+  const agg = noiseCanvas(256, 256, grain(seed + 1, 256), (v) => (v > 0.9 ? [100 + v * 40, 98 + v * 40, 94 + v * 38, 80] : v < 0.08 ? [22, 22, 22, 90] : [0, 0, 0, 0]));
   P.overlay('a', agg, 'source-over', 1, Math.max(1, S / 256));
   const aggh = noiseCanvas(256, 256, grain(seed + 1, 256), (v) => [v * 255, v * 255, v * 255, 255]);
   P.overlay('h', aggh, 'source-over', 0.18, Math.max(1, S / 256));
   // patch repairs (darker rectangles)
   for (let i = 0; i < 5; i++) {
     const w = (80 + rnd() * 260) * k, h = (60 + rnd() * 200) * k, x = rnd() * S, y = rnd() * S;
-    P.wrap((dx, dy) => P.rect(x + dx, y + dy, w, h, { a: `rgba(${rnd() < 0.5 ? '28,28,28' : '75,74,70'},0.45)`, h: 135 }));
+    P.wrap((dx, dy) => P.rect(x + dx, y + dy, w, h, { a: `rgba(${rnd() < 0.5 ? '28,28,28' : '75,74,70'},0.26)`, h: 132 }));
   }
   // cracks: branching dark polylines
   P.a.strokeStyle = 'rgba(12,12,12,0.85)'; P.hx.strokeStyle = gray(50);
@@ -714,9 +736,9 @@ function paintAsphalt(S, seed, q) {
   P.overlay('a', oil, 'source-over', 1);
   P.overlay('r', noiseCanvas(256, 256, blotch(2, 8, 4, seed + 3), (v) => [0, 230 - Math.max(0, v - 0.55) * 300, 0, 255]), 'source-over', 1);
   // wind-blown sand and dust drifting over the surface
-  const dust = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 9), (v) => [176, 163, 140, Math.max(0, v - 0.48) * 2.4 * 255 * 0.55]);
+  const dust = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 9), (v) => [150, 146, 136, Math.max(0, v - 0.5) * 2.4 * 255 * 0.3]);
   P.overlay('a', dust, 'source-over', 1);
-  return P.textures({ normal: 1.3, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 0.9, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintSidewalk(S, seed, q) {
@@ -738,29 +760,42 @@ function paintSidewalk(S, seed, q) {
     P.rect(0, i * cs - 2 * k, S, 4 * k, { a: 'rgba(40,38,34,0.75)', h: 60 });
   }
   weather(P, rnd, { streaks: 0, dirt: 0.5, seed });
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintPlaza(S, seed, q) {
+  // big cracked concrete slabs (2 m on an 8 m tile) with sand, stains and joints filled with dirt
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#8a8178', h: 150, r: 0.85 });
-  const n = 16, cs = S / n, k = S / 1024; // 0.5 m pavers on 8 m
-  for (let y = 0; y < n; y++) for (let x = 0; x < n * 2; x++) {
-    const off = (y % 2) * cs * 0.5;
-    P.rect(x * cs * 0.5 + off - cs * 0.5 + 1.5 * k, y * cs + 1.5 * k, cs * 0.5 - 3 * k, cs - 3 * k,
-      { a: shade(['#948a7e', '#8a7f72', '#a39a8e', '#7d756c'][Math.floor(rnd() * 4)], 0.9 + rnd() * 0.15), h: 160 + rnd() * 20 });
+  const P = new Painter(S, S, { a: '#8b877f', h: 150, r: 0.88 });
+  concreteBase(P, seed, '#8e8a82', { forms: false });
+  const n = 4, cs = S / n, k = S / 1024;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    P.rect(x * cs, y * cs, cs, cs, { a: `rgba(${rnd() < 0.5 ? '255,250,240' : '30,28,24'},${(0.03 + rnd() * 0.1).toFixed(3)})` });
+    if (rnd() < 0.55) {
+      P.a.strokeStyle = 'rgba(22,20,18,0.8)'; P.a.lineWidth = (1.5 + rnd() * 2) * k; P.hx.strokeStyle = gray(70); P.hx.lineWidth = 2.5 * k;
+      let cx = x * cs + rnd() * cs, cy = y * cs, an = Math.PI / 2 + (rnd() - 0.5);
+      for (const c of [P.a, P.hx]) { c.beginPath(); c.moveTo(cx, cy); }
+      for (let i = 0; i < 9; i++) { cx += Math.cos(an) * cs / 9; cy += Math.sin(an) * cs / 9; an += (rnd() - 0.5) * 1.1; for (const c of [P.a, P.hx]) c.lineTo(cx, cy); }
+      P.a.stroke(); P.hx.stroke();
+    }
   }
-  weather(P, rnd, { streaks: 0, dirt: 0.55, seed, warm: true });
-  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals });
+  for (let i = 0; i <= n; i++) {
+    P.rect(i * cs - 3 * k, 0, 6 * k, S, { a: 'rgba(52,46,38,0.8)', h: 55 });
+    P.rect(0, i * cs - 3 * k, S, 6 * k, { a: 'rgba(52,46,38,0.8)', h: 55 });
+  }
+  const dust = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 4), (v) => [138, 126, 106, Math.max(0, v - 0.42) * 2.4 * 255 * 0.5]);
+  P.overlay('a', dust, 'source-over', 1);
+  weather(P, rnd, { streaks: 0, dirt: 0.8, seed, warm: true });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintGrass(S, seed, q) {
   const rnd = mulberry32(seed);
   const P = new Painter(S, S, { a: '#4e5a33', h: 128, r: 0.95 });
-  const base = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => [58 + v * 50, 70 + v * 40, 36 + v * 18, 255]);
+  const base = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => [78 + v * 42, 76 + v * 36, 54 + v * 20, 255]);
   P.overlay('a', base, 'source-over', 1);
   // dead / trampled patches
-  const dead = noiseCanvas(256, 256, blotch(4, 4, 5, seed + 1), (v) => [118, 100, 70, Math.max(0, v - 0.52) * 3 * 255 * 0.8]);
+  const dead = noiseCanvas(256, 256, blotch(4, 4, 5, seed + 1), (v) => [128, 112, 84, Math.max(0, v - 0.42) * 3 * 255 * 0.85]);
   P.overlay('a', dead, 'source-over', 1);
   const k = S / 1024;
   for (let i = 0; i < 9000 * k * k; i++) {
@@ -771,46 +806,53 @@ function paintGrass(S, seed, q) {
   }
   const gh = noiseCanvas(256, 256, grain(seed + 2, 256), (v) => [v * 255, v * 255, v * 255, 255]);
   P.overlay('h', gh, 'source-over', 0.7, Math.max(1, S / 256));
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintDirt(S, seed, q) {
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#6b5d4a', h: 128, r: 0.95 });
-  const base = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => [84 + v * 50, 72 + v * 42, 56 + v * 32, 255]);
+  const P = new Painter(S, S, { a: '#6b6252', h: 128, r: 0.95 });
+  const base = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => [88 + v * 44, 80 + v * 38, 64 + v * 30, 255]);
   P.overlay('a', base, 'source-over', 1);
+  // fine grit: many tiny, low-contrast specks instead of cobble-sized pebbles
   const k = S / 1024;
-  for (let i = 0; i < 2500 * k * k; i++) {
-    const x = rnd() * S, y = rnd() * S, r = (1 + rnd() * 3.5) * k, c = 90 + rnd() * 70;
-    P.a.fillStyle = `rgb(${c},${c * 0.93},${c * 0.82})`; P.a.beginPath(); P.a.arc(x, y, r, 0, 7); P.a.fill();
-    P.hx.fillStyle = gray(170 + rnd() * 60); P.hx.beginPath(); P.hx.arc(x, y, r, 0, 7); P.hx.fill();
+  for (let i = 0; i < 7000 * k * k; i++) {
+    const x = rnd() * S, y = rnd() * S, r = (0.5 + rnd() * 1.4) * k, c = 70 + rnd() * 90;
+    P.a.fillStyle = `rgba(${c},${c * 0.94},${c * 0.84},0.55)`; P.a.beginPath(); P.a.arc(x, y, r, 0, 7); P.a.fill();
+    P.hx.fillStyle = gray(150 + rnd() * 80); P.hx.beginPath(); P.hx.arc(x, y, r, 0, 7); P.hx.fill();
   }
-  const sparse = noiseCanvas(256, 256, blotch(6, 6, 5, seed + 1), (v) => [70, 80, 45, Math.max(0, v - 0.6) * 2.5 * 255 * 0.7]);
+  // a few larger stones and compacted tyre ruts
+  for (let i = 0; i < 160 * k * k; i++) {
+    const x = rnd() * S, y = rnd() * S, r = (2 + rnd() * 3.5) * k, c = 100 + rnd() * 60;
+    P.a.fillStyle = `rgb(${c},${c * 0.95},${c * 0.88})`; P.a.beginPath(); P.a.ellipse(x, y, r, r * 0.7, rnd() * 3, 0, 7); P.a.fill();
+    P.hx.fillStyle = gray(190); P.hx.beginPath(); P.hx.ellipse(x, y, r, r * 0.7, 0, 0, 7); P.hx.fill();
+  }
+  const sparse = noiseCanvas(256, 256, blotch(6, 6, 5, seed + 1), (v) => [78, 84, 52, Math.max(0, v - 0.62) * 2.5 * 255 * 0.5]);
   P.overlay('a', sparse, 'source-over', 1);
   const gh = noiseCanvas(256, 256, blotch(10, 10, 4, seed + 2), (v) => [v * 255, v * 255, v * 255, 255]);
-  P.overlay('h', gh, 'source-over', 0.6);
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  P.overlay('h', gh, 'source-over', 0.5);
+  return P.textures({ normal: 1.1, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 // Painted metal for small props (AC units, poles, tanks, signs backs); neutral so vertex colors tint it.
 function paintMetal(S, seed, q) {
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#b8b8b4', h: 150, r: 0.55, m: 0.35 });
-  const rust = noiseCanvas(256, 256, blotch(6, 6, 5, seed), (v) => [120, 66, 32, Math.max(0, v - 0.58) * 3 * 255]);
+  const P = new Painter(S, S, { a: '#b8b8b4', h: 150, r: 0.55, m: 0.25 });
+  const rust = noiseCanvas(256, 256, blotch(6, 6, 5, seed), (v) => [120, 66, 32, Math.max(0, v - 0.64) * 3 * 255 * 0.8]);
   P.overlay('a', rust, 'source-over', 1);
-  P.overlay('r', noiseCanvas(256, 256, blotch(6, 6, 5, seed), (v) => [0, v > 0.6 ? 235 : 140, v > 0.6 ? 40 : 90, 255]), 'source-over', 1);
+  P.overlay('r', noiseCanvas(256, 256, blotch(6, 6, 5, seed), (v) => [0, v > 0.64 ? 235 : 150, v > 0.64 ? 40 : 70, 255]), 'source-over', 1);
   const k = S / 512;
-  for (let i = 0; i < 60; i++) {
-    P.a.strokeStyle = `rgba(${rnd() < 0.5 ? '230,230,225' : '40,38,35'},0.35)`; P.a.lineWidth = k;
-    const x = rnd() * S, y = rnd() * S; P.a.beginPath(); P.a.moveTo(x, y); P.a.lineTo(x + (rnd() - 0.5) * 40 * k, y + (rnd() - 0.5) * 10 * k); P.a.stroke();
+  for (let i = 0; i < 40; i++) {
+    P.a.strokeStyle = `rgba(${rnd() < 0.5 ? '230,230,225' : '40,38,35'},0.16)`; P.a.lineWidth = k;
+    const x = rnd() * S, y = rnd() * S; P.a.beginPath(); P.a.moveTo(x, y); P.a.lineTo(x + (rnd() - 0.5) * 30 * k, y + (rnd() - 0.5) * 8 * k); P.a.stroke();
   }
-  weather(P, rnd, { streaks: 0.35, dirt: 0.4, seed });
-  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals });
+  weather(P, rnd, { streaks: 0.12, dirt: 0.3, seed });
+  return P.textures({ normal: 0.8, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 // Burnt-out car body: soot, ash, orange rust, peeled paint islands.
 function paintBurnt(S, seed, q) {
-  const P = new Painter(S, S, { a: '#2a2725', h: 140, r: 0.85, m: 0.3 });
+  const P = new Painter(S, S, { a: '#5a5550', h: 140, r: 0.85, m: 0.3 });
   const rust = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => [140 * (0.6 + v * 0.6), 64 * (0.6 + v * 0.5), 28, Math.max(0, v - 0.45) * 2.4 * 255]);
   P.overlay('a', rust, 'source-over', 1);
   const ash = noiseCanvas(256, 256, blotch(8, 8, 5, seed + 1), (v) => [150, 145, 135, Math.max(0, v - 0.62) * 3 * 255 * 0.7]);
@@ -819,15 +861,15 @@ function paintBurnt(S, seed, q) {
   P.overlay('a', paint, 'source-over', 1);
   const gh = noiseCanvas(256, 256, blotch(16, 16, 4, seed + 3), (v) => [v * 255, v * 255, v * 255, 255]);
   P.overlay('h', gh, 'source-over', 0.7);
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintBark(S, seed, q) {
-  const P = new Painter(S, S, { a: '#4a3f33', h: 128, r: 0.95 });
-  const n = noiseCanvas(256, 256, blotch(12, 2, 5, seed), (v) => { const c = 40 + v * 60; return [c, c * 0.85, c * 0.7, 255]; });
+  const P = new Painter(S, S, { a: '#6a5e50', h: 128, r: 0.95 });
+  const n = noiseCanvas(256, 256, blotch(12, 2, 5, seed), (v) => { const c = 78 + v * 70; return [c, c * 0.88, c * 0.76, 255]; });
   P.overlay('a', n, 'source-over', 1);
   P.overlay('h', noiseCanvas(256, 256, blotch(12, 2, 5, seed), (v) => [v * 255, v * 255, v * 255, 255]), 'source-over', 1);
-  return P.textures({ normal: 4, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 4, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintFoliage(S, seed, q) {
@@ -837,11 +879,11 @@ function paintFoliage(S, seed, q) {
   for (let i = 0; i < 3500 * k * k; i++) {
     const x = rnd() * S, y = rnd() * S, r = (3 + rnd() * 5) * k;
     const f = 0.55 + rnd() * 0.7;
-    P.a.fillStyle = `rgb(${70 * f},${88 * f},${44 * f})`;
+    P.a.fillStyle = `rgb(${78 * f},${88 * f},${52 * f})`;
     P.a.beginPath(); P.a.ellipse(x, y, r, r * 0.55, rnd() * 3, 0, 7); P.a.fill();
     P.hx.fillStyle = gray(90 + f * 120); P.hx.beginPath(); P.hx.ellipse(x, y, r, r * 0.55, rnd() * 3, 0, 7); P.hx.fill();
   }
-  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 3, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintCanvas(S, seed, q) {
@@ -852,7 +894,7 @@ function paintCanvas(S, seed, q) {
   for (let y = 0; y < S; y += 2 * k) P.rect(0, y, S, k, { a: 'rgba(0,0,0,0.06)', h: 110 });
   for (let x = 0; x < S; x += 2 * k) P.rect(x, 0, k, S, { a: 'rgba(255,255,255,0.04)', h: 140 });
   weather(P, rnd, { streaks: 0.3, dirt: 0.5, seed, warm: true });
-  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintSandbag(S, seed, q) {
@@ -862,7 +904,7 @@ function paintSandbag(S, seed, q) {
   for (let y = 0; y < S; y += 2 * k) P.rect(0, y, S, k, { a: 'rgba(60,45,25,0.15)', h: 100 });
   for (let x = 0; x < S; x += 2 * k) P.rect(x, 0, k, S, { a: 'rgba(60,45,25,0.12)', h: 150 });
   weather(P, rnd, { streaks: 0.1, dirt: 0.6, seed, warm: true });
-  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintHesco(S, seed, q) {
@@ -875,7 +917,7 @@ function paintHesco(S, seed, q) {
     P.rect(i * cell - k, 0, 2 * k, S, { a: '#5d5d58', h: 220, r: 0.5, m: 0.7 });
     P.rect(0, i * cell - k, S, 2 * k, { a: '#5d5d58', h: 220, r: 0.5, m: 0.7 });
   }
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 function paintContainer(S, seed, q) {
@@ -890,7 +932,7 @@ function paintContainer(S, seed, q) {
   const rust = noiseCanvas(256, 256, blotch(10, 3, 5, seed), (v) => [120, 60, 28, Math.max(0, v - 0.55) * 2.5 * 255]);
   P.overlay('a', rust, 'source-over', 1);
   weather(P, rnd, { streaks: 0.4, dirt: 0.5, seed });
-  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals });
+  return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
 
 // Large-scale tileable grime (shared uniform, sampled in world space by patched materials).
@@ -909,20 +951,24 @@ export function grimeTexture() {
 export const DECAL = {
   scorch: 0, crack: 1, pothole: 2, manhole: 3, oil: 4, paint: 5, blast: 6, streak: 7,
   graffiti: 8, puddle: 9, helipad: 10, chunks: 11, tyre: 12, dust: 13, glow: 14, drain: 15,
+  litter: 16, gutter: 17, leaves: 18, bricks: 19, glass: 20, tarpatch: 21, skid: 22, weedline: 23,
 };
+const DECAL_GRID = 5;
 export function decalUV(cell) {
-  const cx = cell % 4, cy = Math.floor(cell / 4);
+  const G = DECAL_GRID;
+  const cx = cell % G, cy = Math.floor(cell / G);
   // inset by half a texel-ish to avoid bleeding between cells
   const e = 0.004;
-  return [cx / 4 + e, 1 - (cy + 1) / 4 + e, (cx + 1) / 4 - e, 1 - cy / 4 - e];
+  return [cx / G + e, 1 - (cy + 1) / G + e, (cx + 1) / G - e, 1 - cy / G - e];
 }
 
 function paintDecals(S, seed, q) {
   const rnd = mulberry32(seed);
   const P = new Painter(S, S, { h: 128, r: 0.9 }, { alpha: true });
-  const c = S / 4;
+  const G = DECAL_GRID;
+  const c = S / G;
   const a = P.a;
-  const cell = (i, fn) => { const x = (i % 4) * c, y = Math.floor(i / 4) * c; a.save(); a.beginPath(); a.rect(x, y, c, c); a.clip(); a.translate(x, y); fn(c); a.restore(); };
+  const cell = (i, fn) => { const x = (i % G) * c, y = Math.floor(i / G) * c; a.save(); a.beginPath(); a.rect(x, y, c, c); a.clip(); a.translate(x, y); fn(c); a.restore(); };
   const blob = (cx, cy, r, n, jag, fill) => {
     a.fillStyle = fill; a.beginPath();
     for (let j = 0; j <= n; j++) { const an = (j / n) * 6.283; const rr = r * (1 - jag + rnd() * jag * 2); const px = cx + Math.cos(an) * rr, py = cy + Math.sin(an) * rr; j ? a.lineTo(px, py) : a.moveTo(px, py); }
@@ -947,9 +993,11 @@ function paintDecals(S, seed, q) {
     branch(s * 0.5, s * 0.5, Math.PI * 0.6, s * 0.08, s * 0.012);
   });
   cell(DECAL.pothole, (s) => {
-    blob(s / 2, s / 2, s * 0.44, 22, 0.25, 'rgba(70,68,64,0.85)');
-    blob(s / 2, s / 2, s * 0.36, 20, 0.25, 'rgba(25,24,22,0.95)');
-    blob(s / 2 + s * 0.04, s / 2 + s * 0.04, s * 0.2, 14, 0.3, 'rgba(45,42,38,0.9)');
+    a.shadowColor = 'rgba(0,0,0,0.8)'; a.shadowBlur = s * 0.04;
+    blob(s / 2, s / 2, s * 0.42, 22, 0.25, 'rgba(58,56,52,0.8)');
+    blob(s / 2, s / 2, s * 0.33, 20, 0.25, 'rgba(20,19,17,0.95)');
+    a.shadowBlur = 0;
+    blob(s / 2 + s * 0.04, s / 2 + s * 0.04, s * 0.16, 14, 0.3, 'rgba(40,37,33,0.9)');
   });
   cell(DECAL.manhole, (s) => {
     a.fillStyle = '#2b2a28'; a.beginPath(); a.arc(s / 2, s / 2, s * 0.44, 0, 7); a.fill();
@@ -969,12 +1017,21 @@ function paintDecals(S, seed, q) {
     a.globalCompositeOperation = 'source-over';
   });
   cell(DECAL.blast, (s) => {
+    // scorch halo, a ragged crater with spalled rim and soot streaks licking upward (soft edges: no hard silhouettes)
     const g = a.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-    g.addColorStop(0, 'rgba(10,9,8,0.9)'); g.addColorStop(0.6, 'rgba(25,22,18,0.6)'); g.addColorStop(1, 'rgba(30,28,25,0)');
+    g.addColorStop(0, 'rgba(8,7,6,0.85)'); g.addColorStop(0.45, 'rgba(18,16,13,0.5)'); g.addColorStop(1, 'rgba(28,26,22,0)');
     a.fillStyle = g; a.fillRect(0, 0, s, s);
-    blob(s / 2, s / 2, s * 0.24, 18, 0.35, 'rgba(105,100,92,1)');
-    blob(s / 2, s / 2, s * 0.17, 16, 0.4, 'rgba(6,5,5,1)');
-    for (let i = 0; i < 40; i++) { a.fillStyle = 'rgba(10,9,8,0.8)'; a.beginPath(); a.arc(s / 2 + (rnd() - 0.5) * s * 0.8, s / 2 + (rnd() - 0.5) * s * 0.8, 1 + rnd() * s * 0.012, 0, 7); a.fill(); }
+    for (let i = 0; i < 9; i++) {
+      const x = s / 2 + (rnd() - 0.5) * s * 0.12, w = s * (0.02 + rnd() * 0.05), l = s * (0.2 + rnd() * 0.3);
+      const sg = a.createLinearGradient(0, s / 2, 0, s / 2 - l);
+      sg.addColorStop(0, 'rgba(12,10,8,0.55)'); sg.addColorStop(1, 'rgba(12,10,8,0)');
+      a.fillStyle = sg; a.fillRect(x - w / 2, s / 2 - l, w, l);
+    }
+    a.shadowColor = 'rgba(0,0,0,0.9)'; a.shadowBlur = s * 0.03;
+    blob(s / 2, s / 2, s * 0.15, 14, 0.35, 'rgba(70,66,60,0.9)');
+    blob(s / 2, s / 2 + s * 0.01, s * 0.1, 12, 0.4, 'rgba(10,9,8,0.95)');
+    a.shadowBlur = 0;
+    for (let i = 0; i < 30; i++) { const an = rnd() * 6.28, rr = s * (0.12 + rnd() * 0.18); a.fillStyle = rnd() < 0.5 ? 'rgba(14,12,10,0.7)' : 'rgba(120,112,100,0.5)'; a.beginPath(); a.arc(s / 2 + Math.cos(an) * rr, s / 2 + Math.sin(an) * rr, 1 + rnd() * s * 0.01, 0, 7); a.fill(); }
   });
   cell(DECAL.streak, (s) => {
     const g = a.createLinearGradient(0, 0, 0, s);
@@ -1018,10 +1075,89 @@ function paintDecals(S, seed, q) {
     a.fillStyle = '#2a2927'; a.fillRect(s * 0.1, s * 0.3, s * 0.8, s * 0.4);
     a.fillStyle = '#0c0c0c'; for (let x = s * 0.14; x < s * 0.86; x += s * 0.06) a.fillRect(x, s * 0.34, s * 0.03, s * 0.32);
   });
+  // street litter: paper, card, plastic scraps scattered thinly
+  cell(DECAL.litter, (s) => {
+    // muted paper, card and plastic scraps in a few drifts (no saturated colours: it is a wrecked street, not confetti)
+    const cols = ['rgba(176,172,160,0.85)', 'rgba(128,112,90,0.85)', 'rgba(84,92,100,0.8)', 'rgba(120,76,62,0.75)', 'rgba(52,50,46,0.8)', 'rgba(198,196,186,0.8)'];
+    for (let d = 0; d < 4; d++) {
+      const cx = s * (0.2 + rnd() * 0.6), cy = s * (0.2 + rnd() * 0.6);
+      for (let i = 0; i < 46; i++) {
+        const x = cx + (rnd() - 0.5) * s * 0.34 * rnd(), y = cy + (rnd() - 0.5) * s * 0.34 * rnd();
+        const w = s * (0.004 + rnd() * 0.01), h = w * (0.35 + rnd() * 1.1), an = rnd() * 6.28;
+        a.save(); a.translate(x, y); a.rotate(an); a.fillStyle = cols[Math.floor(rnd() * cols.length)]; a.fillRect(-w / 2, -h / 2, w, h); a.restore();
+      }
+    }
+  });
+  // gutter strip: a long wavy band of grit, leaves and dust along the curb (u runs along the street)
+  cell(DECAL.gutter, (s) => {
+    for (let i = 0; i < 220; i++) {
+      const u = rnd() * s, v = s * (0.5 + Math.sin(u / s * 9 + 1) * 0.09 + (rnd() - 0.5) * 0.34 * rnd());
+      const r = s * (0.012 + rnd() * 0.035);
+      const g = 70 + rnd() * 60;
+      a.fillStyle = `rgba(${g * 1.15},${g},${g * 0.82},${0.12 + rnd() * 0.2})`;
+      a.beginPath(); a.ellipse(u, v, r * 2.2, r, 0, 0, 7); a.fill();
+    }
+    for (let i = 0; i < 80; i++) { a.fillStyle = `rgba(${40 + rnd() * 30},${34 + rnd() * 26},${24 + rnd() * 18},0.5)`; a.fillRect(rnd() * s, s * (0.42 + rnd() * 0.16), 1 + rnd() * 3, 1 + rnd() * 2); }
+  });
+  cell(DECAL.leaves, (s) => {
+    for (let i = 0; i < 70; i++) {
+      const x = s / 2 + (rnd() - 0.5) * s * 0.9 * (0.4 + rnd() * 0.6), y = s / 2 + (rnd() - 0.5) * s * 0.9 * (0.4 + rnd() * 0.6);
+      const f = 0.6 + rnd() * 0.6;
+      a.fillStyle = `rgba(${110 * f},${88 * f},${50 * f},0.85)`;
+      a.beginPath(); a.ellipse(x, y, s * 0.02, s * 0.01, rnd() * 6, 0, 7); a.fill();
+    }
+  });
+  // scattered brick and concrete pieces
+  cell(DECAL.bricks, (s) => {
+    for (let i = 0; i < 46; i++) {
+      const rr = rnd() * rnd();
+      const x = s / 2 + (rnd() - 0.5) * s * 0.92 * (0.2 + rr), y = s / 2 + (rnd() - 0.5) * s * 0.92 * (0.2 + rr);
+      const w = s * (0.02 + rnd() * 0.05), h = w * (0.45 + rnd() * 0.4);
+      a.save(); a.translate(x, y); a.rotate(rnd() * 6.28);
+      a.fillStyle = shade(['#8a4a38', '#9a5842', '#8f8a80', '#6f6a62', '#a49e92'][Math.floor(rnd() * 5)], 0.75 + rnd() * 0.4);
+      a.fillRect(-w / 2, -h / 2, w, h);
+      a.fillStyle = 'rgba(0,0,0,0.35)'; a.fillRect(-w / 2, h / 2 - 1, w, 1.5);
+      a.restore();
+    }
+  });
+  cell(DECAL.glass, (s) => {
+    for (let i = 0; i < 150; i++) {
+      const x = s / 2 + (rnd() - 0.5) * s * 0.95 * rnd(), y = s / 2 + (rnd() - 0.5) * s * 0.35 * rnd() * 2;
+      const r = s * (0.004 + rnd() * 0.014);
+      a.fillStyle = `rgba(${170 + rnd() * 70},${195 + rnd() * 50},${205 + rnd() * 50},${0.4 + rnd() * 0.5})`;
+      a.beginPath(); a.moveTo(x, y - r); a.lineTo(x + r, y + r * 0.6); a.lineTo(x - r * 0.7, y + r); a.fill();
+    }
+  });
+  // patched or scorched asphalt: irregular soft-edged dark blotch (no rectangles)
+  cell(DECAL.tarpatch, (s) => {
+    const g = a.createRadialGradient(s / 2, s / 2, s * 0.1, s / 2, s / 2, s * 0.5);
+    g.addColorStop(0, 'rgba(20,20,20,0.55)'); g.addColorStop(0.7, 'rgba(20,20,20,0.3)'); g.addColorStop(1, 'rgba(20,20,20,0)');
+    a.fillStyle = g;
+    a.beginPath();
+    for (let j = 0; j <= 28; j++) { const an = (j / 28) * 6.283, rr = s * (0.4 + 0.08 * Math.sin(an * 3) + (rnd() - 0.5) * 0.06); const px = s / 2 + Math.cos(an) * rr, py = s / 2 + Math.sin(an) * rr * 0.8; j ? a.lineTo(px, py) : a.moveTo(px, py); }
+    a.fill();
+  });
+  // burnt rubber / soot smear
+  cell(DECAL.skid, (s) => {
+    a.lineCap = 'round';
+    for (let k = 0; k < 3; k++) {
+      a.strokeStyle = `rgba(8,8,8,${0.28 + rnd() * 0.25})`; a.lineWidth = s * (0.03 + rnd() * 0.04);
+      a.beginPath(); a.moveTo(0, s * (0.3 + k * 0.18)); a.bezierCurveTo(s * 0.3, s * (0.25 + k * 0.2 + rnd() * 0.1), s * 0.7, s * (0.4 + k * 0.15), s, s * (0.35 + k * 0.2)); a.stroke();
+    }
+  });
+  // thin green-grey weed line growing out of a crack (u runs along the crack)
+  cell(DECAL.weedline, (s) => {
+    for (let i = 0; i < 110; i++) {
+      const x = rnd() * s, y = s / 2 + (rnd() - 0.5) * s * 0.14;
+      const l = s * (0.03 + rnd() * 0.05);
+      a.strokeStyle = `rgba(${70 + rnd() * 50},${80 + rnd() * 40},${40 + rnd() * 20},0.8)`; a.lineWidth = 1 + rnd() * 1.4;
+      a.beginPath(); a.moveTo(x, y); a.lineTo(x + (rnd() - 0.5) * l, y - l * (0.5 + rnd())); a.stroke();
+    }
+  });
   // roughness: puddles are glossy
   P.r.fillStyle = 'rgb(0,230,0)'; P.r.fillRect(0, 0, S, S);
-  P.r.fillStyle = 'rgb(0,30,0)'; P.r.fillRect((DECAL.puddle % 4) * c, Math.floor(DECAL.puddle / 4) * c, c, c);
-  P.r.fillStyle = 'rgb(0,120,140)'; P.r.fillRect((DECAL.manhole % 4) * c, Math.floor(DECAL.manhole / 4) * c, c, c);
+  P.r.fillStyle = 'rgb(0,30,0)'; P.r.fillRect((DECAL.puddle % G) * c, Math.floor(DECAL.puddle / G) * c, c, c);
+  P.r.fillStyle = 'rgb(0,120,140)'; P.r.fillRect((DECAL.manhole % G) * c, Math.floor(DECAL.manhole / G) * c, c, c);
   return P.textures({ normal: 0, aniso: q.aniso, repeat: false, normals: false });
 }
 

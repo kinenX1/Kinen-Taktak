@@ -103,7 +103,7 @@ export class Painter {
     for (const dx of [-this.w, 0, this.w]) for (const dy of [-this.h, 0, this.h]) fn(dx, dy);
   }
 
-  textures({ normal = 2.5, aniso = 4, repeat = true, normals = true } = {}) {
+  textures({ normal = 2.5, aniso = 4, repeat = true, normals = true, normalDiv = 1 } = {}) {
     const wrapMode = repeat ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
     const mk = (canvas, srgb) => {
       const t = new THREE.CanvasTexture(canvas);
@@ -114,7 +114,7 @@ export class Painter {
       return t;
     };
     const out = { map: mk(this.ca, true), roughnessMap: mk(this.cr, false) };
-    if (normals && normal > 0) out.normalMap = mk(heightToNormal(this.ch, normal, repeat), false);
+    if (normals && normal > 0) out.normalMap = mk(heightToNormal(normalDiv > 1 ? downscale(this.ch, normalDiv) : this.ch, normal, repeat), false);
     if (this.ce) out.emissiveMap = mk(this.ce, true);
     return out;
   }
@@ -122,6 +122,16 @@ export class Painter {
 
 export const gray = (v) => { const g = Math.max(0, Math.min(255, v | 0)); return `rgb(${g},${g},${g})`; };
 export const rm = (r, m) => `rgb(0,${Math.round(Math.max(0, Math.min(1, r)) * 255)},${Math.round(Math.max(0, Math.min(1, m)) * 255)})`;
+
+// Smooth half/quarter-size copy of a canvas: normal maps are blurred anyway, so they do not need full resolution.
+function downscale(src, div) {
+  const c = makeCanvas(Math.max(16, Math.round(src.width / div)), Math.max(16, Math.round(src.height / div)));
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
 
 // Sobel over the height canvas (wrapping at the edges) → tangent-space normal map canvas.
 export function heightToNormal(src, strength, wrap = true) {

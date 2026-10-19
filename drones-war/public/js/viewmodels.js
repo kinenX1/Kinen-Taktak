@@ -13,11 +13,14 @@ import { HAND_GRIP } from './models/weapons.js';
 
 const ADS_FOV = [52, 60];
 // Game viewmodels are drawn oversized so the weapon fills the lower right of the screen like in a console shooter.
-const WEAPON_SCALE = [1.25, 1.2];
+const WEAPON_SCALE = [1.5, 1.35];
 // In ADS the eye sits this far above the sight axis (m): the window frame drops below the reticle so the
 // rear of the sight no longer covers half of it, and the reticle quad is lifted by the same amount so it
 // still lands exactly on the screen center (a collimated sight shows the dot on target wherever the eye is).
 const EYE_DROP = 0.009;
+const ENV_STRENGTH = 0.6;
+// Hands are drawn a bit smaller than the oversized weapon so the fingers close around the grips instead of hovering.
+const HAND_SCALE = 1.22;
 const RELOAD_PROGRESS_NONE = -1;
 
 // Weapon origin (the sight axis) in the weapon frame, plus [roll x, yaw y, pitch z] — YZX order like the unit models.
@@ -25,20 +28,20 @@ const RELOAD_PROGRESS_NONE = -1;
 // low: dropped out of sight (swap, grenade). pivot: where recoil/sway rotate the weapon (the shoulder pocket).
 const POSE = [
   {
-    hip: { p: [0.3, -0.075, 0.21], r: [0.0, 0.16, 0.0] },
-    ads: { p: [0.16, -EYE_DROP, 0.0], r: [0, 0, 0] },
+    hip: { p: [0.3, -0.1, 0.23], r: [0.0, 0.2, 0.0] },
+    ads: { p: [0.2, -EYE_DROP, 0.0], r: [0, 0, 0] },
     sprint: { p: [0.33, -0.3, 0.17], r: [0.0, 0.62, 0.32] },
     low: { p: [0.34, -0.62, 0.2], r: [0.35, 0.3, -0.85] },
-    reload: { p: [0.08, 0.13, -0.1], r: [0.4, 0.0, 0.32] },
+    reload: { p: [0.14, 0.17, -0.12], r: [0.5, 0.0, 0.38] },
     pivot: [-0.3, -0.07, 0],
     mid: [0.12, -0.07, 0],
   },
   {
-    hip: { p: [0.3, -0.1, 0.2], r: [0.0, 0.06, 0.0] },
+    hip: { p: [0.3, -0.08, 0.2], r: [0.3, 0.12, 0.02] },
     ads: { p: [0.3, 0.0, 0.0], r: [0, 0, 0] },
     sprint: { p: [0.3, -0.25, 0.2], r: [0.2, 0.5, 0.25] },
     low: { p: [0.3, -0.7, 0.22], r: [0.4, 0.3, -0.8] },
-    reload: { p: [0.0, 0.0, -0.04], r: [0.0, 0.0, 0.35] },
+    reload: { p: [-0.26, -0.05, -0.02], r: [0.1, 0.28, 0.5] },
     pivot: [-0.45, -0.07, 0],
     mid: [0.0, -0.07, 0],
   },
@@ -46,11 +49,12 @@ const POSE = [
 
 // ---------- scratch + helpers ----------
 
-const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+const _e = new THREE.Euler(), _q = new THREE.Quaternion();
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _one = new THREE.Vector3(1, 1, 1);
 const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _mw = new THREE.Matrix4();
 const _s = new THREE.Vector3(), _el = new THREE.Vector3(), _pole = new THREE.Vector3(), _back = new THREE.Vector3();
 const _hp = new THREE.Vector3(), _hq = new THREE.Quaternion(), _hs = new THREE.Vector3();
+const _x = new THREE.Vector3(), _rest = new THREE.Vector3();
 
 const dec = (m) => ({ p: new THREE.Vector3().setFromMatrixPosition(m), q: new THREE.Quaternion().setFromRotationMatrix(m) });
 const D = {
@@ -191,7 +195,7 @@ class ViewModel {
             // Micro-variation from the bind-pose position: worn, dusty finish instead of flat CG plastic.
             .replace('#include <color_fragment>', '#include <color_fragment>\nfloat vmWear = vmFbm(vObjP);\ndiffuseColor.rgb = diffuseColor.rgb * (0.75 + 0.7 * vmWear) + 0.03;')
             // Edge wear: faceted bevels flip the normal between pixels; show bare, shiny metal there.
-            .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(normal + 0.05 * (vec3(vmNoise(vObjP * 700.0), vmNoise(vObjP * 700.0 + 11.7), vmNoise(vObjP * 700.0 + 23.1)) - 0.5));\nfloat vmEdge = clamp(length(fwidth(normal)) * 5.0, 0.0, 1.0) * step(0.15, vRM.y);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.3, 0.31, 0.33), vmEdge * 0.7);\nroughnessFactor = mix(roughnessFactor, 0.3, vmEdge);\nmetalnessFactor = max(metalnessFactor, vmEdge * 0.7);')
+            .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(normal + 0.05 * (vec3(vmNoise(vObjP * 700.0), vmNoise(vObjP * 700.0 + 11.7), vmNoise(vObjP * 700.0 + 23.1)) - 0.5));\nfloat vmEdge = clamp(length(fwidth(normal)) * 5.0, 0.0, 1.0) * step(0.15, vRM.y);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.3, 0.31, 0.33), vmEdge * 0.45);\nroughnessFactor = mix(roughnessFactor, 0.3, vmEdge);\nmetalnessFactor = max(metalnessFactor, vmEdge * 0.7);')
             .replace('roughnessFactor *= vRM.x;', 'roughnessFactor = clamp(roughnessFactor * vRM.x * (1.25 - 0.7 * vmWear), 0.06, 1.0);')
             .replace('metalnessFactor *= vRM.y;', 'metalnessFactor *= vRM.y * vmMetal;');
         };
@@ -232,13 +236,13 @@ class ViewModel {
     this.lights.name = 'viewmodel-lights';
     this.lights.visible = on;
     // Camera space: +x right, +y up, +z behind the viewer.
-    const hemi = new THREE.HemisphereLight(0xc4d0dc, 0x57544e, 2.2);
-    const key = new THREE.DirectionalLight(0xfff0dc, 3.2);
-    key.position.set(-0.6, 1.0, 0.7);
-    const fill = new THREE.DirectionalLight(0x8fa8c8, 0.9);
-    fill.position.set(0.9, -0.1, 0.5);
-    const rim = new THREE.DirectionalLight(0xb7c8dc, 1.2);
-    rim.position.set(0.2, 0.5, -1);
+    const hemi = new THREE.HemisphereLight(0xb9c6d3, 0x4a4844, 1.5);
+    const key = new THREE.DirectionalLight(0xfff1de, 3.4);
+    key.position.set(-0.7, 0.9, 0.5);
+    const fill = new THREE.DirectionalLight(0x8fa8c8, 0.5);
+    fill.position.set(0.9, -0.2, 0.5);
+    const rim = new THREE.DirectionalLight(0xc4d4e6, 1.5);
+    rim.position.set(0.4, 0.6, -1);
     this.lights.add(hemi, key, fill, rim);
     this.hemi = hemi;
     this.object.add(this.lights);
@@ -298,8 +302,11 @@ class ViewModel {
     const fl = this.flash[s];
     fl.visible = true;
     fl.rotation.x = Math.random() * Math.PI;
+    // Aimed down the sight the burst would fill the window: shrink it and drop the camera-facing star.
+    fl.scale.setScalar(fl.userData.size * (1 - 0.6 * this.ads));
+    fl.children[0].visible = this.ads < 0.5;
     this.flashT[s] = s === 1 ? 0.09 : 0.045;
-    if (s === 0 && this.flashLight) { this.flashLight.intensity = 2.5; this.flashLightT = 0.05; }
+    if (s === 0 && this.flashLight) { this.flashLight.intensity = 2.5 * (1 - 0.6 * this.ads); this.flashLightT = 0.05; }
   }
 
   ejectCasing() {
@@ -404,10 +411,16 @@ class ViewModel {
     this.kickX.step(dt); this.kickPitch.step(dt); this.kickYaw.step(dt); this.kickRoll.step(dt);
     this.climb = Math.max(0, this.climb - dt * 0.09);
 
-    // Base pose: hip ↔ sprint, then → ads, then reload/lower offsets.
+    // Base pose: hip ↔ sprint, then → ads, then reload/lower offsets. On a narrow (portrait) screen the weapon
+    // would sit outside the horizontal field of view, so its sideways offset shrinks with the aspect ratio.
     const P = this.pos, R = this.eul;
     mix3(pose.hip.p, pose.sprint.p, sp, P);
     mix3(pose.hip.r, pose.sprint.r, sp, R);
+    if (p.aspect > 0) {
+      const narrow = lerp(1, 0.35, clamp((1.6 - p.aspect) / 1.1, 0, 1));
+      P[2] *= narrow;
+      R[1] *= narrow;
+    }
     mix3(P, pose.ads.p, adsEff, P);
     mix3(R, pose.ads.r, adsEff, R);
     P[1] += Math.sin(Math.PI * adsEff) * 0.012; // the weapon arcs up a touch on its way to the eye
@@ -442,6 +455,13 @@ class ViewModel {
     let r = this.object;
     while (r.parent) r = r.parent;
     this.sceneEnv = !!r.environment;
+    // Take the scene's environment ourselves so its strength can be tamed: a bright overcast sky on near-mirror
+    // edge-worn steel otherwise burns white hotspots into the rails.
+    if (this.sceneEnv && !this.envTex) {
+      for (const m of this.ownMaterials) {
+        if (m.envMap !== r.environment) { m.envMap = r.environment; m.envMapIntensity = ENV_STRENGTH; m.needsUpdate = true; }
+      }
+    }
     // Metal needs something to reflect; direct lights alone make it read as black plastic.
     this.metalU.value = this.envTex || this.sceneEnv ? 1 : 0.4;
   }
@@ -480,6 +500,9 @@ class ViewModel {
     // Left hand: weapon grip, or the reload dance.
     _hp.copy(gL.p);
     _hq.copy(gL.q);
+    // Aiming: the hand slides down and under the handguard so the sleeve stays out of the sight picture.
+    _hp.y -= 0.08 * (this.adsEff || 0);
+    _hp.z -= 0.03 * (this.adsEff || 0);
     if (isReloading) {
       if (rifle) this.rifleReload(reloadP, _hp, _hq);
       else this.rpgReload(reloadP, _hp, _hq);
@@ -501,8 +524,8 @@ class ViewModel {
     const k = this.tmp;
     // k: [grip blend, off x, off y, off z]
     keys(r, [
-      [0.0, 0, 0, 0, 0], [0.1, 0, 0, 0, 0], [0.2, 1, 0, 0, 0], [0.3, 1, 0.0, -0.01, 0], [0.4, 1, -0.02, -0.24, 0.0],
-      [0.5, 1, -0.05, -0.3, -0.1], [0.62, 1, -0.05, -0.3, -0.1], [0.74, 1, 0.0, -0.15, 0.0], [0.82, 1, 0.0, 0.0, 0.0],
+      [0.0, 0, 0, 0, 0], [0.1, 0, 0, 0, 0], [0.2, 1, 0, 0, 0], [0.3, 1, 0.0, -0.01, 0], [0.4, 1, -0.02, -0.1, 0.0],
+      [0.5, 1, -0.05, -0.11, -0.13], [0.62, 1, -0.05, -0.11, -0.13], [0.74, 1, 0.0, -0.06, -0.04], [0.82, 1, 0.0, 0.0, 0.0],
       [0.86, 1, 0.0, 0.004, 0.0], [0.95, 0, 0, 0, 0],
     ], k);
     quat.slerpQuaternions(D.rifleL.q, D.rifleMag.q, k[0]);
@@ -513,7 +536,7 @@ class ViewModel {
     else if (r < 0.42) b.mag.position.set(k[1], k[2], k[3]);
     else if (r < 0.52) { // released: falls and tumbles
       const u = (r - 0.42) / 0.1;
-      b.mag.position.set(k[1] * 0.5, -0.24 - u * u * 1.4, 0.05 * u);
+      b.mag.position.set(k[1] * 0.5, -0.17 - u * u * 1.4, 0.05 * u);
       b.mag.rotation.set(u * 1.5, 0, u * 0.8);
       if (u > 0.9) b.mag.scale.setScalar(0);
     } else if (r < 0.56) b.mag.scale.setScalar(0);
@@ -527,7 +550,7 @@ class ViewModel {
     const k = this.tmp;
     // k: [rocket-grip blend, rocket slide x (0 = seated … 0.55 = outside), hand dy]
     keys(r, [
-      [0.0, 0, 0.45, 0.0], [0.12, 1, 0.45, -0.0], [0.3, 1, 0.45, -0.0], [0.5, 1, 0.45, -0.0], [0.62, 1, 0.45, -0.0],
+      [0.0, 0, 0.34, 0.0], [0.12, 1, 0.34, -0.0], [0.3, 1, 0.34, -0.0], [0.5, 1, 0.34, -0.0], [0.62, 1, 0.34, -0.0],
       [0.88, 1, 0.0, 0.0], [0.96, 0, 0.0, 0.0],
     ], k);
     quat.slerpQuaternions(D.rpgL.q, D.rpgRocket.q, k[0]);
@@ -562,30 +585,37 @@ class ViewModel {
     this.setHand('R', _m);
     // Grenade in the hand until it is released.
     if (t > 0.2 && t < 0.6) {
+      const hand = b.handR;
+      hand.updateMatrix();
       _m2.makeTranslation(HAND_GRIP[0], HAND_GRIP[1], HAND_GRIP[2]);
-      _mw.multiplyMatrices(_m, _m2);
+      _mw.multiplyMatrices(hand.matrix, _m2);
       _mw.decompose(b.gren.position, b.gren.quaternion, b.gren.scale);
     }
   }
 
-  // Place a hand bone from a weapon-frame matrix and solve the arm from an off-screen shoulder.
+  // Place a hand bone from a weapon-frame matrix and solve the arm behind it. The forearm continues the line
+  // of the hand (wrist straight, sagging a little), the upper arm swings back and out to an off-screen shoulder.
   setHand(side, m) {
-    const L = side;
     const sign = side === 'L' ? -1 : 1;
-    const hand = this.b['hand' + L];
+    const hand = this.b['hand' + side];
     m.decompose(hand.position, hand.quaternion, hand.scale);
-    // Back of the hand decides which way the arm's "up" faces.
+    // Keep the grip point where the pose put it while resizing the hand around it.
+    _hp.set(HAND_GRIP[0], HAND_GRIP[1], HAND_GRIP[2]);
+    _v.copy(_hp).multiplyScalar(hand.scale.x).applyQuaternion(hand.quaternion).add(hand.position);
+    hand.scale.setScalar(HAND_SCALE);
+    hand.position.copy(_v).sub(_hp.multiplyScalar(HAND_SCALE).applyQuaternion(hand.quaternion));
+    // Hand axes in the weapon frame: x toward the knuckles, y = back of the hand.
     _back.set(0, 1, 0).applyQuaternion(hand.quaternion);
-    // Shoulder rest position (off screen, below the camera) pulled toward the hand if the arm can't reach.
-    _s.set(0.1, -0.5, sign * 0.2);
-    const reach = (UARM + FARM) * 0.985;
-    _v2.subVectors(hand.position, _s);
-    const d = _v2.length();
-    if (d > reach) _s.copy(hand.position).addScaledVector(_v2, -reach / d);
-    _pole.set(-0.1, -1, sign * 0.55);
+    _x.set(1, 0, 0).applyQuaternion(hand.quaternion);
+    // Mostly along the hand's own axis (so the wrist stays straight), pulled toward a relaxed back-and-down carry
+    // so a hand that spins (reload, grenade) never whips the arm across the screen.
+    _el.copy(_x).multiplyScalar(-0.3).addScaledVector(_rest.set(-0.55, -0.85, sign * 0.1), 0.8).normalize().multiplyScalar(FARM).add(hand.position);
+    _s.set(-0.75, -0.3, sign * 0.55).normalize().multiplyScalar(UARM).add(_el);
+    // Pole: toward the chosen elbow, so the IK reproduces it (and keeps it stable while the hand moves).
+    _pole.copy(_el).sub(_v2.addVectors(_s, hand.position).multiplyScalar(0.5));
     solveTwoBone(_s, hand.position, UARM, FARM, _pole, _el);
-    orientLimb(this.b['uArm' + L], _s, _el, _back);
-    orientLimb(this.b['fArm' + L], _el, hand.position, _back);
+    orientLimb(this.b['uArm' + side], _s, _el, _back);
+    orientLimb(this.b['fArm' + side], _el, hand.position, _back);
   }
 
   updateFx(dt) {
@@ -597,7 +627,7 @@ class ViewModel {
     }
     if (this.flashLightT > 0) {
       this.flashLightT -= dt;
-      if (this.flashLight) this.flashLight.intensity = Math.max(0, this.flashLightT / 0.05) * 2.5;
+      if (this.flashLight) this.flashLight.intensity = Math.max(0, this.flashLightT / 0.05) * 2.5 * (1 - 0.6 * this.ads);
     }
     for (const c of this.casings) {
       if (c.t <= 0) continue;

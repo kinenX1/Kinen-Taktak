@@ -175,11 +175,30 @@ export function buildGround(ctx) {
   };
   const nRoad = roadCells.length;
   for (let i = 0; i < nRoad * 1.1; i++) damage(DECAL.crack, 5, 11, 0.6, 0.95);
-  for (let i = 0; i < nRoad * 0.45; i++) damage(DECAL.pothole, 1.2, 3, 0.8, 1);
+  for (let i = 0; i < nRoad * 0.25; i++) damage(DECAL.pothole, 1.2, 3, 0.6, 0.9);
   for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.oil, 2, 4.5, 0.5, 0.9);
   for (let i = 0; i < nRoad * 0.4; i++) damage(DECAL.puddle, 2.5, 6, 0.5, 0.9);
   for (let i = 0; i < nRoad * 0.2; i++) damage(DECAL.manhole, 1.1, 1.1, 0.95, 1);
   for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.tyre, 5, 9, 0.5, 0.9);
+  // street grit: litter, soft dark patches, skid smears and gutter drifts along both curbs
+  for (let i = 0; i < nRoad * 1.6; i++) damage(DECAL.litter, 4, 9, 0.55, 0.9);
+  for (let i = 0; i < nRoad * 0.45; i++) damage(DECAL.tarpatch, 3, 8, 0.5, 0.95);
+  for (let i = 0; i < nRoad * 0.3; i++) damage(DECAL.skid, 6, 11, 0.4, 0.8);
+  for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.bricks, 3, 6, 0.55, 0.9);
+  // big soft blotches of grime and dust break up the flat colour of the asphalt at street scale
+  for (let i = 0; i < nRoad * 0.7; i++) damage(DECAL.tarpatch, 12, 26, 0.12, 0.28);
+  for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.dust, 14, 30, 0.14, 0.32);
+  for (const rc of roadCells) {
+    const len = rc.alongX ? rc.x1 - rc.x0 : rc.z1 - rc.z0;
+    const rot = rc.alongX ? 0 : Math.PI / 2;
+    for (const side of [0, 1]) {
+      if (rnd() < 0.25) continue;
+      const off = 0.55 + rnd() * 0.5;
+      const cx = rc.alongX ? (rc.x0 + rc.x1) / 2 : side ? rc.x1 - off : rc.x0 + off;
+      const cz = rc.alongX ? (side ? rc.z1 - off : rc.z0 + off) : (rc.z0 + rc.z1) / 2;
+      decals.rect(cx, cz, 1.2 + rnd() * 1.4, len * (0.9 + rnd() * 0.25), rot + (rnd() < 0.5 ? 0 : Math.PI), DECAL.gutter, { alpha: 0.55 + rnd() * 0.4, y: 0.016 });
+    }
+  }
   // shell craters: scorched asphalt ringed with chunks
   const craters = Math.round(nRoad * 0.3);
   for (let i = 0; i < craters; i++) {
@@ -247,6 +266,16 @@ export function buildGround(ctx) {
     } else {
       slab('sidewalk', x0, z0, x1, z1, CURB, 6, 0.92, 0.25);
       curb(x0, z0, x1, z1, 0, CURB);
+    }
+    // sidewalk grit: windblown leaves and litter pooled against the buildings
+    if (b.kind === 'city' || b.kind === 'plaza') {
+      const nL = Math.round((b.w + b.d) / 14);
+      for (let i = 0; i < nL; i++) {
+        const px = x0 + 1.5 + rnd() * (b.w - 3), pz = z0 + 1.5 + rnd() * (b.d - 3);
+        const edge = Math.min(px - x0, x1 - px, pz - z0, z1 - pz);
+        if (edge > 4.5) continue;
+        decals.ground(px, pz, 2.5 + rnd() * 4, rnd() * 6.28, rnd() < 0.5 ? DECAL.leaves : DECAL.litter, 0.55 + rnd() * 0.35, { y: CURB + 0.012 });
+      }
     }
     // contaminated pavement edge: dust and grime along the curb
     if (b.kind !== 'park') {

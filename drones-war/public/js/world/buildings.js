@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mulberry32, clamp } from './util.js';
 import { FACADE_METRICS, FACADE_BAYS, FACADE_FLOORS, GROUND_FLOOR_H, TILE, DECAL, decalUV } from './textures.js';
 import { trs, hexColor } from './geo.js';
+import { face4 } from './shapes.js';
 
 // Per-style facade material, ground-floor strip, tints.
 const STYLE = {
@@ -20,6 +21,13 @@ const STYLE = {
 const PARAPET = 1.0;   // parapet height above roof
 const ROOF_DROP = 0.9; // roof surface below the box top
 const WALL_T = 0.45;   // ruined shell thickness
+
+const shade3 = (c, f) => [c[0] * f, c[1] * f, c[2] * f];
+
+function desaturate(c, amt) {
+  const l = c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722;
+  return [c[0] + (l - c[0]) * amt, c[1] + (l - c[1]) * amt, c[2] + (l - c[2]) * amt];
+}
 
 function facadeKey(style) { return (STYLE[style] || STYLE.concrete).facade; }
 
@@ -47,6 +55,7 @@ export class BuildingBuilder {
       tankCap: new THREE.ConeGeometry(1.4, 0.7, q.level >= 2 ? 14 : 8).translate(0, 4.55, 0),
       leg: new THREE.BoxGeometry(0.15, 1.8, 0.15).translate(0, 0.9, 0),
       pole: new THREE.CylinderGeometry(0.05, 0.07, 1, 5).translate(0, 0.5, 0),
+      rebar: new THREE.CylinderGeometry(0.5, 0.5, 1, 3, 1, true).translate(0, 0.5, 0), // open triangular prism: 6 triangles
       dish: new THREE.SphereGeometry(0.6, 10, 4, 0, Math.PI * 2, 0, Math.PI * 0.35).rotateX(Math.PI / 2.4),
       box: new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
       slab: new THREE.BoxGeometry(1, 1, 1),
@@ -62,18 +71,24 @@ export class BuildingBuilder {
     const st = STYLE[b.style] || STYLE.concrete;
     const fkey = st.facade;
     const M = FACADE_METRICS[fkey];
-    const x0 = b.x, z0 = b.z, x1 = b.x + b.w, z1 = b.z + b.d, h = Math.max(3, b.h);
+    const x0 = b.x, z0 = b.z, x1 = b.x + b.w, z1 = b.z + b.d, hFull = Math.max(3, b.h);
     const ruin = decor ? (rnd() < 0.25 ? rnd() * 0.6 : 0) : clamp(b.ruined || 0, 0, 1);
-    const tint = hexColor(st.tints[Math.floor(rnd() * st.tints.length)], 0.93 + rnd() * 0.12);
+    // low-rise houses and shops get pitched roofs (the roof peak stays within the collision box)
+    const pitched = !decor && ruin < 0.15 && hFull < 17 && b.w > 8 && b.d > 8 && Math.min(b.w, b.d) < 24
+      && (b.style === 'brick' || b.style === 'apartment' || b.style === 'shop' || b.style === 'concrete') && rnd() < 0.55;
+    const rise = pitched ? Math.min(3.2, Math.min(b.w, b.d) * 0.22) : 0;
+    const h = hFull - rise;
+    // war-weary palette: pull the cheerful plaster colours toward grey so the street reads as drab and dusty
+    const tint = desaturate(hexColor(st.tints[Math.floor(rnd() * st.tints.length)], 0.88 + rnd() * 0.12), this.ctx.preset.tintDesat ?? 0.45);
     const groundKind = decor || (b.style === 'concrete' && rnd() < 0.35) ? null : st.ground;
     const gH = groundKind ? Math.min(GROUND_FLOOR_H[groundKind], h - PARAPET - 0.5) : 0;
     const top = h - ROOF_DROP;                // roof surface height
-    const facadeTop = h - PARAPET - 0.2 > gH ? h - PARAPET - 0.2 : h; // parapet band starts here
+    const facadeTop = pitched ? h : h - PARAPET - 0.2 > gH ? h - PARAPET - 0.2 : h; // parapet band starts here
     const hasParapet = facadeTop < h;
     const floorsF = Math.max(1, Math.round((facadeTop - gH) / M.floor));
     const fhA = (facadeTop - gH) / floorsF;   // actual floor height so floors fit exactly
     // lit windows at night: intact buildings only, and the power is out in some blocks
-    const lit = ruin < 0.25 && rnd() < 0.72 ? 1 : 0;
+    const lit = ruin < 0.25 && rnd() < (this.ctx.preset.litShare ?? 0.72) ? 1 : 0;
     const shopLit = ruin < 0.35 && rnd() < 0.6 ? 1 : 0;
     const vOff = Math.floor(rnd() * FACADE_FLOORS) / FACADE_FLOORS;
 
@@ -115,12 +130,31 @@ export class BuildingBuilder {
     // --- body (solid part)
     const bodyTop = Math.min(solidTop, facadeTop);
     if (bodyTop > gH + 0.01) {
-      F.forEach(([ax, az, bx, bz], fi) => {
-        const { nb, uOff } = faceData[fi];
-        const u1 = uOff + nb / FACADE_BAYS;
+      const floorsBody = Math.round((bodyTop - gH) / fhA);
+      F.forEach(([ax, az, bx, bz, nx, , nz], fi) => {
+        const { nb, uOff, L } = faceData[fi];
         const cBot = gH > 0 ? tint : [tint[0] * 0.65, tint[1] * 0.65, tint[2] * 0.65];
-        fac.quad([ax, gH, az, bx, gH, bz, bx, bodyTop, bz, ax, bodyTop, az],
-          [uOff, vAt(gH), u1, vAt(gH), u1, vAt(bodyTop), uOff, vAt(bodyTop)], [cBot, cBot, tint, tint], lit);
+        // shell breach: a blown-out bay two or three floors tall that shows the dark interior
+        let br = null;
+        if (!decor && ruin >= 0.28 && floorsBody >= 2 && L >= 9 && rnd() < 0.25 + ruin * 0.5) {
+          const span = Math.min(L - 3, 3.4 + rnd() * 3.6);
+          const t0 = (1.4 + rnd() * Math.max(0.1, L - span - 2.8)) / L;
+          const f0 = 1 + Math.floor(rnd() * Math.max(1, floorsBody - 2));
+          const nf = Math.min(floorsBody - f0, 1 + Math.floor(rnd() * 2));
+          if (nf >= 1) br = { t0, t1: t0 + span / L, y0: gH + f0 * fhA, y1: gH + (f0 + nf) * fhA };
+        }
+        const part = (t0, t1, y0, y1, c0, c1) => {
+          if (t1 - t0 < 0.002 || y1 - y0 < 0.01) return;
+          const px0 = ax + (bx - ax) * t0, pz0 = az + (bz - az) * t0, px1 = ax + (bx - ax) * t1, pz1 = az + (bz - az) * t1;
+          const ua = uOff + (t0 * nb) / FACADE_BAYS, ub = uOff + (t1 * nb) / FACADE_BAYS;
+          fac.quad([px0, y0, pz0, px1, y0, pz1, px1, y1, pz1, px0, y1, pz0], [ua, vAt(y0), ub, vAt(y0), ub, vAt(y1), ua, vAt(y1)], [c0, c0, c1, c1], lit);
+        };
+        if (!br) { part(0, 1, gH, bodyTop, cBot, tint); return; }
+        part(0, br.t0, gH, bodyTop, cBot, tint);
+        part(br.t1, 1, gH, bodyTop, cBot, tint);
+        part(br.t0, br.t1, gH, br.y0, cBot, tint);
+        part(br.t0, br.t1, br.y1, bodyTop, tint, tint);
+        this.breach({ ax, az, bx, bz, nx, nz, ...br, L, rnd, tint });
       });
       // floor ledges add real relief to the silhouette on high
       if (q.ledges && !decor && (fkey === 'concrete' || fkey === 'apartment' || fkey === 'brick') && ruin < 0.15) {
@@ -131,7 +165,9 @@ export class BuildingBuilder {
       }
     }
 
-    if (ruin < 0.15 || solidTop >= facadeTop - 0.01) {
+    if (pitched) {
+      this.gableRoof(x0, z0, x1, z1, h, rise, tint, rnd, fkey);
+    } else if (ruin < 0.15 || solidTop >= facadeTop - 0.01) {
       // --- intact top: parapet + roof + clutter
       if (hasParapet) this.parapet(x0, z0, x1, z1, facadeTop, h, top, tint);
       geos.get('roof').flat(x0 + 0.25, z0 + 0.25, x1 - 0.25, z1 - 0.25, hasParapet ? top : h, TILE.roof, [0.95, 0.95, 0.95], false, rnd(), rnd());
@@ -151,6 +187,73 @@ export class BuildingBuilder {
     }
 
     if (!decor) this.facadeDecals(F, faceData, { gH, bodyTop: Math.min(solidTop, facadeTop), ruin, rnd, groundKind });
+  }
+
+  // Interior of a blown-out bay: dark back wall, torn floor slabs, side returns, rubble spilling out below.
+  breach({ ax, az, bx, bz, nx, nz, t0, t1, y0, y1, L, rnd }) {
+    const { geos, q } = this.ctx;
+    const inter = geos.get('interior');
+    const D = 2.6 + rnd() * 1.4;
+    const px = (t, k = 0) => [ax + (bx - ax) * t - nx * k, az + (bz - az) * t - nz * k];
+    const A = px(t0), B = px(t1), A2 = px(t0, D), B2 = px(t1, D);
+    const mid = [(A[0] + B2[0]) / 2, (y0 + y1) / 2, (A[1] + B2[1]) / 2];
+    const T = TILE.interior;
+    const dark = [0.34, 0.32, 0.3], mid2 = [0.5, 0.48, 0.45];
+    const dx = (bx - ax) / L, dz = (bz - az) / L;
+    const cm = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+    // face4 flips each quad away from the point given, so pass a point on the side the quad must NOT face
+    face4(inter, [A2[0], y0, A2[1]], [B2[0], y0, B2[1]], [B2[0], y1, B2[1]], [A2[0], y1, A2[1]], [cm[0] - nx * (D + 3), (y0 + y1) / 2, cm[1] - nz * (D + 3)], T, dark);
+    face4(inter, [A[0], y0, A[1]], [A2[0], y0, A2[1]], [A2[0], y1, A2[1]], [A[0], y1, A[1]], [A[0] - dx * 3, mid[1], A[1] - dz * 3], T, mid2);
+    face4(inter, [B[0], y0, B[1]], [B2[0], y0, B2[1]], [B2[0], y1, B2[1]], [B[0], y1, B[1]], [B[0] + dx * 3, mid[1], B[1] + dz * 3], T, mid2);
+    face4(inter, [A[0], y1, A[1]], [B[0], y1, B[1]], [B2[0], y1, B2[1]], [A2[0], y1, A2[1]], [mid[0], y1 + 3, mid[2]], T, dark);
+    // the floor of the lowest opened storey with a torn slab edge poking out of the facade
+    face4(inter, [A[0], y0, A[1]], [B[0], y0, B[1]], [B2[0], y0, B2[1]], [A2[0], y0, A2[1]], [mid[0], y0 - 3, mid[2]], T, mid2);
+    const lip = 0.32;
+    face4(inter, [A[0], y0 - lip, A[1]], [B[0], y0 - lip, B[1]], [B[0], y0, B[1]], [A[0], y0, A[1]], [cm[0] - nx * 3, y0, cm[1] - nz * 3], T, [0.62, 0.6, 0.57]);
+    // rubble heap and scattered chunks in front
+    const cx = (A[0] + B[0]) / 2 + nx * 1.4, cz = (A[1] + B[1]) / 2 + nz * 1.4;
+    const r = Math.min(3.4, (t1 - t0) * L * 0.55 + 0.8);
+    this.mound(cx, cz, 0.1, r, 0.7 + rnd() * 0.9, rnd);
+    for (let c = 0; c < 6 * q.debris; c++) this.ctx.chunks.push([cx + (rnd() - 0.5) * r * 3 + nx * r, cz + (rnd() - 0.5) * r * 3 + nz * r, 0.25 + rnd() * 0.5, rnd() * 6.28, rnd()]);
+    this.ctx.decals.ground(cx + nx * r * 0.5, cz + nz * r * 0.5, r * 2.8, rnd() * 6.28, DECAL.bricks, 0.7, { y: 0.09 });
+  }
+
+  // Gable roof: two slopes over the longer axis with eaves, gable-end triangles, a chimney and the odd missing patch.
+  gableRoof(x0, z0, x1, z1, y, rise, tint, rnd, fkey) {
+    const { geos } = this.ctx;
+    const along = x1 - x0 >= z1 - z0;
+    const ov = 0.4;
+    const roofCols = [[0.5, 0.45, 0.42], [0.42, 0.42, 0.44], [0.55, 0.38, 0.32], [0.38, 0.36, 0.34]];
+    const rc = roofCols[Math.floor(rnd() * roofCols.length)];
+    const g = geos.get('roof');
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    const under = [cx, y - 1, cz];
+    const P = (px, py, pz) => [px, py, pz];
+    const T = TILE.roof;
+    const slope = (a, b, c, d, col) => face4(g, a, b, c, d, under, T, col);
+    if (along) {
+      slope(P(x0 - ov, y - 0.25, z0 - ov), P(x1 + ov, y - 0.25, z0 - ov), P(x1 + ov, y + rise, cz), P(x0 - ov, y + rise, cz), rc);
+      slope(P(x1 + ov, y - 0.25, z1 + ov), P(x0 - ov, y - 0.25, z1 + ov), P(x0 - ov, y + rise, cz), P(x1 + ov, y + rise, cz), shade3(rc, 0.9));
+      // gable ends in the facade colour
+      const t = geos.get('trim');
+      face4(t, P(x0, y, z0), P(x0, y, z1), P(x0, y + rise, cz), P(x0, y + rise, cz), under, 4, tint);
+      face4(t, P(x1, y, z1), P(x1, y, z0), P(x1, y + rise, cz), P(x1, y + rise, cz), under, 4, tint);
+      // ridge cap
+      g.box(x0 - ov, y + rise - 0.05, cz - 0.12, x1 + ov, y + rise + 0.12, cz + 0.12, T, shade3(rc, 0.7));
+    } else {
+      slope(P(x0 - ov, y - 0.25, z1 + ov), P(x0 - ov, y - 0.25, z0 - ov), P(cx, y + rise, z0 - ov), P(cx, y + rise, z1 + ov), rc);
+      slope(P(x1 + ov, y - 0.25, z0 - ov), P(x1 + ov, y - 0.25, z1 + ov), P(cx, y + rise, z1 + ov), P(cx, y + rise, z0 - ov), shade3(rc, 0.9));
+      const t = geos.get('trim');
+      face4(t, P(x0, y, z1), P(x1, y, z1), P(cx, y + rise, z1), P(cx, y + rise, z1), under, 4, tint);
+      face4(t, P(x1, y, z0), P(x0, y, z0), P(cx, y + rise, z0), P(cx, y + rise, z0), under, 4, tint);
+      g.box(cx - 0.12, y + rise - 0.05, z0 - ov, cx + 0.12, y + rise + 0.12, z1 + ov, T, shade3(rc, 0.7));
+    }
+    // brick chimney
+    if (rnd() < 0.7) {
+      const px = x0 + (x1 - x0) * (0.2 + rnd() * 0.6), pz = z0 + (z1 - z0) * (0.2 + rnd() * 0.6);
+      const hy = along ? y + rise * (1 - Math.abs(pz - cz) / ((z1 - z0) / 2)) : y + rise * (1 - Math.abs(px - cx) / ((x1 - x0) / 2));
+      geos.get('trim').box(px - 0.35, hy - 0.3, pz - 0.35, px + 0.35, hy + 1.6, pz + 0.35, 2, [0.55, 0.36, 0.3]);
+    }
   }
 
   // Protruding horizontal band around the footprint (cornice / ledge).
@@ -301,7 +404,7 @@ export class BuildingBuilder {
           const metal = geos.get('metal');
           for (let r = 0; r < 3; r++) {
             const t = rnd();
-            metal.add(this.tpl.pole, trs(pax + (pbx - pax) * t + ix * 0.5, y2 - 0.1, paz + (pbz - paz) * t + iz * 0.5, rnd() * 6, 0.35, 0.6 + rnd() * 1.2, 0.35, (rnd() - 0.5) * 0.9, (rnd() - 0.5) * 0.9), [0.35, 0.22, 0.15]);
+            metal.add(this.tpl.rebar, trs(pax + (pbx - pax) * t + ix * 0.5, y2 - 0.1, paz + (pbz - paz) * t + iz * 0.5, rnd() * 6, 0.05, 0.6 + rnd() * 1.2, 0.05, (rnd() - 0.5) * 0.9, (rnd() - 0.5) * 0.9), [0.45, 0.28, 0.18]);
           }
         }
       }
@@ -355,7 +458,7 @@ export class BuildingBuilder {
   // Low noisy dome of rubble (non-collidable cosmetics, kept small).
   mound(cx, cz, y0, r, hgt, rnd) {
     const g = this.ctx.geos.get('rubble');
-    const seg = this.ctx.q.level >= 2 ? 10 : 7, rings = this.ctx.q.level >= 2 ? 4 : 3;
+    const seg = this.ctx.q.level >= 2 ? 9 : 7, rings = 3;
     const pts = [];
     const ph = rnd() * 10;
     for (let ri = 0; ri <= rings; ri++) {
@@ -376,8 +479,9 @@ export class BuildingBuilder {
     for (let ri = 0; ri < rings; ri++) {
       for (let s = 0; s < seg; s++) {
         const a = pts[ri][s], bb = pts[ri][(s + 1) % seg], cc = pts[ri + 1][(s + 1) % seg], dd = pts[ri + 1][s];
-        g.quad([...dd, ...cc, ...bb, ...a], [dd[0] / T, dd[2] / T, cc[0] / T, cc[2] / T, bb[0] / T, bb[2] / T, a[0] / T, a[2] / T],
-          [ri + 1 === rings ? cd : c, ri + 1 === rings ? cd : c, c, c]);
+        // counter-clockwise seen from above (outward/up facing), so the dome is lit from the sky, not from below
+        g.quad([...a, ...bb, ...cc, ...dd], [a[0] / T, a[2] / T, bb[0] / T, bb[2] / T, cc[0] / T, cc[2] / T, dd[0] / T, dd[2] / T],
+          [c, c, ri + 1 === rings ? cd : c, ri + 1 === rings ? cd : c]);
       }
     }
   }
@@ -392,6 +496,12 @@ export class BuildingBuilder {
         const t = 0.1 + rnd() * 0.8, y = 2 + rnd() * Math.max(1, bodyTop - 3);
         const s = 2 + rnd() * 3;
         dec.wall(ax + (bx - ax) * t, y, az + (bz - az) * t, nx, nz, s, s, rnd() < 0.6 ? DECAL.blast : DECAL.scorch);
+      }
+      if (groundKind === 'storefront' && rnd() < 0.55) {
+        // shattered shop glass and litter swept onto the pavement in front of the shutters
+        const t = 0.15 + rnd() * 0.7;
+        const px = ax + (bx - ax) * t + nx * 1.3, pz = az + (bz - az) * t + nz * 1.3;
+        dec.rect(px, pz, 1.6 + rnd(), 3 + rnd() * 3, Math.atan2(bz - az, bx - ax), rnd() < 0.6 ? DECAL.glass : DECAL.bricks, { alpha: 0.5 + rnd() * 0.4, y: 0.085 });
       }
       if (groundKind === 'storefront' && rnd() < 0.3) {
         const t = 0.1 + rnd() * 0.8;
