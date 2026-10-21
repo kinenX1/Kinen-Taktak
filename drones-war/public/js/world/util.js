@@ -56,6 +56,7 @@ export const sharedUniforms = {
   uFogMax: { value: 0.97 },     // never fully fog out: distant silhouettes stay faintly readable
   uLitBoost: { value: 1 },      // multiplies lit-window emission (0 by day)
   uGrime: { value: null },      // large-scale tileable dirt texture, breaks up texture repetition
+  uDust: { value: 1 },          // strength of the settled-dust layer (pale dust glows under moonlight, so night uses less)
 };
 
 // Patches a built-in material (Standard or Lambert):
@@ -64,14 +65,15 @@ export const sharedUniforms = {
 //  - fogScale: distance multiplier for the haze (skyline/hills use < 1 so they survive on the horizon)
 const FOG_HEIGHT_K = (1 / 55).toFixed(5);
 
-export function patchMaterial(mat, { grime = 0, grimeScale = 48, lit = false, fogScale = 1, instanced = false, baseFade = 0, fine = 0.35 } = {}) {
-  const key = `w:${grime}:${grimeScale}:${lit}:${fogScale}:${instanced}:${baseFade}:${fine}`;
+export function patchMaterial(mat, { grime = 0, grimeScale = 48, lit = false, fogScale = 1, instanced = false, baseFade = 0, fine = 0.35, dust = 0 } = {}) {
+  const key = `w:${grime}:${grimeScale}:${lit}:${fogScale}:${instanced}:${baseFade}:${fine}:${dust}`;
   mat.customProgramCacheKey = () => key;
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uFogMax = sharedUniforms.uFogMax;
     shader.uniforms.uFogBase = sharedUniforms.uFogBase;
     shader.uniforms.uLitBoost = sharedUniforms.uLitBoost;
     shader.uniforms.uGrime = sharedUniforms.uGrime;
+    shader.uniforms.uDust = sharedUniforms.uDust;
     let vs = shader.vertexShader;
     let fs = shader.fragmentShader;
     const needWorld = true; // world position feeds grime, base fade and the height fog
@@ -94,6 +96,7 @@ ${lit ? 'vLit = aLit;' : ''}`);
 uniform float uFogMax;
 uniform float uFogBase;
 uniform float uLitBoost;
+uniform float uDust;
 ${needWorld ? 'uniform sampler2D uGrime; varying vec3 vWPos; varying vec3 vWNrm;' : ''}
 ${lit ? 'varying float vLit;' : ''}`);
     if (grime > 0) {
@@ -109,7 +112,13 @@ ${lit ? 'varying float vLit;' : ''}`);
     diffuseColor.rgb *= 1.0 - lowW * 0.38 * ${Math.min(1, grime * 2).toFixed(3)};
     diffuseColor.rgb = mix( diffuseColor.rgb, diffuseColor.rgb * vec3( 1.1, 1.02, 0.88 ), lowW * 0.35 );
     diffuseColor.rgb *= 1.0 - ( 1.0 - streak ) * 0.34 * ${Math.min(1, grime * 2).toFixed(3)};
-  }
+  }${dust > 0 ? `
+  else {
+    // wind-blown sand and concrete dust settled on flat ground: big drifts broken up by a finer pattern
+    float dn = texture2D( uGrime, vWPos.xz / 41.0 + 0.13 ).r * 0.62 + texture2D( uGrime, vWPos.xz / 7.3 + 0.71 ).r * 0.38;
+    float da = smoothstep( 0.42, 0.88, dn ) * ${dust.toFixed(3)} * uDust;
+    diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.235, 0.215, 0.185 ) * ( 0.75 + dn * 0.4 ), da );
+  }` : ''}
 }`);
     }
     if (lit) {

@@ -24,14 +24,14 @@ export const PRESETS = {
     cloudCover: 0.52, cloudLit: '#ffb27a', cloudDark: '#5e4a5c', cloudScale: 1.0, cloudSpeed: 0.005,
     sunColor: '#ffae6b', sunIntensity: 2.6, sunElev: 7, sunAz: 268, sunDisc: 1, sunGlow: 1.3,
     hemiSky: '#c9a48e', hemiGround: '#4e3e36', hemiIntensity: 0.75, envIntensity: 0.7, exposure: 1.0,
-    shadowStrength: 1, lit: 0.6, lamps: true, stars: 0, moon: 0,
+    shadowStrength: 1, lit: 0.6, lamps: true, stars: 0, moon: 0, dust: 0.75, litShare: 0.4,
   },
   night: {
     top: '#05080f', horizon: '#1b2433', below: '#0e131b', fog: '#18202e', fogDensity: 0.0036, fogMax: 0.96,
     cloudCover: 0.45, cloudLit: '#3a4252', cloudDark: '#0b0e14', cloudScale: 1.0, cloudSpeed: 0.003,
-    sunColor: '#9db4ff', sunIntensity: 1.5, sunElev: 38, sunAz: 120, sunDisc: 0, sunGlow: 0.0,
-    hemiSky: '#5a70b0', hemiGround: '#26262c', hemiIntensity: 0.85, envIntensity: 0.85, exposure: 1.45,
-    shadowStrength: 0.8, lit: 1.0, lamps: true, stars: 1, moon: 1, litShare: 0.5,
+    sunColor: '#9db4ff', sunIntensity: 0.75, sunElev: 38, sunAz: 120, sunDisc: 0, sunGlow: 0.0,
+    hemiSky: '#5a70b0', hemiGround: '#26262c', hemiIntensity: 0.5, envIntensity: 0.55, exposure: 1.2,
+    shadowStrength: 0.8, lit: 1.0, lamps: true, stars: 1, moon: 1, litShare: 0.5, dust: 0.3,
   },
 };
 

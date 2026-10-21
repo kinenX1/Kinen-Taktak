@@ -30,9 +30,11 @@ export function buildHorizon(ctx, bb) {
     for (let gz = -band; gz < M.d + band; gz += step) {
       const inside = gx > -margin && gx < M.w + margin && gz > -margin && gz < M.d + margin;
       if (inside) continue;
-      const w = R(14, 26), d = R(14, 26);
-      const x = gx + R(0, 10), z = gz + R(0, 10);
-      if (rnd() > 0.55 * q.skyline) continue;
+      const w = R(12, 30), d = R(12, 30);
+      const x = gx + R(-4, step - w), z = gz + R(-4, step - d);
+      // districts: noise decides where the outskirts are built up and where they open into waste ground
+      const dens = vnoise(gx / 140 + 5, gz / 140 + 11);
+      if (rnd() > (0.35 + dens * 0.6) * q.skyline) continue;
       if (roadHit(x, z, w, d)) continue;
       const edge = Math.max(Math.abs(gx + 19 - cx) - M.w / 2, Math.abs(gz + 19 - cz) - M.d / 2); // distance outside the map
       const h = clamp(R(7, 20) + Math.max(0, edge) * 0.04 + (rnd() < 0.12 ? R(10, 25) : 0), 6, 45);
@@ -70,30 +72,49 @@ export function buildHorizon(ctx, bb) {
     }
   }
 
-  // --- far suburbs: plain merged boxes out to ~900 m so the city does not stop at a hard edge
+  // --- far suburbs out to ~900 m: a street grid of city blocks filled with plain merged boxes, so from the air
+  // the city carries on into the haze instead of stopping at a hard edge
   {
     const sky = ctx.global.get('suburb');
+    const roads = ctx.global.get('asphalt');
     const M3 = FACADE_METRICS.tower;
     const bwF = (L) => Math.max(1, Math.round(L / (M3.bay * FACADE_BAYS) * 2) / 2);
-    const step2 = 56;
+    const pitch = 112, street = 14;
     const reach = 880 * (0.55 + q.skyline * 0.45);
-    const inner = 250;
-    for (let gx = -reach; gx < M.w + reach; gx += step2) {
-      for (let gz = -reach; gz < M.d + reach; gz += step2) {
-        const ox = Math.max(-gx - 0, gx - M.w, 0), oz = Math.max(-gz, gz - M.d, 0);
-        if (Math.hypot(ox, oz) < inner) continue;
-        if (rnd() > 0.62 * (q.skyline > 0.6 ? 1 : 0.6)) continue;
-        const w = R(16, 34), d = R(16, 34), x0 = gx + R(0, 14), z0 = gz + R(0, 14);
+    const inner = 230;
+    const n0 = Math.floor(-reach / pitch), n1x = Math.ceil((M.w + reach) / pitch), n1z = Math.ceil((M.d + reach) / pitch);
+    const box = (x0, z0, w, d, h, col) => {
+      const vv = h / (M3.floor * FACADE_FLOORS);
+      sky.wall(x0, z0 + d, x0 + w, z0 + d, 0, h, 0, bwF(w), 0, vv, col);
+      sky.wall(x0 + w, z0 + d, x0 + w, z0, 0, h, 0, bwF(d), 0, vv, col);
+      sky.wall(x0 + w, z0, x0, z0, 0, h, 0, bwF(w), 0, vv, col);
+      sky.wall(x0, z0, x0, z0 + d, 0, h, 0, bwF(d), 0, vv, col);
+      sky.flat(x0, z0, x0 + w, z0 + d, h, 12, [0.5, 0.5, 0.5]);
+    };
+    for (let i = n0; i < n1x; i++) {
+      for (let j = n0; j < n1z; j++) {
+        const gx = i * pitch, gz = j * pitch;
+        const mx = gx + pitch / 2, mz = gz + pitch / 2;
+        const ox = Math.max(-mx, mx - M.w, 0), oz = Math.max(-mz, mz - M.d, 0);
         const dist = Math.hypot(ox, oz);
-        const h = R(9, 26) + (rnd() < 0.16 ? R(14, 46) : 0) + dist * 0.012;
-        const t = 0.7 + rnd() * 0.3;
-        const col = [t * 0.96, t, t * 1.03];
-        const vv = h / (M3.floor * FACADE_FLOORS);
-        sky.wall(x0, z0 + d, x0 + w, z0 + d, 0, h, 0, bwF(w), 0, vv, col);
-        sky.wall(x0 + w, z0 + d, x0 + w, z0, 0, h, 0, bwF(d), 0, vv, col);
-        sky.wall(x0 + w, z0, x0, z0, 0, h, 0, bwF(w), 0, vv, col);
-        sky.wall(x0, z0, x0, z0 + d, 0, h, 0, bwF(d), 0, vv, col);
-        sky.flat(x0, z0, x0 + w, z0 + d, h, 12, [0.5, 0.5, 0.5]);
+        if (dist < inner || dist > reach) continue;
+        const shade = 0.75 + vnoise(i * 0.7, j * 0.7) * 0.25;
+        roads.flat(gx, gz, gx + pitch, gz + street, 0.004, 12, [shade, shade, shade]);
+        roads.flat(gx, gz + street, gx + street, gz + pitch, 0.004, 12, [shade, shade, shade]);
+        // district density and height from smooth noise: a few dense, taller quarters, open waste ground elsewhere
+        const dens = vnoise(i * 0.45 + 17, j * 0.45 + 3);
+        const lots = 2 + Math.floor(rnd() * 2);
+        const lw = (pitch - street - 6) / lots;
+        for (let a = 0; a < lots; a++) {
+          for (let c = 0; c < lots; c++) {
+            if (rnd() > (0.15 + dens * 0.95) * (q.skyline > 0.6 ? 1 : 0.6)) continue;
+            const w = lw * R(0.6, 0.95), d = lw * R(0.6, 0.95);
+            const x0 = gx + street + 3 + a * lw + R(0, lw - w), z0 = gz + street + 3 + c * lw + R(0, lw - d);
+            const h = (R(7, 20) + (rnd() < 0.08 + dens * 0.3 ? R(14, 50) : 0)) * (0.6 + dens * 0.8) + dist * 0.01;
+            const t = 0.66 + rnd() * 0.3;
+            box(x0, z0, w, d, h, [t * 0.96, t, t * 1.03]);
+          }
+        }
       }
     }
   }

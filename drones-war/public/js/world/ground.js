@@ -184,7 +184,7 @@ export function buildGround(ctx) {
   for (let i = 0; i < nRoad * 1.6; i++) damage(DECAL.litter, 4, 9, 0.55, 0.9);
   for (let i = 0; i < nRoad * 0.45; i++) damage(DECAL.tarpatch, 3, 8, 0.5, 0.95);
   for (let i = 0; i < nRoad * 0.3; i++) damage(DECAL.skid, 6, 11, 0.4, 0.8);
-  for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.bricks, 3, 6, 0.55, 0.9);
+  for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.bricks, 1.8, 3.2, 0.55, 0.9);
   // big soft blotches of grime and dust break up the flat colour of the asphalt at street scale
   for (let i = 0; i < nRoad * 0.7; i++) damage(DECAL.tarpatch, 12, 26, 0.12, 0.28);
   for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.dust, 14, 30, 0.14, 0.32);
@@ -206,6 +206,45 @@ export function buildGround(ctx) {
     decals.ground(x, z, s * 1.4, rnd() * 6.28, DECAL.scorch, 0.6, { y: 0.017 });
     decals.ground(x, z, s * 1.7, rnd() * 6.28, DECAL.chunks, 0.9, { y: 0.02 });
     for (let k = 0; k < 5 * q.debris; k++) ctx.chunks.push([x + (rnd() - 0.5) * s * 1.3, z + (rnd() - 0.5) * s * 1.3, 0.2 + rnd() * 0.55, rnd() * 6.28, rnd()]);
+  }
+
+  // --- loose debris: concrete bits, bricks and broken boards drifted along the curbs, a few strewn mid-road.
+  // Entries are [x, y, z, sx, sy, sz, yaw, tiltX, tiltZ, r, g, b] and become one instanced mesh (see world.js).
+  const bits = ctx.bits;
+  const bitAt = (x, y, z, size) => {
+    const k = rnd();
+    let sx, sy, sz, c;
+    if (k < 0.5) { sx = size * (0.6 + rnd() * 0.8); sy = size * (0.35 + rnd() * 0.4); sz = size * (0.5 + rnd() * 0.7); const v = rnd() < 0.25 ? 0.5 + rnd() * 0.4 : 1.1 + rnd() * 1.1; c = [v, v * 0.97, v * 0.92]; }
+    else if (k < 0.72) { sx = 0.22; sy = 0.07; sz = 0.11; const v = 0.8 + rnd() * 0.5; c = [2.1 * v, 1.15 * v, 0.9 * v]; }
+    else if (k < 0.88) { sx = 0.6 + rnd() * 1.3; sy = 0.025; sz = 0.08 + rnd() * 0.12; const v = 0.7 + rnd() * 0.5; c = [1.25 * v, 0.95 * v, 0.68 * v]; }
+    else { sx = size * (1.2 + rnd()); sy = 0.03; sz = size * (0.8 + rnd()); const v = 0.45 + rnd() * 0.5; c = [v, v * 0.97, v * 0.95]; }
+    bits.push([x, y + sy * 0.35, z, sx, sy, sz, rnd() * 6.283, (rnd() - 0.5) * 0.5, (rnd() - 0.5) * 0.5, c[0], c[1], c[2]]);
+  };
+  for (const rc of roadCells) {
+    const len = rc.alongX ? rc.x1 - rc.x0 : rc.z1 - rc.z0;
+    // the streets running on into the outskirts stay clean: nobody fights there
+    if (rc.z1 < -10 || rc.z0 > M.d + 10) continue;
+    for (const side of [0, 1]) {
+      // a few clumps per side, each a drift of pieces hugging the gutter
+      const clumps = Math.round(len / 9 * q.debris * (0.3 + rnd() * 1.4));
+      for (let c = 0; c < clumps; c++) {
+        const t = rnd() * len, spread = 0.8 + rnd() * 2.5;
+        const n = 4 + Math.floor(rnd() * 12);
+        for (let i = 0; i < n; i++) {
+          const along = t + (rnd() - 0.5) * spread * 2, off = 0.12 + rnd() * rnd() * 2.6;
+          const x = rc.alongX ? rc.x0 + along : side ? rc.x1 - off : rc.x0 + off;
+          const z = rc.alongX ? (side ? rc.z1 - off : rc.z0 + off) : rc.z0 + along;
+          bitAt(x, 0, z, 0.12 + rnd() * rnd() * 0.6);
+        }
+        if (rnd() < 0.5) {
+          const along = t, off = 0.8 + rnd();
+          const x = rc.alongX ? rc.x0 + along : side ? rc.x1 - off : rc.x0 + off;
+          const z = rc.alongX ? (side ? rc.z1 - off : rc.z0 + off) : rc.z0 + along;
+          decals.ground(x, z, spread * 2 + 2, rnd() * 6.28, DECAL.dust, 0.7, { y: 0.019 });
+        }
+      }
+    }
+    for (let i = 0; i < len / 6 * q.debris; i++) bitAt(rc.x0 + rnd() * (rc.x1 - rc.x0), 0, rc.z0 + rnd() * (rc.z1 - rc.z0), 0.1 + rnd() * rnd() * 0.4);
   }
 
   // --- blocks: sidewalks, parks, plazas, lots, rubble fields
@@ -293,7 +332,7 @@ export function buildGround(ctx) {
   // --- night: lamp light pools on the pavement (additive glow decals), placed under every lamp
   if (night) {
     for (const [x, z] of world.props.lamps) {
-      glowDecals.ground(x, z, 17, 0, DECAL.glow, 0.5, { y: 0.045, color: [1, 0.72, 0.4] });
+      glowDecals.ground(x, z, 13, 0, DECAL.glow, 0.26, { y: 0.045, color: [1, 0.7, 0.38] });
     }
   }
 }

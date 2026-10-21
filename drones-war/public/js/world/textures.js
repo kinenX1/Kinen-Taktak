@@ -422,7 +422,7 @@ function paintTower(S, seed, q) {
     for (let b = 0; b < FACADE_BAYS; b++) {
       const x = b * bw + bw * 0.18, w = bw * 0.64, y = f * fh + fh * 0.12, h = fh * 0.7;
       const kind = pickWindowKind(rnd, 0.1);
-      windowPane(P, x, y, w, h, rnd, { frame: '#2c2e30', cols: 2, rows: 1, kind: kind === 'curtain' ? 'blinds' : kind, lit: rnd() < 0.5, cool: rnd() < 0.5, recess: 0.08 });
+      windowPane(P, x, y, w, h, rnd, { frame: '#2c2e30', cols: 2, rows: 1, kind: kind === 'curtain' ? 'blinds' : kind, lit: rnd() < 0.3, cool: rnd() < 0.5, recess: 0.08 });
       // dark spandrel panel below each window
       P.rect(x, y + h + 4 * k, w, fh * 0.12, { a: '#4a4d50', h: 120, r: 0.4, m: 0.4 });
     }
@@ -717,10 +717,10 @@ function paintAsphalt(S, seed, q) {
     P.wrap((dx, dy) => P.rect(x + dx, y + dy, w, h, { a: `rgba(${rnd() < 0.5 ? '28,28,28' : '75,74,70'},0.26)`, h: 132 }));
   }
   // cracks: branching dark polylines
-  P.a.strokeStyle = 'rgba(12,12,12,0.85)'; P.hx.strokeStyle = gray(50);
+  P.a.strokeStyle = 'rgba(16,16,15,0.6)'; P.hx.strokeStyle = gray(60);
   for (let i = 0; i < 9; i++) {
     let x = rnd() * S, y = rnd() * S, a = rnd() * 6.28;
-    const lw = (1 + rnd() * 2) * k;
+    const lw = (0.7 + rnd() * 1.1) * k;
     P.a.lineWidth = lw; P.hx.lineWidth = lw * 1.5;
     for (let s = 0; s < 22; s++) {
       const nx = x + Math.cos(a) * 14 * k, ny = y + Math.sin(a) * 14 * k;
@@ -852,8 +852,11 @@ function paintMetal(S, seed, q) {
 
 // Burnt-out car body: soot, ash, orange rust, peeled paint islands.
 function paintBurnt(S, seed, q) {
-  const P = new Painter(S, S, { a: '#5a5550', h: 140, r: 0.85, m: 0.3 });
-  const rust = noiseCanvas(256, 256, blotch(5, 5, 6, seed), (v) => [140 * (0.6 + v * 0.6), 64 * (0.6 + v * 0.5), 28, Math.max(0, v - 0.45) * 2.4 * 255]);
+  // burned-out steel: sooty grey-brown with fine rust bloom (not orange paint), ash and a few scraps of old paint
+  const P = new Painter(S, S, { a: '#4a4643', h: 140, r: 0.85, m: 0.3 });
+  const soot = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 5), (v) => [30, 28, 26, Math.max(0, v - 0.4) * 1.6 * 255]);
+  P.overlay('a', soot, 'source-over', 1);
+  const rust = noiseCanvas(256, 256, blotch(10, 10, 6, seed), (v) => [112 * (0.6 + v * 0.5), 70 * (0.6 + v * 0.4), 44 * (0.7 + v * 0.3), Math.max(0, v - 0.5) * 2.0 * 255]);
   P.overlay('a', rust, 'source-over', 1);
   const ash = noiseCanvas(256, 256, blotch(8, 8, 5, seed + 1), (v) => [150, 145, 135, Math.max(0, v - 0.62) * 3 * 255 * 0.7]);
   P.overlay('a', ash, 'source-over', 1);
@@ -910,12 +913,22 @@ function paintSandbag(S, seed, q) {
 function paintHesco(S, seed, q) {
   // geotextile + welded wire mesh, 1 m tile
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#9c8c6c', h: 120, r: 0.95 });
-  weather(P, rnd, { streaks: 0.2, dirt: 0.6, seed, warm: true });
+  const P = new Painter(S, S, { a: '#a08f6e', h: 120, r: 0.95 });
+  // geotextile: blotchy sun-bleached fabric with vertical creases where the bag slumps
+  const base = noiseCanvas(128, 128, blotch(4, 4, 5, seed), (v) => { const c = 140 + v * 34; return [c, c * 0.9, c * 0.72, 255]; });
+  P.overlay('a', base, 'source-over', 1);
   const k = S / 256, cell = S / 13;
+  for (let i = 0; i < 18; i++) {
+    const x = rnd() * S, w = (3 + rnd() * 8) * k;
+    P.wrap((dx, dy) => P.rect(x + dx, dy, w, S, { a: `rgba(${rnd() < 0.5 ? '60,48,30' : '210,196,160'},0.12)`, h: rnd() < 0.5 ? 100 : 150 }));
+  }
+  weather(P, rnd, { streaks: 0.2, dirt: 0.6, seed, warm: true });
+  // welded galvanised mesh: thin wires with a dark shadow line under each so they read as standing proud of the fabric
   for (let i = 0; i <= 13; i++) {
-    P.rect(i * cell - k, 0, 2 * k, S, { a: '#5d5d58', h: 220, r: 0.5, m: 0.7 });
-    P.rect(0, i * cell - k, S, 2 * k, { a: '#5d5d58', h: 220, r: 0.5, m: 0.7 });
+    P.rect(i * cell + 0.6 * k, 0, 0.8 * k, S, { a: 'rgba(40,34,24,0.35)' });
+    P.rect(0, i * cell + 0.6 * k, S, 0.8 * k, { a: 'rgba(40,34,24,0.35)' });
+    P.rect(i * cell - 0.6 * k, 0, 1.1 * k, S, { a: '#77766f', h: 200, r: 0.55, m: 0.6 });
+    P.rect(0, i * cell - 0.6 * k, S, 1.1 * k, { a: '#77766f', h: 200, r: 0.55, m: 0.6 });
   }
   return P.textures({ normal: 2.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
@@ -981,16 +994,22 @@ function paintDecals(S, seed, q) {
     for (let i = 0; i < 26; i++) { const an = rnd() * 6.28, l = s * (0.25 + rnd() * 0.25); a.strokeStyle = 'rgba(10,9,8,0.5)'; a.lineWidth = s * 0.02; a.beginPath(); a.moveTo(s / 2, s / 2); a.lineTo(s / 2 + Math.cos(an) * l, s / 2 + Math.sin(an) * l); a.stroke(); }
   });
   cell(DECAL.crack, (s) => {
-    a.strokeStyle = 'rgba(10,10,10,0.9)'; a.lineCap = 'round';
+    // hairline cracks: a faint grime halo, a soft dark seam and a thin black core, so they never read as ink outlines
+    a.lineCap = 'round'; a.lineJoin = 'round';
+    const segs = [];
     const branch = (x, y, an, len, w) => {
-      if (len < s * 0.03 || w < 0.4) return;
+      if (len < s * 0.02 || w < 0.5) return;
       const nx = x + Math.cos(an) * len, ny = y + Math.sin(an) * len;
-      a.lineWidth = w; a.beginPath(); a.moveTo(x, y); a.lineTo(nx, ny); a.stroke();
-      branch(nx, ny, an + (rnd() - 0.5) * 0.9, len * 0.85, w * 0.88);
-      if (rnd() < 0.35) branch(nx, ny, an + (rnd() < 0.5 ? 1 : -1) * (0.6 + rnd() * 0.6), len * 0.6, w * 0.6);
+      segs.push([x, y, nx, ny, w]);
+      branch(nx, ny, an + (rnd() - 0.5) * 1.1, len * 0.86, w * 0.9);
+      if (rnd() < 0.3) branch(nx, ny, an + (rnd() < 0.5 ? 1 : -1) * (0.6 + rnd() * 0.7), len * 0.55, w * 0.6);
     };
-    branch(s * 0.05, s * 0.5, 0, s * 0.11, s * 0.016);
-    branch(s * 0.5, s * 0.5, Math.PI * 0.6, s * 0.08, s * 0.012);
+    branch(s * 0.05, s * 0.5, (rnd() - 0.5) * 0.4, s * 0.09, s * 0.009);
+    branch(s * 0.5, s * 0.48, Math.PI * 0.6, s * 0.07, s * 0.007);
+    for (const [style, mul] of [['rgba(40,38,34,0.16)', 4.5], ['rgba(28,27,25,0.4)', 1.8], ['rgba(10,10,10,0.75)', 0.7]]) {
+      a.strokeStyle = style;
+      for (const [x, y, nx, ny, w] of segs) { a.lineWidth = Math.max(0.6, w * mul); a.beginPath(); a.moveTo(x, y); a.lineTo(nx, ny); a.stroke(); }
+    }
   });
   cell(DECAL.pothole, (s) => {
     a.shadowColor = 'rgba(0,0,0,0.8)'; a.shadowBlur = s * 0.04;
@@ -1048,10 +1067,12 @@ function paintDecals(S, seed, q) {
     a.fillRect(s * 0.33, s * 0.28, s * 0.07, s * 0.44); a.fillRect(s * 0.6, s * 0.28, s * 0.07, s * 0.44); a.fillRect(s * 0.33, s * 0.47, s * 0.34, s * 0.06);
   });
   cell(DECAL.chunks, (s) => {
-    for (let i = 0; i < 160; i++) {
+    // fine angular grit (small, mostly grey; big round dots read as paint splats once magnified)
+    for (let i = 0; i < 520; i++) {
       const x = s / 2 + (rnd() - 0.5) * s * 0.9 * rnd(), y = s / 2 + (rnd() - 0.5) * s * 0.9 * rnd();
-      a.fillStyle = shade(['#8f8a80', '#6a655c', '#7d4a3a', '#a49e92'][Math.floor(rnd() * 4)], 0.8 + rnd() * 0.4);
-      a.beginPath(); a.arc(x, y, 1 + rnd() * s * 0.025, 0, 7); a.fill();
+      const r = 0.6 + rnd() * rnd() * s * 0.012;
+      a.fillStyle = shade(['#8f8a80', '#6a655c', '#8a7a6a', '#a49e92', '#4a4741'][Math.floor(rnd() * 5)], 0.8 + rnd() * 0.4);
+      a.beginPath(); a.moveTo(x - r, y - r * 0.6); a.lineTo(x + r * (0.4 + rnd()), y - r); a.lineTo(x + r, y + r * (0.3 + rnd() * 0.7)); a.lineTo(x - r * 0.7, y + r); a.fill();
     }
     const g = a.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
     g.addColorStop(0, 'rgba(140,132,118,0.5)'); g.addColorStop(1, 'rgba(140,132,118,0)');
@@ -1062,9 +1083,21 @@ function paintDecals(S, seed, q) {
     for (const x of [0.3, 0.7]) { a.beginPath(); a.moveTo(s * x, 0); a.bezierCurveTo(s * (x + 0.1), s * 0.3, s * (x - 0.1), s * 0.6, s * x, s); a.stroke(); }
   });
   cell(DECAL.dust, (s) => {
-    const g = a.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
-    g.addColorStop(0, 'rgba(150,140,120,0.6)'); g.addColorStop(1, 'rgba(150,140,120,0)');
-    a.fillStyle = g; a.fillRect(0, 0, s, s);
+    // sand drift: many overlapping soft puffs with a ragged edge, plus fine grit
+    for (let i = 0; i < 70; i++) {
+      const an = rnd() * 6.283, rr = s * 0.3 * Math.sqrt(rnd());
+      const x = s / 2 + Math.cos(an) * rr, y = s / 2 + Math.sin(an) * rr * 0.8, r = s * (0.05 + rnd() * 0.12);
+      const g = a.createRadialGradient(x, y, 0, x, y, r);
+      const c = 140 + rnd() * 30;
+      g.addColorStop(0, `rgba(${c},${c * 0.93},${c * 0.8},0.2)`); g.addColorStop(1, `rgba(${c},${c * 0.93},${c * 0.8},0)`);
+      a.fillStyle = g; a.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    for (let i = 0; i < 260; i++) {
+      const an = rnd() * 6.283, rr = s * 0.36 * Math.sqrt(rnd());
+      const c = 90 + rnd() * 90;
+      a.fillStyle = `rgba(${c},${c * 0.94},${c * 0.84},0.5)`;
+      a.fillRect(s / 2 + Math.cos(an) * rr, s / 2 + Math.sin(an) * rr * 0.8, 1 + rnd() * 1.5, 1 + rnd() * 1.5);
+    }
   });
   cell(DECAL.glow, (s) => {
     const g = a.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);

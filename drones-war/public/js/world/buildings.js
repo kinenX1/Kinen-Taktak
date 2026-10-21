@@ -484,6 +484,13 @@ export class BuildingBuilder {
           [c, c, ri + 1 === rings ? cd : c, ri + 1 === rings ? cd : c]);
       }
     }
+    // slabs and blocks half-buried in the pile break up its smooth dome silhouette
+    const n = Math.round(Math.min(40, r * r * 1.4) * this.ctx.q.debris);
+    for (let i = 0; i < n; i++) {
+      const a = rnd() * Math.PI * 2, rr = Math.sqrt(rnd()) * 0.92;
+      const y = y0 + hgt * Math.pow(1 - rr * rr, 0.8) * 0.85 - 0.12;
+      this.ctx.chunks.push([cx + Math.cos(a) * r * rr, cz + Math.sin(a) * r * rr, 0.25 + rnd() * rnd() * 0.9, rnd() * 6.28, rnd(), y]);
+    }
   }
 
   facadeDecals(F, faceData, { gH, bodyTop, ruin, rnd, groundKind }) {

@@ -147,7 +147,8 @@ export function buildProps(ctx, bb) {
   // ------------------------------------------------------------------ burned-out wrecks
   function buildWrecks() {
     const wheel = tpl.cyl(0.33, 0.33, 0.24, seg + 2);
-    const bodyCols = [[0.62, 0.58, 0.54], [0.5, 0.5, 0.52], [0.7, 0.36, 0.26], [0.42, 0.5, 0.62], [0.58, 0.54, 0.36], [0.66, 0.66, 0.64], [0.72, 0.52, 0.34], [0.48, 0.24, 0.2]];
+    // fire-faded paint: whatever colour the car had is mostly ash and rust now
+    const bodyCols = [[0.62, 0.58, 0.54], [0.5, 0.5, 0.52], [0.6, 0.44, 0.36], [0.46, 0.5, 0.56], [0.56, 0.53, 0.42], [0.66, 0.66, 0.64], [0.62, 0.52, 0.42], [0.46, 0.36, 0.32]];
     for (const [x, z, yaw, kind] of P.wrecks) {
       if (sites.some((c) => Math.abs(x - c.x) < 11 && Math.abs(z - c.z) < 8)) continue;
       const g = at(x, z).get('burnt');

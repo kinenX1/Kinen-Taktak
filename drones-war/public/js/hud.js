@@ -129,7 +129,12 @@ export class Hud {
     this._dmgPool = [];
     for (let i = 0; i < 6; i++) {
       const d = el('div', 'h-dmg-arc', this.dmg);
-      d.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="hdg' + i + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff2a1a" stop-opacity="0.95"/><stop offset="1" stop-color="#ff2a1a" stop-opacity="0"/></linearGradient></defs><path d="M58 22 A92 92 0 0 1 142 22 L132 40 A72 72 0 0 0 68 40 Z" fill="url(#hdg' + i + ')"/></svg>';
+      // A thin crescent that fades toward the screen centre and toward its tips (radial + horizontal masks).
+      d.innerHTML = '<svg viewBox="0 0 200 200" aria-hidden="true"><defs>'
+        + '<radialGradient id="hdr' + i + '" cx="100" cy="100" r="96" gradientUnits="userSpaceOnUse"><stop offset="0.74" stop-color="#c8160c" stop-opacity="0"/><stop offset="0.9" stop-color="#e0200f" stop-opacity="0.8"/><stop offset="1" stop-color="#ff3a20" stop-opacity="0.95"/></radialGradient>'
+        + '<linearGradient id="hdm' + i + '" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+        + '<mask id="hdk' + i + '"><rect x="40" y="0" width="120" height="60" fill="url(#hdm' + i + ')"/></mask></defs>'
+        + '<path d="M44 34 A96 96 0 0 1 156 34 L147 46 A80 80 0 0 0 53 46 Z" fill="url(#hdr' + i + ')" mask="url(#hdk' + i + ')"/></svg>';
       this._dmgPool.push({ el: d, anim: null });
     }
     this._dmgNext = 0;
@@ -252,6 +257,7 @@ export class Hud {
     const r = this.root.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, this.touch ? 1.5 : 2);
     this._dpr = dpr;
+    this._safe = null;
     this._w = Math.max(1, Math.round(r.width));
     this._h = Math.max(1, Math.round(r.height));
     if (this._overlay) {
@@ -507,8 +513,7 @@ export class Hud {
     };
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = '#141a14';
-    ctx.fillRect(0, 0, S, S);
+    ctx.clearRect(0, 0, S, S);
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(rot);
@@ -520,8 +525,8 @@ export class Hud {
 
     // View cone.
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, half * 0.95);
-    g.addColorStop(0, 'rgba(255,255,255,0.22)');
-    g.addColorStop(1, 'rgba(255,255,255,0)');
+    g.addColorStop(0, 'rgba(220,235,245,0.26)');
+    g.addColorStop(1, 'rgba(220,235,245,0)');
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -656,34 +661,35 @@ export class Hud {
     cv.height = Math.ceil(world.map.d * ppm);
     const c = cv.getContext('2d');
     c.scale(ppm, ppm);
-    c.fillStyle = '#2a3022';
+    // CoD-style translucent tactical map: dark blue-grey ground, darker streets, pale building footprints.
+    c.fillStyle = 'rgba(46, 56, 60, 0.62)';
     c.fillRect(0, 0, world.map.w, world.map.d);
-    const blockFill = { city: '#3b3f37', park: '#2f4a2a', plaza: '#4a4a44', lot: '#3c3a33', rubble: '#45403a' };
+    const blockFill = { city: 'rgba(70, 80, 84, 0.55)', park: 'rgba(62, 84, 66, 0.6)', plaza: 'rgba(86, 94, 96, 0.55)', lot: 'rgba(76, 78, 74, 0.55)', rubble: 'rgba(88, 84, 78, 0.55)' };
     for (const b of world.blocks || []) {
-      c.fillStyle = blockFill[b.kind] || '#3b3f37';
+      c.fillStyle = blockFill[b.kind] || blockFill.city;
       c.fillRect(b.x, b.z, b.w, b.d);
     }
-    c.fillStyle = '#5d6157';
+    c.fillStyle = 'rgba(20, 26, 30, 0.7)';
     for (const r of world.roads || []) c.fillRect(r.x, r.z, r.w, r.d);
     // Team areas.
     const sp = world.spawns || {};
     for (const t of ['def', 'atk']) {
       const z = sp[t];
       if (!z) continue;
-      c.fillStyle = t === 'def' ? 'rgba(61,139,255,0.18)' : 'rgba(255,77,61,0.18)';
+      c.fillStyle = t === 'def' ? 'rgba(61,139,255,0.2)' : 'rgba(255,77,61,0.2)';
       c.fillRect(z.x, z.z, z.w, z.d);
     }
+    c.lineWidth = 0.8;
+    c.strokeStyle = 'rgba(10, 14, 16, 0.75)';
     for (const b of world.buildings || []) {
-      c.fillStyle = b.ruined > 0.5 ? '#6e675d' : b.h > 45 ? '#9a9e94' : '#83877d';
+      c.fillStyle = b.ruined > 0.5 ? 'rgba(150, 146, 136, 0.78)' : b.h > 45 ? 'rgba(205, 218, 224, 0.86)' : 'rgba(168, 182, 190, 0.82)';
       c.fillRect(b.x, b.z, b.w, b.d);
-      c.strokeStyle = 'rgba(0,0,0,0.55)';
-      c.lineWidth = 0.9;
-      c.strokeRect(b.x + 0.45, b.z + 0.45, b.w - 0.9, b.d - 0.9);
+      c.strokeRect(b.x + 0.4, b.z + 0.4, b.w - 0.8, b.d - 0.8);
     }
-    c.fillStyle = '#4c4f46';
-    for (const w of world.walls || []) c.fillRect(w.x, w.z, w.w, w.d);
+    c.fillStyle = 'rgba(120, 128, 124, 0.85)';
+    for (const w of world.walls || []) c.fillRect(w.x, w.z, w.w, Math.max(w.d, 0.8));
     if (world.hq) {
-      c.fillStyle = 'rgba(255,213,74,0.22)';
+      c.fillStyle = 'rgba(255,213,74,0.2)';
       c.beginPath();
       c.arc(world.hq.x, world.hq.z, world.hq.r + 10, 0, Math.PI * 2);
       c.fill();
@@ -1019,8 +1025,41 @@ export class Hud {
     const ppr = h / 2 / Math.tan(fov / 2); // pixels per radian at the screen centre
     const att = { pitch: me.pitch || 0, roll: me.roll || 0, heading: me.heading ?? me.yaw ?? 0 };
     if (this._overlay === 'gunner') drawGunner(ctx, w, h, me, info, ppr);
-    else if (this._overlay === 'drone') drawDrone(ctx, w, h, me, info, att, this.touch);
-    else drawCockpit(ctx, w, h, me, info, att, ppr, this._overlay);
+    else if (this._overlay === 'drone') drawDrone(ctx, w, h, me, info, att, this.touch, this._safeArea());
+    else drawCockpit(ctx, w, h, me, info, att, ppr, this._overlay, this._safeArea());
+  }
+
+  // Rectangle between the HUD panels (screen px), re-measured at most once a second: the overlays
+  // keep their text inside it.
+  _safeArea() {
+    const now = performance.now();
+    if (this._safe && now - this._safeT < 1000) return this._safe;
+    const R = this.root.getBoundingClientRect();
+    const w = this._w;
+    const h = this._h;
+    const pad = 12;
+    const mm = this.mm.getBoundingClientRect();
+    const top = this.top.getBoundingClientRect();
+    let l = mm.right - R.left + pad;
+    let r = top.left - R.left - pad;
+    // Touch: keep clear of the button cluster on the right as well.
+    if (this.touch) r = Math.min(r, w - 280);
+    if (r - l < w * 0.35) {
+      l = w * 0.22;
+      r = w * 0.78;
+    }
+    let b = h - pad;
+    // Touch: the button cluster owns the lower part of the screen.
+    if (this.touch) b = Math.min(b, h * 0.6);
+    else {
+      for (const e of [this.ammo, this.unitPanel]) {
+        const rr = e.getBoundingClientRect();
+        if (rr.height > 0) b = Math.min(b, rr.top - R.top - pad);
+      }
+    }
+    this._safe = { l, r, t: pad + (this.touch ? 30 : 0), b: Math.max(b, h * 0.5) };
+    this._safeT = now;
+    return this._safe;
   }
 
   // ------------------------------------------------------------------ misc
@@ -1143,7 +1182,18 @@ function tape(ctx, x, cy, height, value, step, color, side, label) {
   glowText(ctx, label, bx + 32, cy - height / 2 - 10, color, 13, 'center', 600);
 }
 
-function drawCockpit(ctx, w, h, me, info, att, ppr, type) {
+// Small screens draw the symbology in a scaled-down logical space (same look, less clutter); the
+// pixels-per-radian scale is converted too so the ladder stays on the real horizon.
+function drawCockpit(ctx, w, h, me, info, att, ppr, type, S) {
+  const k = clamp(h / 720, 0.62, 1);
+  if (k === 1) return drawCockpitAt(ctx, w, h, me, info, att, ppr, type, S);
+  ctx.save();
+  ctx.scale(k, k);
+  drawCockpitAt(ctx, w / k, h / k, me, info, att, ppr / k, type, { l: S.l / k, r: S.r / k, t: S.t / k, b: S.b / k });
+  ctx.restore();
+}
+
+function drawCockpitAt(ctx, w, h, me, info, att, ppr, type, S) {
   const jet = type === 'jet';
   const color = HUD_GREEN;
   const cx = w / 2;
@@ -1157,7 +1207,8 @@ function drawCockpit(ctx, w, h, me, info, att, ppr, type) {
   // Pitch ladder, conformal with the view (lines sit on the real horizon) and rolled with the aircraft.
   ctx.save();
   ctx.beginPath();
-  ctx.rect(cx - 260 * scale, cy - h * 0.34, 520 * scale, h * 0.68);
+  // Kept to a HUD-glass sized window so it doesn't clutter the canopy frame and the displays.
+  ctx.rect(cx - 230 * scale, cy - h * 0.27, 460 * scale, h * 0.5);
   ctx.clip();
   ctx.translate(cx, cy);
   ctx.rotate(-att.roll);
@@ -1168,7 +1219,7 @@ function drawCockpit(ctx, w, h, me, info, att, ppr, type) {
   for (let d = Math.ceil((pDeg - 40) / stepDeg) * stepDeg; d <= pDeg + 40; d += stepDeg) {
     if (d < -90 || d > 90) continue;
     const py = -Math.tan(((d - pDeg) * Math.PI) / 180) * ppr;
-    const half = d === 0 ? 220 * scale : 90 * scale;
+    const half = d === 0 ? 200 * scale : 78 * scale;
     const gap = 34 * scale;
     ctx.setLineDash(d < 0 ? [10, 7] : []);
     ctx.beginPath();
@@ -1232,10 +1283,10 @@ function drawCockpit(ctx, w, h, me, info, att, ppr, type) {
 
   // Tapes and heading.
   const tapeH = clamp(h * 0.42, 150, 340);
-  const tx = clamp(w * 0.5 - 300 * scale, 90, w * 0.3);
+  const tx = clamp(w * 0.5 - 300 * scale, Math.max(90, S.l + 76), w * 0.3);
   tape(ctx, tx, cy, tapeH, Math.abs(me.spd || 0) * 3.6, jet ? 50 : 20, color, 'left', 'KM/H');
   tape(ctx, w - tx, cy, tapeH, me.alt || 0, jet ? 50 : 20, color, 'right', 'ALT M');
-  headingTape(ctx, cx, Math.max(46, h * 0.1), clamp(w * 0.32, 220, 460), att.heading, color);
+  headingTape(ctx, cx, Math.max(S.t + 34, h * 0.1), clamp(Math.min(w * 0.32, (S.r - S.l) * 0.7), 200, 460), att.heading, color);
 
   // Weapons / throttle readout under the boresight.
   const by = cy + h * 0.3;
@@ -1247,7 +1298,7 @@ function drawCockpit(ctx, w, h, me, info, att, ppr, type) {
     const bx = tx - 72;
     const bh = 90;
     const top = cy + tapeH / 2 + 30;
-    if (top + bh < h - 10) {
+    if (top + bh < S.b) {
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(bx, top, 12, bh);
@@ -1302,8 +1353,10 @@ function drawGunner(ctx, w, h, me, info, ppr) {
   ctx.lineTo(cx - 40, cy);
   ctx.moveTo(cx + 40, cy);
   ctx.lineTo(cx + R * 0.9, cy);
-  for (let m = 5; m * mil < R * 0.85; m += 5) {
-    const len = m % 10 === 0 ? 10 : 5;
+  // Tick spacing adapts to the zoom so the marks never merge into a solid bar.
+  const step = [5, 10, 20, 50, 100].find((v) => v * mil >= 9) || 100;
+  for (let m = step; m * mil < R * 0.85; m += step) {
+    const len = m % (step * 2) === 0 ? 10 : 5;
     for (const s of [-1, 1]) {
       const x = cx + s * m * mil;
       if (Math.abs(x - cx) < 40) continue;
@@ -1354,7 +1407,9 @@ function drawGunner(ctx, w, h, me, info, ppr) {
   if (info.range != null) glowText(ctx, `RNG ${String(Math.round(info.range)).padStart(4, '0')}`, cx - R * 0.62, cy - R * 0.62, '#d8d2c0', 16, 'center');
 }
 
-function drawDrone(ctx, w, h, me, info, att, touch) {
+// S = safe rectangle between the HUD panels (minimap, scores, ammo, vehicle panel), so the feed's
+// telemetry never collides with them.
+function drawDrone(ctx, w, h, me, info, att, touch, S) {
   const cx = w / 2;
   const cy = h / 2;
   const white = 'rgba(235,245,240,0.92)';
@@ -1364,11 +1419,10 @@ function drawDrone(ctx, w, h, me, info, att, touch) {
   ctx.shadowColor = 'rgba(0,0,0,0.6)';
   ctx.shadowBlur = 3;
   ctx.lineWidth = 1.6;
-  // Corner brackets.
-  const m = touch ? 18 : 34;
-  const L = Math.min(w, h) * 0.08;
+  // Camera frame brackets on the safe rectangle.
+  const L = Math.min(w, h) * 0.06;
   ctx.beginPath();
-  for (const [x, y, sx, sy] of [[m, m, 1, 1], [w - m, m, -1, 1], [m, h - m, 1, -1], [w - m, h - m, -1, -1]]) {
+  for (const [x, y, sx, sy] of [[S.l, S.t, 1, 1], [S.r, S.t, -1, 1], [S.l, S.b, 1, -1], [S.r, S.b, -1, -1]]) {
     ctx.moveTo(x, y + sy * L);
     ctx.lineTo(x, y);
     ctx.lineTo(x + sx * L, y);
@@ -1389,7 +1443,7 @@ function drawDrone(ctx, w, h, me, info, att, touch) {
   ctx.stroke();
   // Wider framing brackets.
   ctx.beginPath();
-  const b = Math.min(w, h) * 0.18;
+  const b = Math.min(w, h) * 0.16;
   for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
     ctx.moveTo(cx + sx * b, cy + sy * (b - 16));
     ctx.lineTo(cx + sx * b, cy + sy * b);
@@ -1397,29 +1451,34 @@ function drawDrone(ctx, w, h, me, info, att, touch) {
   }
   ctx.stroke();
 
-  // Telemetry.
-  const fs = touch ? 12 : 15;
+  // Telemetry in the four inner corners of the frame.
+  const fs = touch ? 11 : 14;
   const lh = fs + 5;
-  const now = new Date();
+  const pad = 10;
+  const l = S.l + pad;
+  const r = S.r - pad;
+  const top = S.t + pad + fs;
+  const bot = S.b - pad;
   const blink = Math.floor(performance.now() / 600) % 2 === 0;
   if (blink) {
     ctx.fillStyle = '#ff3b30';
     ctx.beginPath();
-    ctx.arc(m + 12, m + 30, 5, 0, Math.PI * 2);
+    ctx.arc(l + 5, top - fs * 0.35, 4.5, 0, Math.PI * 2);
     ctx.fill();
   }
-  glowText(ctx, 'REC', m + 24, m + 35, white, fs);
-  glowText(ctx, `UAV FEED  ${now.toISOString().slice(11, 19)}Z`, m + 12, m + 35 + lh, white, fs, 'left', 600);
-  const pitchDeg = Math.round((att.pitch * 180) / Math.PI);
-  glowText(ctx, `ALT ${String(Math.round(me.alt || 0)).padStart(3, '0')} M`, m + 12, h - m - 12 - lh * 2, white, fs);
-  glowText(ctx, `SPD ${String(Math.round(Math.abs(me.spd || 0) * 3.6)).padStart(3, '0')} KM/H`, m + 12, h - m - 12 - lh, white, fs);
-  glowText(ctx, `CAM ${pitchDeg >= 0 ? '+' : ''}${pitchDeg}°`, m + 12, h - m - 12, white, fs);
+  glowText(ctx, 'REC', l + 15, top, white, fs);
+  glowText(ctx, `UAV FEED ${new Date().toISOString().slice(11, 19)}Z`, l, top + lh, white, fs, 'left', 600);
   const hp = Math.round(clamp((me.hp || 0) / (me.maxHp || 1), 0, 1) * 100);
-  glowText(ctx, `SIG ${hp > 30 ? 'GOOD' : 'WEAK'}   HULL ${hp}%`, w - m - 12, m + 35, white, fs, 'right');
-  glowText(ctx, `MINIGUN ${me.reloading >= 0 ? 'RLD' : me.mag ?? 0}`, w - m - 12, h - m - 12 - lh, white, fs, 'right');
-  glowText(ctx, `BOMBS ${me.altReloading >= 0 ? 'RLD' : me.altMag ?? 0}`, w - m - 12, h - m - 12, white, fs, 'right');
-  if (me.x != null && me.z != null) glowText(ctx, `GRID ${String(Math.round(me.x)).padStart(3, '0')} ${String(Math.round(me.z)).padStart(3, '0')}`, w - m - 12, m + 35 + lh, white, fs, 'right', 600);
-  headingTape(ctx, cx, touch ? m + 30 : m + 44, clamp(w * 0.28, 180, 380), att.heading, white, 10);
+  glowText(ctx, `SIG ${hp > 30 ? 'GOOD' : 'WEAK'}  HULL ${hp}%`, r, top, hp > 30 ? white : '#ff6a5a', fs, 'right');
+  if (me.x != null && me.z != null) glowText(ctx, `GRID ${String(Math.round(me.x)).padStart(3, '0')} ${String(Math.round(me.z)).padStart(3, '0')}`, r, top + lh, white, fs, 'right', 600);
+  const pitchDeg = Math.round((att.pitch * 180) / Math.PI);
+  glowText(ctx, `ALT ${String(Math.round(me.alt || 0)).padStart(3, '0')} M`, l, bot - lh * 2, white, fs);
+  glowText(ctx, `SPD ${String(Math.round(Math.abs(me.spd || 0) * 3.6)).padStart(3, '0')} KM/H`, l, bot - lh, white, fs);
+  glowText(ctx, `CAM ${pitchDeg >= 0 ? '+' : ''}${pitchDeg}°`, l, bot, white, fs);
+  glowText(ctx, `ZOOM ${(78 / (info.fov || 78)).toFixed(1)}×`, r, bot - lh, white, fs, 'right');
+  glowText(ctx, 'MODE TV  WHT', r, bot, white, fs, 'right', 600);
+  const tapeW = clamp((S.r - S.l) * 0.42, 140, 380);
+  headingTape(ctx, (S.l + S.r) / 2, S.t + (touch ? 26 : 34), tapeW, att.heading, white, 10);
   ctx.restore();
 }
 

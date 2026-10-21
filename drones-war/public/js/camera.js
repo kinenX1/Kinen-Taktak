@@ -8,18 +8,19 @@ import * as THREE from 'three';
 import { VIEW_MODES } from './shared/units.js';
 
 // Per unit and view: chase distance / pivot height / shoulder offset, how tightly the pivot
-// follows the unit (lag, 1/s), the eye height used when a model has no anchor, and pitch limits.
+// follows the unit (lag, 1/s), the eye height used when a model has no anchor (lift: extra height
+// over the model's anchor), and pitch limits.
 export const CAMERA_PRESETS = {
   soldier: {
-    third: { dist: 2.35, height: 1.58, side: 0.62, lag: 40, pitch: [-1.4, 1.35] },
+    third: { dist: 2.7, height: 1.7, side: 0.82, lag: 40, pitch: [-1.4, 1.35] },
     first: { eye: 1.62, pitch: [-1.45, 1.45] },
   },
   jeep: {
     third: { dist: 8.2, height: 3.1, side: 0, lag: 14, pitch: [-1.2, 0.75] },
-    first: { eye: 1.55, pitch: [-0.75, 0.9] },
+    first: { eye: 1.55, lift: 0.14, pitch: [-0.75, 0.9] },
   },
   tank: {
-    third: { dist: 12, height: 4.8, side: 0, lag: 12, pitch: [-1.2, 0.7] },
+    third: { dist: 10.5, height: 4.4, side: 0, lag: 12, pitch: [-1.2, 0.7] },
     first: { eye: 2.1, pitch: [-0.6, 0.8] },
     gunner: { eye: 2.55, pitch: [-0.15, 0.35] },
   },
@@ -32,7 +33,7 @@ export const CAMERA_PRESETS = {
     first: { eye: -0.05, pitch: [-1.5, 0.5] },
   },
   heli: {
-    third: { dist: 19, height: 6.2, side: 0, lag: 10, pitch: [-1.3, 0.8] },
+    third: { dist: 16.5, height: 5.6, side: 0, lag: 10, pitch: [-1.3, 0.8] },
     first: { eye: 2.0, pitch: [-1.2, 0.6] },
   },
   jet: {
@@ -129,6 +130,12 @@ export class CameraRig {
     this._kickY = clamp(this._kickY + yaw, -0.04, 0.04);
   }
 
+  // Current (collision-limited) chase distance in metres, 0 in first person: lets the game fade a
+  // model the camera got very close to.
+  get chaseDistance() {
+    return this.mode === 'third' && this._dist > 0 ? this._dist : 0;
+  }
+
   forward(out = new THREE.Vector3()) {
     const c = Math.cos(this.pitch);
     return out.set(c * Math.cos(this.yaw), Math.sin(this.pitch), c * Math.sin(this.yaw));
@@ -185,6 +192,8 @@ export class CameraRig {
       if (target.anchor) {
         target.anchor.updateWorldMatrix(true, false);
         target.anchor.getWorldPosition(_want);
+        // Optional per-view eye lift: a few cm over a model's seat anchor clears dashboards/coamings.
+        if (p.lift) _want.y += p.lift;
       } else {
         _want.copy(target.position);
         _want.y += target.crouch && this.type === 'soldier' ? CAMERA_PRESETS.soldier.first.eye * 0.69 : p.eye;

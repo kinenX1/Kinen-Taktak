@@ -5,7 +5,7 @@
 // Mouse look accumulates radians until the game calls takeLook(). Movement keys use
 // KeyboardEvent.code so WASD works on AZERTY/QWERTZ layouts at the same physical place.
 
-const BASE_MOUSE = 0.0022; // radians per mouse count at sensitivity 1 (≈ 0.126°)
+const BASE_MOUSE = 0.0018; // radians per mouse count at sensitivity 1 (≈ 0.10°, a typical shooter default)
 const BASE_TOUCH = 0.0062; // radians per CSS pixel of touch drag at sensitivity 1
 const STICK_RADIUS = 58; // px, virtual stick travel
 const SPRINT_PUSH = 0.92; // stick push beyond this (forward) sprints on foot
@@ -46,6 +46,8 @@ export class Input {
     this._lockSupported = !!(canvas && canvas.requestPointerLock);
     this._lockFailed = false;
     this._lockPending = false;
+    this._lockAsked = 0;
+    this._lastTouch = -1e9;
     this._listeners = [];
 
     const on = (target, type, fn, opts) => {
@@ -59,11 +61,11 @@ export class Input {
     on(document, 'pointerlockchange', () => this._lockChange());
     on(document, 'pointerlockerror', () => { this._lockPending = false; this._lockFailed = true; });
     on(document, 'mousemove', (e) => this._mouseMove(e));
-    if (canvas) {
-      on(canvas, 'mousedown', (e) => this._mouseButton(e, true));
-      on(canvas, 'contextmenu', (e) => e.preventDefault());
-      on(canvas, 'wheel', (e) => this._onWheel(e), { passive: false });
-    }
+    // Mouse presses/wheel are taken on the window and filtered by _gameTarget(): HUD and touch layers
+    // stacked over the canvas must not swallow clicks, but real UI (buttons, chat, menus) keeps them.
+    on(window, 'mousedown', (e) => { if (this._gameTarget(e.target)) this._mouseButton(e, true); });
+    on(window, 'contextmenu', (e) => { if (this._gameTarget(e.target)) e.preventDefault(); });
+    on(window, 'wheel', (e) => { if (this._gameTarget(e.target)) this._onWheel(e); }, { passive: false });
     // Releases are caught on the window so a drag that leaves the canvas never sticks the trigger.
     on(window, 'mouseup', (e) => this._mouseButton(e, false));
     if (this.touch && touchRoot) this._buildTouch();
@@ -105,23 +107,29 @@ export class Input {
   }
 
   requestPointerLock() {
-    if (!this.canvas || this.pointerLocked || !this._lockSupported || this._lockPending) return;
+    if (!this.canvas || this.pointerLocked || !this._lockSupported) return;
+    // Some browsers never answer a refused request (no promise, no event): don't wait on it forever.
+    if (this._lockPending && performance.now() - this._lockAsked < 1500) return;
     this._lockPending = true;
-    const fallback = () => {
+    this._lockAsked = performance.now();
+    const failed = () => {
+      this._lockPending = false;
+      this._lockFailed = true;
+    };
+    const plain = () => {
       try {
         const p = this.canvas.requestPointerLock();
-        if (p && p.catch) p.catch(() => { this._lockPending = false; this._lockFailed = true; });
+        if (p && p.catch) p.catch(failed);
       } catch {
-        this._lockPending = false;
-        this._lockFailed = true;
+        failed();
       }
     };
     try {
       // unadjustedMovement = raw deltas without OS acceleration (Chromium); retry plain if refused.
       const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
-      if (p && p.catch) p.catch(fallback);
+      if (p && p.catch) p.catch(plain);
     } catch {
-      fallback();
+      plain();
     }
   }
 
@@ -216,10 +224,10 @@ export class Input {
   // ---- Mouse ----
 
   _mouseMove(e) {
-    if (!this._enabled || e.pointerType === 'touch') return;
+    if (!this._enabled || this._fromTouch()) return;
     if (this.pointerLocked) {
       this._look(e.movementX, e.movementY, BASE_MOUSE);
-    } else if (this.canvas && (e.target === this.canvas || this._buttons)) {
+    } else if (this.canvas && (this._buttons || this._gameTarget(e.target))) {
       // Fallback before pointer lock is granted (or when it isn't available): moving over the
       // canvas still turns the camera, so the game is never "stuck".
       const dx = e.movementX || 0;
@@ -236,14 +244,36 @@ export class Input {
     this._lookY += (this.invertY ? dy : -dy) * k;
   }
 
+  // True when an event target is the game view itself (canvas or a passive layer over it inside the
+  // canvas' container), false for interactive UI.
+  _gameTarget(t) {
+    if (!this.canvas || !t) return false;
+    if (t === this.canvas) return true;
+    if (!(t instanceof Element)) return false;
+    if (t.closest('button, a, input, textarea, select, label, [contenteditable="true"], [data-ui], .h-chat, .h-over')) return false;
+    const scope = this.canvas.parentElement;
+    return !!scope && scope.contains(t);
+  }
+
+  // Phones also send emulated mouse events after a tap; the touch controls already handled those.
+  _fromTouch() {
+    return this.touch && performance.now() - this._lastTouch < 1000;
+  }
+
   _mouseButton(e, down) {
+    if (down && this._fromTouch()) return;
     if (down) {
       if (!this._enabled) return;
-      // The first click only captures the mouse (no accidental shot) when pointer lock can work.
-      if (!this.pointerLocked && this._lockSupported && !this._lockFailed && !this.touch) {
-        e.preventDefault();
+      if (!this.pointerLocked && this._lockSupported && !this.touch) {
+        // Every click without the lock asks for it again (Chrome refuses re-locking for ~1 s after Esc).
+        // Only while it has never failed does the click just capture the mouse, so it can't fire a shot
+        // by accident; after a refusal the game keeps working with the cursor-over-canvas fallback.
+        const first = !this._lockFailed;
         this.requestPointerLock();
-        return;
+        if (first) {
+          e.preventDefault();
+          return;
+        }
       }
       if (e.button === 1) e.preventDefault();
       this._buttons |= 1 << e.button;
@@ -400,12 +430,12 @@ export class Input {
     b.grenade.hidden = this.kind !== 'soldier';
     this._touchEl.dataset.kind = this.kind;
     this._touchState.ads = false;
-    b.ads.classList.remove('ti-held');
-    b.down.classList.remove('ti-held');
+    for (const k of ['ads', 'down']) b[k].classList.remove('ti-held', 'ti-latched');
   }
 
   _touchDown(e) {
     if (e.pointerType === 'mouse') return;
+    this._lastTouch = performance.now();
     e.preventDefault();
     if (!this._enabled) return;
     const el = e.target.closest('[data-act],[data-zone]');
@@ -461,6 +491,7 @@ export class Input {
     const rec = this._touchPointers.get(e.pointerId);
     if (!rec) return;
     e.preventDefault();
+    this._lastTouch = performance.now();
     const dx = e.clientX - rec.x;
     const dy = e.clientY - rec.y;
     rec.x = e.clientX;

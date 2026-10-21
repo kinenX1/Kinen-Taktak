@@ -26,18 +26,18 @@ const NO_SHADOW = new Set(['ground', 'asphalt', 'sidewalk', 'plaza', 'grass', 'd
 const MATS = {
   brick: { tex: 'brick', grime: 0.3, lit: true },
   concrete: { tex: 'concrete', grime: 0.3, lit: true },
-  office: { tex: 'office', grime: 0.2, lit: true, metal: 0.8 },
+  office: { tex: 'office', grime: 0.2, lit: true, metal: 0.8, emi: 1.1 },
   apartment: { tex: 'apartment', grime: 0.3, lit: true },
-  glass: { tex: 'glass', grime: 0.2, lit: true, metal: 0.4 },
+  glass: { tex: 'glass', grime: 0.2, lit: true, metal: 0.4, emi: 1.0 },
   warehouse: { tex: 'warehouse', grime: 0.25, lit: true, metal: true },
-  tower: { tex: 'tower', grime: 0.25, lit: true, metal: true },
+  tower: { tex: 'tower', grime: 0.25, lit: true, metal: true, emi: 1.5 },
   storefront: { tex: 'storefront', grime: 0.1, lit: true, metal: true },
   lobby: { tex: 'lobby', grime: 0.1, lit: true, metal: true },
   industrial: { tex: 'industrial', grime: 0.1, lit: true, metal: true },
-  roof: { tex: 'roof', grime: 0.5 },
+  roof: { tex: 'roof', grime: 0.5, dust: 0.4 },
   trim: { tex: 'trim', grime: 0.45 },
   interior: { tex: 'interior', grime: 0.3 },
-  rubble: { tex: 'rubble', grime: 0.5 },
+  rubble: { tex: 'rubble', grime: 0.4, dust: 0.7 },
   metal: { tex: 'metal', grime: 0.2, metal: true },
   canvas: { tex: 'canvas', grime: 0.3 },
   sandbag: { tex: 'sandbag', grime: 0.35 },
@@ -46,13 +46,13 @@ const MATS = {
   burnt: { tex: 'burnt', grime: 0.1, metal: true },
   bark: { tex: 'bark', grime: 0.2 },
   foliage: { tex: 'foliage', grime: 0.35 },
-  asphalt: { tex: 'asphalt', grime: 0.35, grimeScale: 40, offset: -2 },
-  sidewalk: { tex: 'sidewalk', grime: 0.4, grimeScale: 40, offset: -1 },
-  plaza: { tex: 'plaza', grime: 0.4, grimeScale: 40, offset: -1 },
+  asphalt: { tex: 'asphalt', grime: 0.35, grimeScale: 40, offset: -2, dust: 0.6 },
+  sidewalk: { tex: 'sidewalk', grime: 0.4, grimeScale: 40, offset: -1, dust: 0.4 },
+  plaza: { tex: 'plaza', grime: 0.4, grimeScale: 40, offset: -1, dust: 0.35 },
   grass: { tex: 'grass', grime: 0.5, grimeScale: 60, offset: -1 },
   dirt: { tex: 'dirt', grime: 0.4, grimeScale: 60, offset: -1 },
   hq: { tex: 'trim', grime: 0.4 },
-  suburb: { tex: 'tower', grime: 0, fogScale: 0.75, metal: true },
+  suburb: { tex: 'tower', grime: 0, fogScale: 0.95, metal: true },
   skyline: { tex: 'tower', grime: 0, fogScale: 0.5, metal: true, baseFade: 70 },
 };
 
@@ -76,6 +76,7 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
   sharedUniforms.uFogMax.value = preset.fogMax;
   sharedUniforms.uFogBase.value = preset.fogDensity;
   sharedUniforms.uLitBoost.value = preset.lit;
+  sharedUniforms.uDust.value = preset.dust ?? 1;
 
   const sky = createSky(preset);
   sky.scale.setScalar(1000);
@@ -154,10 +155,10 @@ export function buildWorld({ renderer, scene, world: input, quality = 'high' }) 
     if (spec.lit && set.emissiveMap) {
       m.emissive = new THREE.Color(1, 1, 1);
       m.emissiveMap = set.emissiveMap;
-      m.emissiveIntensity = 2.4;
+      m.emissiveIntensity = spec.emi ?? 2.4; // big glazed office floors would read as light boxes at full strength
     }
     if (spec.offset) { m.polygonOffset = true; m.polygonOffsetFactor = spec.offset; m.polygonOffsetUnits = spec.offset; }
-    return patchMaterial(m, { grime: spec.grime || 0, grimeScale: spec.grimeScale || 48, lit: !!spec.lit, fogScale: spec.fogScale || 1, baseFade: spec.baseFade || 0 });
+    return patchMaterial(m, { grime: spec.grime || 0, grimeScale: spec.grimeScale || 48, lit: !!spec.lit, fogScale: spec.fogScale || 1, baseFade: spec.baseFade || 0, dust: spec.dust || 0 });
   }
 
   // Terrain: grass outside the map, dirt and rubble inside, blended by large-scale noise.
@@ -188,6 +189,10 @@ uniform vec2 uMapSize;`)
   vec4 g4 = texture2D( map, vMapUv );
   vec4 d4 = texture2D( uDirt, vMapUv * 0.8 );
   diffuseColor *= mix( g4, d4, dirtAmt );
+  // the outskirts read as grey urban waste ground rather than a tan field
+  float urban = smoothstep( 15.0, 140.0, outside ) * ( 1.0 - smoothstep( 600.0, 1100.0, outside ) );
+  float lum = dot( diffuseColor.rgb, vec3( 0.3, 0.55, 0.15 ) );
+  diffuseColor.rgb = mix( diffuseColor.rgb, vec3( lum * 0.6, lum * 0.61, lum * 0.63 ), urban * 0.9 );
 }`);
     };
     return m;
@@ -198,6 +203,8 @@ uniform vec2 uMapSize;`)
   function decalMaterial() {
     const set = decalSet();
     const m = new THREE.MeshLambertMaterial({ map: set.map, vertexColors: true, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+    // pale dust and paper decals would glow under moonlight against the dark asphalt: tone them down with the dust
+    m.color.setScalar(0.3 + 0.7 * (preset.dust ?? 1));
     return patchMaterial(m, {});
   }
   function glowDecalMaterial() {
@@ -231,7 +238,7 @@ uniform vec2 uMapSize;`)
     geos: null,
     decals: new DecalBatch(),
     glowDecals: new DecalBatch({ glow: true }),
-    chunks: [], beacons: [], lamps: [], extraFires: [], parks: [], rubbleBlocks: [],
+    chunks: [], bits: [], beacons: [], lamps: [], extraFires: [], parks: [], rubbleBlocks: [],
     fx: new BillboardField(),
     mat, decalMaterial,
     // a position-bound view that routes each material to the chunk cell sized for it
@@ -302,16 +309,16 @@ uniform vec2 uMapSize;`)
     const set = clampAniso(lib.get('rubble'));
     const cm = patchMaterial(q.standard
       ? new THREE.MeshStandardMaterial({ map: set.map, normalMap: set.normalMap || null, roughness: 1, metalness: 0 })
-      : new THREE.MeshLambertMaterial({ map: set.map }), { grime: 0.4 });
-    const geo = chunkGeometry();
-    const n = Math.min(ctx.chunks.length, 6000);
+      : new THREE.MeshLambertMaterial({ map: set.map }), { grime: 0.4, dust: 0.5 });
+    const geo = chunkGeometry(1);
+    const n = Math.min(ctx.chunks.length, [2500, 10000, 14000, 16000][q.level]);
     chunkMesh = new THREE.InstancedMesh(geo, cm, n);
     const mtx = new THREE.Matrix4(), qt = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
     for (let i = 0; i < n; i++) {
-      const [x, z, size, yaw, r] = ctx.chunks[i];
+      const [x, z, size, yaw, r, y = 0] = ctx.chunks[i]; // optional base height (chunks strewn over rubble mounds)
       e.set(r * 3, yaw, r * 5);
       qt.setFromEuler(e);
-      p.set(x, 0.05 + size * 0.35, z);
+      p.set(x, y + 0.05 + size * 0.35, z);
       s.set(size * (0.5 + r * 0.4), size * (0.3 + r * 0.2), size * (0.55 + (1 - r) * 0.35));
       mtx.compose(p, qt, s);
       chunkMesh.setMatrixAt(i, mtx);
@@ -322,6 +329,30 @@ uniform vec2 uMapSize;`)
     chunkMesh.receiveShadow = q.shadows;
     chunkMesh.name = 'chunks';
     group.add(chunkMesh);
+  }
+
+  // loose street debris (bits): low-poly jittered boxes, one instanced mesh
+  let bitMesh = null;
+  if (ctx.bits.length) {
+    const set = clampAniso(lib.get('rubble'));
+    const bm = patchMaterial(q.standard
+      ? new THREE.MeshStandardMaterial({ map: set.map, roughness: 0.95, metalness: 0 })
+      : new THREE.MeshLambertMaterial({ map: set.map }), { grime: 0.3 });
+    const n = Math.min(ctx.bits.length, [2500, 12000, 22000, 30000][q.level]);
+    bitMesh = new THREE.InstancedMesh(bitGeometry(), bm, n);
+    const mtx = new THREE.Matrix4(), qt = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
+    for (let i = 0; i < n; i++) {
+      const b = ctx.bits[i];
+      e.set(b[7], b[6], b[8]);
+      qt.setFromEuler(e);
+      mtx.compose(p.set(b[0], b[1], b[2]), qt, s.set(b[3], b[4], b[5]));
+      bitMesh.setMatrixAt(i, mtx);
+      bitMesh.setColorAt(i, c.setRGB(b[9], b[10], b[11]));
+    }
+    bitMesh.castShadow = false;
+    bitMesh.receiveShadow = q.shadows;
+    bitMesh.name = 'bits';
+    group.add(bitMesh);
   }
 
   // ---------------------------------------------------------------- fires, lamp glows, beacons
@@ -379,7 +410,7 @@ uniform vec2 uMapSize;`)
   function update(dt, time, camera) {
     if (camera.far < 3200) { camera.far = 3200; camera.updateProjectionMatrix(); }
     const cam = camera.position;
-    scene.fog.density = preset.fogDensity * fogAltitudeFactor(cam.y);
+    if (scene.fog) scene.fog.density = preset.fogDensity * fogAltitudeFactor(cam.y);
     sky.position.copy(cam);
     sky.material.uniforms.uTime.value = time;
     ctx.fx.update(time, camera, scene.fog.color, scene.fog.density);
@@ -444,6 +475,7 @@ uniform vec2 uMapSize;`)
     decalMesh?.material.dispose();
     glowMesh?.material.dispose();
     chunkMesh?.material.dispose();
+    bitMesh?.material.dispose();
     ctx.fx.dispose();
     bases.dispose();
     bb.dispose();
@@ -463,13 +495,13 @@ uniform vec2 uMapSize;`)
     // post-processing hints for the game's composer (see world/grade.js)
     grade: gradeOf(world.timeOfDay),
     // diagnostics for tests: how long the build took and how many meshes it produced
-    stats: { buildMs, meshes: staticMeshes.length, chunks: chunkSets.size, decals: ctx.decals.count, fires: fires.length, rubblePieces: ctx.chunks.length },
+    stats: { buildMs, meshes: staticMeshes.length, chunks: chunkSets.size, decals: ctx.decals.count, fires: fires.length, rubblePieces: ctx.chunks.length, bits: ctx.bits.length },
   };
 }
 
 // Broken-concrete chunk: a coarse box with jittered vertices and flat facets (reads as a slab fragment, not a boulder).
-function chunkGeometry() {
-  const g = new THREE.BoxGeometry(1, 1, 1, 2, 2, 2);
+function chunkGeometry(seg) {
+  const g = new THREE.BoxGeometry(1, 1, 1, seg, seg, seg);
   const p = g.attributes.position;
   const jit = (x, y, z, k) => {
     const h = Math.sin(x * 127.1 + y * 311.7 + z * 74.7 + k * 19.3) * 43758.5453;
@@ -478,6 +510,22 @@ function chunkGeometry() {
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
     p.setXYZ(i, x + jit(x, y, z, 0) * 0.42, y + jit(x, y, z, 1) * 0.36, z + jit(x, y, z, 2) * 0.42);
+  }
+  const flat = g.toNonIndexed();
+  g.dispose();
+  flat.computeVertexNormals();
+  return flat;
+}
+
+// Small debris piece: a single-segment box with skewed corners (12 triangles, cheap enough for thousands).
+function bitGeometry() {
+  const g = new THREE.BoxGeometry(1, 1, 1);
+  const p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+    const h = Math.sin(x * 12.9 + y * 78.2 + z * 37.7) * 43758.5453;
+    const j = (h - Math.floor(h)) - 0.5;
+    p.setXYZ(i, x * (1 + j * 0.35), y * (1 - Math.abs(j) * 0.4), z * (1 - j * 0.3));
   }
   const flat = g.toNonIndexed();
   g.dispose();

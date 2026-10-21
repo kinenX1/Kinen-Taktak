@@ -16,13 +16,16 @@ const QUALITY = {
   ultra: { particles: 10000, tracers: 320, holes: 256, scorches: 64, debris: 140, casings: 64, lights: 4, mult: 1.3, atlas: 256 },
 };
 
-// Sprite atlas cells (4 x 2).
+// Sprite atlas cells (4 x 3).
 const SMOKE = 0; // + 1 = second smoke variant
 const FIRE = 2; // + 1 = second flame variant
 const GLOW = 4;
 const SPARK = 5;
 const CHUNK = 6;
 const MIST = 7;
+const FLARE = 8; // + 1 = second variant: spindle-shaped flame tongue, drawn stretched along its motion
+const STAR = 10; // spiky muzzle-flash star
+const ATLAS_ROWS = 3;
 
 const NO_FLOOR = -1e4;
 const SURFACES = ['ground', 'building', 'metal', 'flesh', 'hq'];
@@ -170,14 +173,45 @@ function fireCell(seed) {
     const shape = d + (n - 0.5) * 0.85 + (n2 - 0.5) * 0.25;
     const a = smooth(0.95, 0.35, shape);
     const heat = smooth(0.9, 0.05, shape) * (0.75 + 0.5 * n2);
-    return [0.35 + heat * 0.85, a];
+    return [0.22 + heat * 0.9, a];
+  };
+}
+
+// Flame tongue for muzzle flashes: thin at the muzzle (v = 1), swelling, then a ragged point at
+// the front (v = -1). Luminance = heat, hottest along the axis.
+function flareCell(seed) {
+  return (u, v) => {
+    const s = (1 - v) / 2; // 0 at the muzzle end, 1 at the tip
+    const n = fbm(u * 2.5 + 3, s * 6 + seed, seed, 4);
+    const width = 0.95 * Math.pow(s, 0.45) * Math.pow(1 - s, 0.8) * (0.7 + 0.6 * n);
+    const d = Math.abs(u) / Math.max(width, 1e-3);
+    const a = smooth(1, 0.55, d) * smooth(0, 0.06, s);
+    const heat = smooth(1, 0, d) * (1 - 0.6 * s) * (0.75 + 0.5 * n);
+    return [0.25 + heat * 0.9, a];
+  };
+}
+
+// Front-on muzzle flash: a hot core with a few uneven spikes.
+function starCell(seed) {
+  return (u, v, d) => {
+    const ang = Math.atan2(v, u);
+    let spikes = 0;
+    for (let k = 0; k < 5; k++) {
+      const a = k * 1.2566 + hash2(k, 1, seed) * 0.5;
+      const len = 0.55 + 0.45 * hash2(k, 2, seed);
+      const da = Math.abs(Math.atan2(Math.sin(ang - a), Math.cos(ang - a)));
+      spikes = Math.max(spikes, smooth(0.32 * (1 - d / len), 0, da) * smooth(len, 0, d));
+    }
+    const core = Math.exp(-d * d * 18);
+    const a = clamp(core + spikes * 0.9, 0, 1);
+    return [0.3 + 0.9 * clamp(core * 1.2 + spikes * 0.6, 0, 1), a];
   };
 }
 
 function buildAtlas(cell) {
   const canvas = document.createElement('canvas');
   canvas.width = cell * 4;
-  canvas.height = cell * 2;
+  canvas.height = cell * ATLAS_ROWS;
   const ctx = canvas.getContext('2d');
   const at = (i) => [(i % 4) * cell, Math.floor(i / 4) * cell];
   paintCell(ctx, ...at(SMOKE), cell, smokeCell(3));
@@ -197,6 +231,9 @@ function buildAtlas(cell) {
     const n = fbm(u * 2.2 + 13, v * 2.2 + 6, 63, 4);
     return [0.8 + n * 0.3, clamp(smooth(1, 0.15, d) * (0.35 + n * 0.9), 0, 1)];
   });
+  paintCell(ctx, ...at(FLARE), cell, flareCell(5));
+  paintCell(ctx, ...at(FLARE + 1), cell, flareCell(9));
+  paintCell(ctx, ...at(STAR), cell, starCell(13));
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.NoColorSpace; // luminance/alpha data, not colour
   tex.generateMipmaps = true;
@@ -258,6 +295,10 @@ class Ring {
       this.a[name] = attr;
     }
     this.list = Object.values(this.a);
+    // Attributes whose full re-upload is still waiting for the next render. Ranges added by a
+    // later flush before that render would otherwise turn it back into a partial upload.
+    this.fullPending = new Set();
+    for (const attr of this.list) attr.onUpload(() => this.fullPending.delete(attr));
   }
 
   next() {
@@ -278,8 +319,9 @@ class Ring {
     const s = from % this.cap;
     const c = to - from;
     for (const attr of this.list) {
-      if (full) {
+      if (full || this.fullPending.has(attr)) {
         attr.clearUpdateRanges();
+        this.fullPending.add(attr);
       } else if (s + c <= this.cap) {
         attr.addUpdateRange(s * 4, c * 4);
       } else {
@@ -363,7 +405,8 @@ void main() {
     float sl = length(sd);
     vec2 dir = sl > 1e-5 ? sd / sl : vec2(0.0, 1.0);
     float len = size + (sl / w) * aX.w;
-    off = dir * corner.y * len + vec2(-dir.y, dir.x) * corner.x * size;
+    // (dir.y, -dir.x) keeps the quad's winding, so it is not back-face culled.
+    off = dir * corner.y * len + vec2(dir.y, -dir.x) * corner.x * size;
   } else {
     float r = aS.z + aS.w * age;
     float c = cos(r);
@@ -405,12 +448,21 @@ void main() {
   if (vCol.a < 0.002) discard;
   float col = floor(mod(vSprite + 0.5, 4.0));
   float row = floor((vSprite + 0.5) / 4.0);
-  vec4 tx = texture2D(uAtlas, vec2((vUv.x + col) * 0.25, (vUv.y + 1.0 - row) * 0.5));
+  vec4 tx = texture2D(uAtlas, vec2((vUv.x + col) * 0.25, (vUv.y + ${ATLAS_ROWS - 1}.0 - row) / ${ATLAS_ROWS}.0));
   float a = tx.a * vCol.a * smoothstep(-0.05, vGround.y, vGround.x);
   if (a < 0.002) discard;
   // Smoke is lit by the scene's sky light (brighter on top); fire is emissive.
   vec3 light = mix(uLight * (0.7 + 0.55 * vShade), vec3(1.0), vAdd);
-  vec3 rgb = vCol.rgb * tx.rgb * light;
+  vec3 tex = tx.rgb;
+  if ((row < 0.5 && col > 1.5) || (row > 1.5 && col < 2.5)) {
+    // Flame cells store heat: a white-yellow core cooling to deep red licks at the edges, so
+    // overlapping flames keep their structure instead of clipping to one flat yellow blob.
+    float h = tx.r;
+    vec3 ramp = mix(vec3(0.42, 0.09, 0.02), vec3(1.0, 0.62, 0.25), smoothstep(0.25, 0.75, h));
+    ramp = mix(ramp, vec3(1.25, 1.1, 0.9), smoothstep(0.78, 1.0, h));
+    tex = mix(vec3(h), ramp * h, vAdd);
+  }
+  vec3 rgb = vCol.rgb * tex * light;
   #ifdef USE_FOG
     #ifdef FOG_EXP2
       float fogFactor = 1.0 - exp(-fogDensity * fogDensity * vFogDepth * vFogDepth);
@@ -541,23 +593,28 @@ void main() {
 // Particle looks. Sizes are in metres (multiplied by the emit size), colours are linear (HDR when > 1).
 
 const LOOK = {
-  flash: { sprite: GLOW, s0: 1, s1: 1.25, c0: lin('#fff1d0', 14), c1: lin('#ff9a40', 5), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1, gp: 1 },
-  fireball: { sprite: FIRE, var: 2, s0: 0.45, s1: 1, c0: lin('#ffa850', 4.2), c1: lin('#1a1512', 1), a0: 1, a1: 0, add0: 0.75, add1: 0, cp: 0.55, ap: 1.8, gp: 2.2, drag: 3.2, grav: 2.5, spin: 1.4, fadeIn: 0.02 },
+  flash: { sprite: GLOW, s0: 1, s1: 1.25, c0: lin('#fff1d0', 9), c1: lin('#ff9a40', 3), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1, gp: 1 },
+  fireball: { sprite: FIRE, var: 2, s0: 0.45, s1: 1, c0: lin('#ffb468', 3.4), c1: lin('#211b17', 1), a0: 1, a1: 0, add0: 0.85, add1: 0, cp: 0.6, ap: 1.8, gp: 2.2, drag: 3.2, grav: 2.5, spin: 1.4, fadeIn: 0.02 },
   tongue: { sprite: FIRE, var: 2, s0: 0.25, s1: 0.6, c0: lin('#ffd090', 8), c1: lin('#802010', 1.2), a0: 1, a1: 0, add0: 1, add1: 0.6, cp: 0.8, ap: 1.3, gp: 1, drag: 4, grav: 1, stretch: 0.05 },
-  smoke: { sprite: SMOKE, var: 2, s0: 0.45, s1: 2, c0: lin('#35312e'), c1: lin('#5d5955'), a0: 0.75, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1.4, gp: 2.5, drag: 1.1, grav: 2, spin: 0.35, fadeIn: 0.1 },
+  smoke: { sprite: SMOKE, var: 2, s0: 0.45, s1: 2, c0: lin('#34302c'), c1: lin('#7d7871'), a0: 0.78, a1: 0, add0: 0, add1: 0, cp: 0.75, ap: 1.4, gp: 2.5, drag: 1.1, grav: 2, spin: 0.35, fadeIn: 0.1 },
+  // Pulverised concrete and earth thrown up by a ground blast: lighter and browner than soot.
+  blastDust: { sprite: SMOKE, var: 2, s0: 0.5, s1: 1.9, c0: lin('#5e554b'), c1: lin('#8a837a'), a0: 0.7, a1: 0, add0: 0, add1: 0, cp: 0.8, ap: 1.3, gp: 2.2, drag: 1.8, grav: 0.9, spin: 0.3, fadeIn: 0.05 },
   debrisSmoke: { sprite: SMOKE, var: 2, s0: 0.6, s1: 2.6, c0: lin('#3a3633'), c1: lin('#6a6662'), a0: 0.45, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1, gp: 2.5, drag: 1.5, grav: 0.8, spin: 0.4, fadeIn: 0.05 },
   greySmoke: { sprite: SMOKE, var: 2, s0: 0.3, s1: 1.6, c0: lin('#6d6a66'), c1: lin('#8d8a86'), a0: 0.65, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1.2, gp: 2.5, drag: 1.4, grav: 0.8, spin: 0.4, fadeIn: 0.05 },
   trailSmoke: { sprite: MIST, s0: 0.7, s1: 3, c0: lin('#c9c6c0'), c1: lin('#a9a7a3'), a0: 0.75, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1.1, gp: 3, drag: 1.6, grav: 0.35, spin: 0.5, fadeIn: 0.03 },
   dust: { sprite: SMOKE, var: 2, s0: 0.4, s1: 1.8, c0: lin('#8a7a62'), c1: lin('#9a8c78'), a0: 0.72, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1.1, gp: 2.5, drag: 2.6, grav: 0.4, spin: 0.3, fadeIn: 0.06 },
-  concrete: { sprite: SMOKE, var: 2, s0: 0.12, s1: 0.8, c0: lin('#a8a49c'), c1: lin('#b8b4ac'), a0: 0.7, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1.2, gp: 2.5, drag: 3.2, grav: 0.3, spin: 0.6, fadeIn: 0.03 },
+  concrete: { sprite: SMOKE, var: 2, s0: 0.15, s1: 1, c0: lin('#a8a49c'), c1: lin('#b8b4ac'), a0: 0.75, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1.2, gp: 2.5, drag: 3.2, grav: 0.3, spin: 0.6, fadeIn: 0.03 },
   mist: { sprite: MIST, s0: 0.1, s1: 0.75, c0: lin('#7a0a06'), c1: lin('#3a0503'), a0: 0.85, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1, gp: 3, drag: 4, grav: -0.6, spin: 0.5 },
   blood: { sprite: SPARK, s0: 0.05, s1: 0.04, c0: lin('#5c0604'), c1: lin('#3a0302'), a0: 1, a1: 0.8, add0: 0, add1: 0, cp: 1, ap: 3, gp: 1, drag: 0.8, grav: -14, stretch: 0.03, floor: 0.02 },
   chunk: { sprite: CHUNK, s0: 0.08, s1: 0.07, c0: lin('#5a5550'), c1: lin('#4a4540'), a0: 1, a1: 0.9, add0: 0, add1: 0, cp: 1, ap: 4, gp: 1, drag: 0.3, grav: -18, spin: 9, floor: 0.03 },
-  spark: { sprite: SPARK, s0: 0.1, s1: 0.06, c0: lin('#ffd9a0', 10), c1: lin('#ff6a10', 3), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 3, gp: 1, drag: 1.2, grav: -14, stretch: 0.035, floor: 0.03 },
+  spark: { sprite: SPARK, s0: 0.1, s1: 0.06, c0: lin('#ffd9a0', 10), c1: lin('#ff6a10', 3), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 3, gp: 1, drag: 1.2, grav: -14, stretch: 0.022, floor: 0.03 },
   ember: { sprite: GLOW, s0: 0.14, s1: 0.08, c0: lin('#ff9a40', 6), c1: lin('#ff3000', 1.5), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 2, gp: 1, drag: 1.6, grav: -6, floor: 0.04 },
   glow: { sprite: GLOW, s0: 1, s1: 1, c0: lin('#ffb060', 6), c1: lin('#ff6020', 3), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1, gp: 1 },
-  muzzle: { sprite: FIRE, var: 2, s0: 0.5, s1: 1, c0: lin('#fff0c0', 12), c1: lin('#ff9030', 6), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1, gp: 1, drag: 25, stretch: 0.012, spin: 0 },
-  flame: { sprite: FIRE, var: 2, s0: 0.5, s1: 0.35, c0: lin('#ffb050', 5), c1: lin('#c02a08', 1.5), a0: 0.95, a1: 0, add0: 1, add1: 0.7, cp: 0.8, ap: 1.4, gp: 1, drag: 1.5, grav: 3.5, spin: 1.5, fadeIn: 0.08 },
+  muzzle: { sprite: FLARE, var: 2, s0: 0.6, s1: 1, c0: lin('#fff0c0', 9), c1: lin('#ff9030', 4), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1.5, gp: 0.6, drag: 22, stretch: 0.016, spin: 0 },
+  star: { sprite: STAR, s0: 0.8, s1: 1.15, c0: lin('#fff2d0', 9), c1: lin('#ffa040', 4), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1.4, gp: 1, spin: 0 },
+  flame: { sprite: FIRE, var: 2, s0: 0.5, s1: 0.35, c0: lin('#ff8a30', 2.4), c1: lin('#a02008', 1), a0: 0.9, a1: 0, add0: 0.5, add1: 0.3, cp: 0.8, ap: 1.4, gp: 1, drag: 1.5, grav: 3.5, spin: 0.4, fadeIn: 0.08, upright: true },
+  // Licking flame tongue of a fire, stretched upward along its rise.
+  lick: { sprite: FLARE, var: 2, s0: 0.7, s1: 0.45, c0: lin('#ff8a2a', 2.4), c1: lin('#a02a08', 1), a0: 1, a1: 0, add0: 0.5, add1: 0.35, cp: 0.9, ap: 1.2, gp: 1, drag: 1.2, grav: 4, stretch: 0.09, fadeIn: 0.12 },
   exhaust: { sprite: GLOW, s0: 0.6, s1: 0.2, c0: lin('#ffe0b0', 9), c1: lin('#ff6020', 3), a0: 1, a1: 0, add0: 1, add1: 1, cp: 1, ap: 1, gp: 1, drag: 2 },
   heat: { sprite: GLOW, s0: 0.9, s1: 0.4, c0: lin('#ffb070', 3), c1: lin('#3050ff', 1), a0: 0.8, a1: 0, add0: 1, add1: 1, cp: 0.6, ap: 1, gp: 1, drag: 3 },
   contrail: { sprite: MIST, s0: 1.2, s1: 4, c0: lin('#e8eaee'), c1: lin('#d0d4da'), a0: 0.4, a1: 0, add0: 0, add1: 0, cp: 1, ap: 1, gp: 2, drag: 0.6, grav: 0.1, spin: 0.2, fadeIn: 0.1 },
@@ -903,7 +960,9 @@ export class Effects {
     };
     set(a.aP, x, y, z, this.gpuTime + delay);
     set(a.aV, vx, vy, vz, Math.max(life, 0.01));
-    set(a.aS, L.s0 * size, L.s1 * size, Math.random() * 6.283, (L.spin || 0) * (Math.random() * 2 - 1));
+    // Upright looks (flames) only wobble a little around vertical; everything else spins freely.
+    const rot = L.upright ? (Math.random() - 0.5) * 0.5 : Math.random() * 6.283;
+    set(a.aS, L.s0 * size, L.s1 * size, rot, (L.spin || 0) * (Math.random() * 2 - 1));
     set(a.aC0, L.c0[0] * tint, L.c0[1] * tint, L.c0[2] * tint, L.a0);
     set(a.aC1, L.c1[0] * tint, L.c1[1] * tint, L.c1[2] * tint, L.a1);
     set(a.aX, L.add0, L.add1, L.sprite + (L.var ? pick(L.var) : 0), L.stretch || 0);
@@ -981,9 +1040,10 @@ export class Effects {
     this.scene.traverse((o) => {
       if (!o.isLight || !o.visible || o.parent === this.group) return;
       if (o.isHemisphereLight) {
-        sum.r += (o.color.r + o.groundColor.r) * 0.5 * o.intensity;
-        sum.g += (o.color.g + o.groundColor.g) * 0.5 * o.intensity;
-        sum.b += (o.color.b + o.groundColor.b) * 0.5 * o.intensity;
+        // Smoke sits in the open, mostly lit by the sky dome.
+        sum.r += (o.color.r * 0.75 + o.groundColor.r * 0.25) * o.intensity;
+        sum.g += (o.color.g * 0.75 + o.groundColor.g * 0.25) * o.intensity;
+        sum.b += (o.color.b * 0.75 + o.groundColor.b * 0.25) * o.intensity;
         found = true;
       } else if (o.isAmbientLight) {
         sum.r += o.color.r * o.intensity;
@@ -991,15 +1051,23 @@ export class Effects {
         sum.b += o.color.b * o.intensity;
         found = true;
       } else if (o.isDirectionalLight) {
-        sum.r += o.color.r * o.intensity * 0.35;
-        sum.g += o.color.g * o.intensity * 0.35;
-        sum.b += o.color.b * o.intensity * 0.35;
+        sum.r += o.color.r * o.intensity * 0.2;
+        sum.g += o.color.g * o.intensity * 0.2;
+        sum.b += o.color.b * o.intensity * 0.2;
         found = true;
       }
     });
     const u = this.pMat.uniforms.uLight.value;
-    if (!found) u.setRGB(1, 1, 1);
-    else u.setRGB(clamp(sum.r * 0.55, 0.06, 1.5), clamp(sum.g * 0.55, 0.06, 1.5), clamp(sum.b * 0.55, 0.06, 1.5));
+    if (!found) {
+      u.setRGB(1, 1, 1);
+      return;
+    }
+    // Mostly neutral: a warm sun would otherwise turn every smoke trail beige. The scene's
+    // environment map lights the world on top of these lights, hence the gain.
+    const lum = sum.r * 0.2126 + sum.g * 0.7152 + sum.b * 0.0722;
+    const k = 0.35;
+    const g = 0.95;
+    u.setRGB(clamp((lum + (sum.r - lum) * k) * g, 0.05, 1.6), clamp((lum + (sum.g - lum) * k) * g, 0.05, 1.6), clamp((lum + (sum.b - lum) * k) * g, 0.05, 1.6));
   }
 
   // ------------------------------------------------------------------ public API
@@ -1067,19 +1135,29 @@ export class Effects {
     const gy = ground ? Math.max(0, y) : y;
     const sz = s * (big ? 1.35 : 1);
 
-    // Blinding core flash + light.
-    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, big ? 0.2 : 0.14, r * 1.5 * (big ? 1.4 : 1));
-    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, 0.07, r * 2.6 * (big ? 1.3 : 1), 0, 0.5);
+    // Short core flash (bloom does the rest) and a light that briefly paints the street.
+    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, big ? 0.14 : 0.1, r * 0.75 * (big ? 1.2 : 1));
+    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, 0.06, r * 1.8 * (big ? 1.2 : 1), 0, 0.12);
     this.flashLight(x, y + 1.5, z, 60 * r * r * (big ? 1.25 : 1), r * (big ? 9 : 7.5), big ? 0.55 : 0.4, 0xffa45a);
 
-    // Fireball: fire sprites that cool into soot.
-    let n = this.count(22 * bm, lod) + 3;
+    // Fireball: flame sprites that swell, rise and cool into soot.
+    let n = this.count(20 * bm, lod) + 3;
     for (let i = 0; i < n; i++) {
       randDir(_v1, ground ? 0.55 : 0);
-      const sp = rand(3, 11) * s;
-      const off = rand(0, 0.35) * r;
+      const sp = rand(2, 8) * s;
+      const off = rand(0, 0.3) * r;
       this.emit(LOOK.fireball, x + _v1.x * off, gy + _v1.y * off + 0.3 * s, z + _v1.z * off,
-        _v1.x * sp, _v1.y * sp + rand(0, 3) * s, _v1.z * sp, rand(0.55, 1.15) * (big ? 1.3 : 1), r * rand(1.3, 1.9) * (big ? 1.2 : 1), rand(0, 0.05));
+        _v1.x * sp, _v1.y * sp + rand(1, 4) * s, _v1.z * sp, rand(0.6, 1.2) * (big ? 1.25 : 1), r * rand(0.9, 1.35) * (big ? 1.1 : 1), rand(0, 0.05));
+    }
+    if (big) {
+      // Secondary blast a moment later (fuel / ammunition) that rolls upward.
+      n = this.count(12, lod) + 2;
+      for (let i = 0; i < n; i++) {
+        randDir(_v1, 0.7);
+        const sp = rand(2, 6) * s;
+        this.emit(LOOK.fireball, x + _v1.x * r * 0.2, gy + r * rand(0.2, 0.5), z + _v1.z * r * 0.2,
+          _v1.x * sp, _v1.y * sp + rand(4, 8) * s, _v1.z * sp, rand(0.7, 1.2), r * rand(0.6, 0.95), rand(0.22, 0.38));
+      }
     }
     // Fast streaky fire tongues.
     n = this.count(9 * bm, lod);
@@ -1088,16 +1166,27 @@ export class Effects {
       const sp = rand(16, 32) * s;
       this.emit(LOOK.tongue, x, gy + 0.4 * s, z, _v1.x * sp, _v1.y * sp, _v1.z * sp, rand(0.25, 0.45), r * 0.55);
     }
-    // Rolling smoke column: dark, buoyant, long lived, partly delayed so it keeps billowing.
-    n = this.count(24 * bm, lod) + 3;
+    // Soot: dark puffs born inside the fireball that billow upward into a column. Mostly vertical
+    // velocity so the cloud climbs rather than spreading into a flat pancake.
+    n = this.count(16 * bm, lod) + 3;
     for (let i = 0; i < n; i++) {
-      randDir(_v1, ground ? 0.6 : 0);
-      const sp = rand(1.5, 6) * s;
-      const off = rand(0, 0.45) * r;
-      const L = LOOK.smoke;
-      this.emit(L, x + _v1.x * off, gy + Math.abs(_v1.y) * off + 0.5 * s, z + _v1.z * off,
-        _v1.x * sp, _v1.y * sp + rand(2, 6) * s, _v1.z * sp,
-        rand(6, 10) * (big ? 1.5 : 1), sz * rand(3, 4.6), rand(0.1, 0.55), rand(0.75, 1.3));
+      const a = Math.random() * Math.PI * 2;
+      const h = rand(0.5, 2.5) * s;
+      const off = rand(0, 0.35) * r;
+      this.emit(LOOK.smoke, x + Math.cos(a) * off, gy + rand(0.3, 1.2) * s, z + Math.sin(a) * off,
+        Math.cos(a) * h, rand(3, 8) * s, Math.sin(a) * h,
+        rand(6, 10) * (big ? 1.4 : 1), r * rand(0.42, 0.62) * (big ? 1.15 : 1), rand(0.1, 0.5), rand(0.8, 1.25));
+    }
+    if (ground) {
+      // Brown-grey cloud of pulverised ground hugging the blast.
+      n = this.count(12 * bm, lod) + 2;
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = rand(2, 7) * s;
+        const off = rand(0.1, 0.5) * r;
+        this.emit(LOOK.blastDust, x + Math.cos(a) * off, gy + rand(0.3, 1.5) * s, z + Math.sin(a) * off,
+          Math.cos(a) * sp, rand(1, 4) * s, Math.sin(a) * sp, rand(4, 7) * (big ? 1.3 : 1), r * rand(0.38, 0.55), rand(0.03, 0.15), rand(0.9, 1.15));
+      }
     }
     if (ground) {
       // Dust skirt racing outward along the ground.
@@ -1152,7 +1241,7 @@ export class Effects {
         rand(0.12, big ? 0.6 : 0.4) * Math.sqrt(s), rand(3, 6), Math.random() < 0.35 ? rand(0.6, 1.3) : 0, _col);
     }
     // Smoke keeps rising for a moment after the blast.
-    this.emitters.push({ x, y: gy, z, until: this.time + (big ? 4 : 1.6), rate: (big ? 12 : 8) * lod, acc: 0, r, big });
+    this.emitters.push({ x, y: gy, z, until: this.time + (big ? 5 : 2.4), rate: (big ? 12 : 8) * lod, acc: 0, r, big });
   }
 
   shockRing(x, y, z, r, big) {
@@ -1190,8 +1279,11 @@ export class Effects {
       const s = e.r / 6;
       while (e.acc >= 1) {
         e.acc -= 1;
-        this.emit(LOOK.smoke, e.x + rand(-0.3, 0.3) * e.r, e.y + rand(0.2, 1) * s, e.z + rand(-0.3, 0.3) * e.r,
-          rand(-1, 1) * s, rand(2, 4.5) * s, rand(-1, 1) * s, rand(4, 7), s * rand(1.6, 2.4) * (e.big ? 1.3 : 1), 0, rand(0.8, 1.3));
+        // The column thins out and turns from soot to grey dust as the fire dies down.
+        const k = 1 - (e.until - this.time) / (e.big ? 5 : 2.4);
+        const L = Math.random() < 0.65 - k * 0.4 ? LOOK.smoke : LOOK.blastDust;
+        this.emit(L, e.x + rand(-0.25, 0.25) * e.r, e.y + rand(0.3, 1.2) * s, e.z + rand(-0.25, 0.25) * e.r,
+          rand(-0.8, 0.8) * s, rand(3, 6) * s, rand(-0.8, 0.8) * s, rand(5, 8), e.r * rand(0.3, 0.42) * (e.big ? 1.2 : 1) * (1 - k * 0.3), 0, rand(0.85, 1.2));
         if (e.big && Math.random() < 0.6) {
           this.emit(LOOK.flame, e.x + rand(-0.3, 0.3) * e.r, e.y + 0.3, e.z + rand(-0.3, 0.3) * e.r, 0, rand(0.5, 1.5), 0, rand(0.5, 0.9), s * rand(1.5, 2.5));
         }
@@ -1209,24 +1301,35 @@ export class Effects {
     const far = this.dist(p.x, p.y, p.z);
     if (far > 500) return;
     const { x, y, z } = p;
-    // Hot core + forward flame petals stretched along the barrel.
-    this.emit(LOOK.glow, x + d.x * 0.1 * s, y + d.y * 0.1 * s, z + d.z * 0.1 * s, 0, 0, 0, 0.045, 0.5 * s, 0, 1.3);
-    const petals = s > 2 ? 4 : 2;
-    for (let i = 0; i < petals; i++) {
-      const sp = rand(28, 45) * Math.sqrt(s);
-      this.emit(LOOK.muzzle, x, y, z, d.x * sp + rand(-1, 1), d.y * sp + rand(-1, 1), d.z * sp + rand(-1, 1),
-        rand(0.04, 0.06) * (s > 2 ? 1.6 : 1), rand(0.32, 0.5) * s);
+    // The first-person viewmodel draws its own flash; a second one right in the eye would only
+    // blind the player.
+    if (far < 1.2) return;
+    // Spiky star (reads from the front), a small glow for bloom and flame tongues stretched along
+    // the barrel (read from the side).
+    const ox = x + d.x * 0.06 * s;
+    const oy = y + d.y * 0.06 * s;
+    const oz = z + d.z * 0.06 * s;
+    const ss = Math.min(s, 2.5);
+    this.emit(LOOK.star, ox, oy, oz, 0, 0, 0, 0.05, 0.42 * ss * rand(0.85, 1.15));
+    this.emit(LOOK.glow, ox, oy, oz, 0, 0, 0, 0.04, 0.32 * ss, 0, 0.7);
+    const tongues = s > 2 ? 4 : 2;
+    for (let i = 0; i < tongues; i++) {
+      const sp = rand(20, 32) * Math.min(Math.sqrt(s), 1.5);
+      this.emit(LOOK.muzzle, x + d.x * 0.05 * s, y + d.y * 0.05 * s, z + d.z * 0.05 * s,
+        d.x * sp + rand(-0.8, 0.8), d.y * sp + rand(-0.8, 0.8), d.z * sp + rand(-0.8, 0.8),
+        rand(0.045, 0.065) * (s > 2 ? 1.6 : 1), rand(0.16, 0.24) * s);
     }
-    // CoD-style side star.
+    // Side vents of the flash hider.
     basis(d, _v2, _s1);
     const a0 = Math.random() * Math.PI;
     for (let i = 0; i < 3; i++) {
       const a = a0 + (i * Math.PI * 2) / 3;
       const c = Math.cos(a);
       const sn = Math.sin(a);
-      const sp = rand(8, 12) * Math.sqrt(s);
-      this.emit(LOOK.muzzle, x + d.x * 0.05 * s, y + d.y * 0.05 * s, z + d.z * 0.05 * s,
-        (_v2.x * c + _s1.x * sn) * sp, (_v2.y * c + _s1.y * sn) * sp, (_v2.z * c + _s1.z * sn) * sp, 0.035, 0.14 * s, 0, 0.8);
+      const sp = rand(9, 14) * Math.sqrt(s);
+      this.emit(LOOK.muzzle, x + d.x * 0.04 * s, y + d.y * 0.04 * s, z + d.z * 0.04 * s,
+        (_v2.x * c + _s1.x * sn + d.x * 0.6) * sp, (_v2.y * c + _s1.y * sn + d.y * 0.6) * sp, (_v2.z * c + _s1.z * sn + d.z * 0.6) * sp,
+        0.035, 0.08 * s, 0, 0.75);
     }
     // Gun smoke.
     if (far < 160 && Math.random() < 0.6 * this.mult + 0.2) {
@@ -1237,14 +1340,14 @@ export class Effects {
     if (s > 2.5) {
       // Heavy guns: a roaring fire jet and flash, a big blast cloud and sparks.
       const lod = this.lod(x, y, z);
-      this.emit(LOOK.flash, x + d.x * s * 0.25, y + d.y * s * 0.25, z + d.z * s * 0.25, 0, 0, 0, 0.09, s * 1.3);
+      this.emit(LOOK.flash, x + d.x * s * 0.25, y + d.y * s * 0.25, z + d.z * s * 0.25, 0, 0, 0, 0.06, s * 0.6, 0, 0.3);
       let n = this.count(7, lod) + 2;
       for (let i = 0; i < n; i++) {
         randDir(_s1);
         const sp = rand(14, 30);
         this.emit(LOOK.fireball, x + d.x * s * 0.2, y + d.y * s * 0.2, z + d.z * s * 0.2,
           d.x * sp + _s1.x * sp * 0.2, d.y * sp + _s1.y * sp * 0.2, d.z * sp + _s1.z * sp * 0.2,
-          rand(0.14, 0.26), s * rand(0.5, 0.85), 0, 1);
+          rand(0.12, 0.22), s * rand(0.35, 0.6), 0, 0.4);
       }
       n = this.count(12, lod) + 2;
       for (let i = 0; i < n; i++) {
@@ -1261,7 +1364,7 @@ export class Effects {
       }
       if (y < 4) this.dust(_s1.set(x, 0, z), 3);
     }
-    if (far < 80) this.flashLight(x + d.x * 0.3, y + d.y * 0.3, z + d.z * 0.3, 14 * s * s + 6, 7 * Math.sqrt(s) + 3, 0.06, 0xffb060);
+    if (far < 80) this.flashLight(x + d.x * 0.3, y + d.y * 0.3, z + d.z * 0.3, Math.min(14 * s * s + 6, 150), 7 * Math.sqrt(s) + 3, 0.06, 0xffb060);
   }
 
   tracer(from, to, color) {
@@ -1335,15 +1438,19 @@ export class Effects {
     // Ground, buildings and the HQ: a dust/concrete puff, chips and a bullet hole.
     const tint = DUST_TINTS[surface] || DUST_TINTS.ground;
     const puff = surface === 'ground' ? LOOK.dust : LOOK.concrete;
-    for (let i = 0, k = this.count(3, lod) + 1; i < k; i++) {
-      cone(dir, 0.6);
-      const sp = rand(2, 6);
-      this.emitTinted(puff, tint, null, x + n.x * 0.05, y + n.y * 0.05, z + n.z * 0.05,
-        dir.x * sp, dir.y * sp, dir.z * sp, rand(0.6, 1.3), surface === 'ground' ? rand(0.35, 0.55) : rand(0.6, 0.9), 0, rand(0.85, 1.1));
+    // A billowing puff that hangs in the air for a moment...
+    for (let i = 0, k = this.count(4, lod) + 1; i < k; i++) {
+      cone(dir, 0.65);
+      const sp = rand(1.5, 5);
+      this.emitTinted(puff, tint, null, x + n.x * 0.08, y + n.y * 0.08, z + n.z * 0.08,
+        dir.x * sp, dir.y * sp, dir.z * sp, rand(1.0, 2.0), surface === 'ground' ? rand(0.6, 0.9) : rand(0.8, 1.2), rand(0, 0.03), rand(0.9, 1.15));
     }
-    // A fast thin jet of dust straight out of the hole.
-    cone(dir, 0.15);
-    this.emitTinted({ ...puff, stretch: 0.08, drag: 5 }, tint, null, x, y, z, dir.x * 14, dir.y * 14, dir.z * 14, 0.35, 0.18);
+    // ...and a fast thin jet of dust straight out of the hole.
+    for (let i = 0; i < 2; i++) {
+      cone(dir, 0.2);
+      const sp = rand(10, 16);
+      this.emitTinted({ ...puff, stretch: 0.07, drag: 5, s1: 1.2 }, tint, null, x, y, z, dir.x * sp, dir.y * sp, dir.z * sp, rand(0.3, 0.45), 0.3);
+    }
     for (let i = 0, k = this.count(5, lod); i < k; i++) {
       cone(dir, 0.9);
       const sp = rand(3, 8);
@@ -1356,7 +1463,7 @@ export class Effects {
         this.emit(LOOK.spark, x, y, z, dir.x * sp, dir.y * sp, dir.z * sp, rand(0.12, 0.3), 0.4);
       }
     }
-    if (far < 120) this.holes.add(p, n, surface === 'ground' ? rand(0.16, 0.22) : rand(0.12, 0.17), HOLE_TINTS[surface] || HOLE_TINTS.ground);
+    if (far < 120) this.holes.add(p, n, surface === 'ground' ? rand(0.18, 0.26) : rand(0.14, 0.2), HOLE_TINTS[surface] || HOLE_TINTS.ground);
   }
 
   trail(id, pos, kind = 'rocket') {
@@ -1477,21 +1584,36 @@ export class Effects {
       const lod = this.lod(b.x, b.y, b.z);
       const k = b.intensity;
       const fire = smooth(0.3, 1, k);
-      b.fire += dt * 26 * fire * this.mult * lod;
+      b.fire += dt * 55 * fire * this.mult * lod;
       b.smoke += dt * (3 + 9 * k) * this.mult * lod;
       b.ember += dt * 4 * fire * this.mult;
       while (b.fire >= 1) {
         b.fire -= 1;
-        this.emit(LOOK.flame, b.x + rand(-0.7, 0.7), b.y + rand(0.2, 0.8), b.z + rand(-0.7, 0.7),
-          rand(-0.3, 0.3), rand(1, 2.5), rand(-0.3, 0.3), rand(0.45, 0.85), rand(1.4, 2.4) * (0.6 + 0.5 * k));
+        // Alternate soft flame bodies with tall licking tongues.
+        const ox = rand(-0.65, 0.65);
+        const oz = rand(-0.65, 0.65);
+        const centre = 1 - Math.hypot(ox, oz); // taller tongues in the middle of the fire
+        if (Math.random() < 0.4) {
+          this.emit(LOOK.flame, b.x + ox, b.y + rand(0, 0.3), b.z + oz,
+            rand(-0.3, 0.3), rand(0.8, 1.6), rand(-0.3, 0.3), rand(0.3, 0.55), rand(0.8, 1.3) * (0.6 + 0.5 * k));
+        } else {
+          this.emit(LOOK.lick, b.x + ox, b.y + rand(0.1, 0.5), b.z + oz,
+            rand(-0.3, 0.3), rand(1.5, 3.2) * (0.7 + 0.6 * centre), rand(-0.3, 0.3), rand(0.35, 0.65), rand(0.7, 1.1) * (0.6 + 0.5 * k));
+        }
       }
       while (b.smoke >= 1) {
         b.smoke -= 1;
         // Light grey when only damaged, thick black when on fire.
         const tint = fire > 0.1 ? rand(0.7, 1.1) : rand(2.2, 2.8);
-        this.emit(LOOK.smoke, b.x + rand(-0.5, 0.5), b.y + rand(0.8, 1.6), b.z + rand(-0.5, 0.5),
-          rand(-0.4, 0.4), rand(2, 3.5) * (0.6 + k), rand(-0.4, 0.4), rand(3.5, 6) * (0.6 + 0.6 * k),
+        this.emit(LOOK.smoke, b.x + rand(-0.5, 0.5), b.y + rand(0.6, 1.3) + 1.2 * fire, b.z + rand(-0.5, 0.5),
+          rand(-0.4, 0.4), rand(1.5, 3) * (0.6 + k), rand(-0.4, 0.4), rand(3.5, 6) * (0.6 + 0.6 * k),
           rand(1.4, 2.2) * (0.6 + 0.8 * k), 0, tint);
+      }
+      // Hot halo at the base, refreshed a few times a second.
+      b.halo = (b.halo || 0) - dt;
+      if (fire > 0.1 && b.halo <= 0) {
+        b.halo = 0.12;
+        this.emit(LOOK.glow, b.x, b.y + 0.6, b.z, 0, 0, 0, 0.2, 2.6 * fire * (0.8 + 0.4 * Math.random()), 0, 0.08);
       }
       while (b.ember >= 1) {
         b.ember -= 1;
