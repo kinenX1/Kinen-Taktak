@@ -27,7 +27,7 @@ function buildTemplate(suit, team, quality) {
   setDetail(q);
   const hi = q >= 2;
   const P = paintFinishes(suit, team);
-  const rig = new Rig({ ground: 0.25 });
+  const rig = new Rig({ ground: 0.25, grime: 0.25, dust: 0.15 });
   rig.bone('root');
   rig.bone('hull', 'root');
   const props = [[1, 1], [1, -1], [-1, 1], [-1, -1]];

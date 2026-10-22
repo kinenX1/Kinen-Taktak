@@ -24,7 +24,7 @@ function buildTemplate(suit, team, quality) {
   const A = airFinishes(suit, team);
   const canopy = canopyMaterial();
   const glass = glassMaterial();
-  const rig = new Rig({ ground: 0 });
+  const rig = new Rig({ ground: 0, grime: 0.7, dust: 0.2 });
   const BP = { root: [0, 0, 0], body: [0, 0, 0] };
   const bone = (name, parent, p) => { BP[name] = p; rig.bone(name, parent, p); };
   rig.bone('root');

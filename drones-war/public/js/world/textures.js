@@ -26,7 +26,7 @@ const LIT_COOL = ['#d8e6ff', '#c8dcff', '#e8f0ff'];
 // ---------------------------------------------------------------- windows
 
 // Draws one window into the painter. kind: glass|curtain|blinds|dark|broken|boarded|burnt.
-function windowPane(P, x, y, w, h, rnd, { frame = '#d8d4cc', cols = 2, rows = 2, kind = 'glass', lit = false, recess = 0.12, cool = false } = {}) {
+function windowPane(P, x, y, w, h, rnd, { frame = '#b0a99d', cols = 2, rows = 2, kind = 'glass', lit = false, recess = 0.12, cool = false } = {}) {
   const fr = Math.max(1, Math.round(Math.min(w, h) * 0.06));
   // recess: darker reveal on top/left suggests depth under overcast light
   const rv = Math.max(1, Math.round(Math.min(w, h) * recess));
@@ -86,8 +86,8 @@ function windowPane(P, x, y, w, h, rnd, { frame = '#d8d4cc', cols = 2, rows = 2,
   // glass with a sky-ish vertical gradient and a diagonal reflection
   const g = P.a.createLinearGradient(x, y, x, y + h);
   const base = kind === 'dark' ? 0.55 : 1;
-  g.addColorStop(0, shade('#5d6c78', base * (0.9 + rnd() * 0.2)));
-  g.addColorStop(0.55, shade('#36414a', base));
+  g.addColorStop(0, shade('#77838b', base * (0.9 + rnd() * 0.2)));
+  g.addColorStop(0.55, shade('#434c53', base));
   g.addColorStop(1, shade('#1c2227', base));
   P.a.fillStyle = g; P.a.fillRect(x, y, w, h);
   P.rect(x, y, w, h, { h: 70, r: 0.12, m: 0.45 });
@@ -134,7 +134,7 @@ function windowPane(P, x, y, w, h, rnd, { frame = '#d8d4cc', cols = 2, rows = 2,
   if (P.e) for (let i = 1; i < cols; i++) { P.e.fillStyle = '#000'; P.e.fillRect(x + (w * i) / cols - fr / 2, y, fr, h); }
 }
 
-function pickWindowKind(rnd, damage = 0.12) {
+function pickWindowKind(rnd, damage = 0.22) {
   const r = rnd();
   if (r < damage * 0.55) return 'broken';
   if (r < damage) return 'boarded';
@@ -210,8 +210,8 @@ function paintBrick(S, seed, q) {
       // stone lintel and sill
       P.rect(x - 6 * k, y - 12 * k, ww + 12 * k, 11 * k, { a: shade('#b5aa98', 1, 0.15, rnd), h: 185, r: 0.8 });
       P.rect(x - 8 * k, y + wh + 2 * k, ww + 16 * k, 8 * k, { a: shade('#b9ae9c', 1, 0.15, rnd), h: 200, r: 0.8 });
-      const kind = pickWindowKind(rnd, 0.14);
-      windowPane(P, x, y, ww, wh, rnd, { frame: rnd() < 0.7 ? '#dcd8cf' : '#3b3a36', cols: 2, rows: 3, kind, lit: kind !== 'broken' && kind !== 'boarded' && rnd() < 0.42 });
+      const kind = pickWindowKind(rnd, 0.24);
+      windowPane(P, x, y, ww, wh, rnd, { frame: rnd() < 0.7 ? '#b3ada2' : '#3b3a36', cols: 2, rows: 3, kind, lit: kind !== 'broken' && kind !== 'boarded' && rnd() < 0.42 });
       // rain streak under the sill
       const g = P.a.createLinearGradient(0, y + wh + 10 * k, 0, y + wh + fh * 0.4);
       g.addColorStop(0, 'rgba(25,20,16,0.35)'); g.addColorStop(1, 'rgba(25,20,16,0)');
@@ -236,8 +236,8 @@ function paintConcrete(S, seed, q) {
       const balcony = (b % 2 === 1) && rnd() < 0.8;
       const ww = bw * (balcony ? 0.62 : 0.5), wh = fh * (balcony ? 0.62 : 0.48);
       const x = b * bw + (bw - ww) / 2, y = f * fh + fh * 0.18;
-      const kind = pickWindowKind(rnd, 0.16);
-      windowPane(P, x, y, ww, wh, rnd, { frame: '#cfcac0', cols: balcony ? 3 : 2, rows: 1, kind, lit: kind !== 'broken' && kind !== 'boarded' && rnd() < 0.4 });
+      const kind = pickWindowKind(rnd, 0.26);
+      windowPane(P, x, y, ww, wh, rnd, { frame: '#aaa499', cols: balcony ? 3 : 2, rows: 1, kind, lit: kind !== 'broken' && kind !== 'boarded' && rnd() < 0.4 });
       if (balcony) {
         // balcony slab + railing panel in front of the door/window
         const by = y + wh - fh * 0.02;
@@ -256,7 +256,7 @@ function paintConcrete(S, seed, q) {
 
 function paintOffice(S, seed, q) {
   const rnd = mulberry32(seed);
-  const P = new Painter(S, S, { a: '#8f9294', h: 150, r: 0.7 }, { emissive: true });
+  const P = new Painter(S, S, { a: '#a9a8a2', h: 150, r: 0.7 }, { emissive: true });
   const k = S / 1024;
   const fh = S / FACADE_FLOORS;
   const sub = FACADE_BAYS * 2;
@@ -264,14 +264,14 @@ function paintOffice(S, seed, q) {
   for (let f = 0; f < FACADE_FLOORS; f++) {
     const sy = f * fh, gh = fh * 0.58, gy = sy + fh * 0.3;
     // spandrel: aluminium/concrete band
-    P.rect(0, sy, S, fh, { a: shade('#9a9c9c', 0.95 + rnd() * 0.1), h: 160, r: 0.55, m: 0.2 });
-    P.rect(0, sy + fh * 0.27, S, 3 * k, { a: '#5a5c5d', h: 90 });
+    P.rect(0, sy, S, fh, { a: shade('#b3b0a8', 0.95 + rnd() * 0.1), h: 160, r: 0.8, m: 0 });
+    P.rect(0, sy + fh * 0.27, S, 3 * k, { a: '#6a6a66', h: 90 });
     for (let i = 0; i < sub; i++) {
-      const kind = pickWindowKind(rnd, 0.12);
-      windowPane(P, i * pw + 2 * k, gy, pw - 4 * k, gh, rnd, { frame: '#2e3133', cols: 1, rows: 1, kind: kind === 'curtain' ? 'blinds' : kind, lit: rnd() < 0.5, recess: 0.03, cool: rnd() < 0.7 });
+      const kind = pickWindowKind(rnd, 0.2);
+      windowPane(P, i * pw + 2 * k, gy, pw - 4 * k, gh, rnd, { frame: '#4a4c4d', cols: 1, rows: 1, kind: kind === 'curtain' ? 'blinds' : kind, lit: rnd() < 0.5, recess: 0.03, cool: rnd() < 0.7 });
     }
     // continuous mullion caps
-    for (let i = 0; i <= sub; i++) P.rect(i * pw - 3 * k, gy - 2 * k, 6 * k, gh + 4 * k, { a: '#3a3d40', h: 175, r: 0.4, m: 0.6 });
+    for (let i = 0; i <= sub; i++) P.rect(i * pw - 3 * k, gy - 2 * k, 6 * k, gh + 4 * k, { a: '#5b5e60', h: 175, r: 0.45, m: 0.5 });
   }
   weather(P, rnd, { streaks: 0.45, dirt: 0.35, seed });
   return P.textures({ normal: 2, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
@@ -311,10 +311,10 @@ function paintApartment(S, seed, q) {
     for (let b = 0; b < FACADE_BAYS; b++) {
       const ww = bw * 0.38, wh = fh * 0.55;
       const x = b * bw + (bw - ww) / 2, y = f * fh + fh * 0.17;
-      const kind = pickWindowKind(rnd, 0.15);
+      const kind = pickWindowKind(rnd, 0.25);
       // frame surround
       P.rect(x - 7 * k, y - 7 * k, ww + 14 * k, wh + 14 * k, { a: shade('#e3dccf', 1, 0.05, rnd), h: 165 });
-      windowPane(P, x, y, ww, wh, rnd, { frame: '#e8e4dc', cols: 2, rows: 2, kind, lit: kind !== 'broken' && kind !== 'boarded' && rnd() < 0.45 });
+      windowPane(P, x, y, ww, wh, rnd, { frame: '#b9b2a6', cols: 2, rows: 2, kind, lit: kind !== 'broken' && kind !== 'boarded' && rnd() < 0.45 });
       if (rnd() < 0.55) {
         // louvered shutters, sometimes one hanging askew
         const sc = shutterCols[Math.floor(rnd() * shutterCols.length)];
@@ -351,7 +351,7 @@ function paintGlass(S, seed, q) {
       const x = i * pw, y = f * fh;
       const t = 0.85 + rnd() * 0.25;
       const g = P.a.createLinearGradient(x, y, x + pw * 0.3, y + fh);
-      g.addColorStop(0, shade('#9ba8a8', t)); g.addColorStop(0.5, shade('#65726f', t)); g.addColorStop(1, shade('#434d4b', t));
+      g.addColorStop(0, shade('#aeb8b9', t)); g.addColorStop(0.5, shade('#7d8987', t)); g.addColorStop(1, shade('#5a6462', t));
       P.a.fillStyle = g; P.a.fillRect(x, y, pw, fh);
       const r = rnd();
       if (r < 0.07) {
@@ -376,11 +376,11 @@ function paintGlass(S, seed, q) {
       }
     }
     // spandrel band (opaque) at slab level
-    P.rect(0, f * fh + fh * 0.84, S, fh * 0.16, { a: '#2b3036', h: 140, r: 0.3, m: 0.7 });
+    P.rect(0, f * fh + fh * 0.84, S, fh * 0.16, { a: '#55585a', h: 140, r: 0.5, m: 0.4 });
     if (P.e) { P.e.fillStyle = '#000'; P.e.fillRect(0, f * fh + fh * 0.84, S, fh * 0.16); }
   }
-  for (let i = 0; i <= sub; i++) P.rect(i * pw - 3 * k, 0, 6 * k, S, { a: '#4b5157', h: 190, r: 0.35, m: 0.8 });
-  for (let f = 0; f <= FACADE_FLOORS; f++) P.rect(0, f * fh - 3 * k, S, 6 * k, { a: '#4b5157', h: 190, r: 0.35, m: 0.8 });
+  for (let i = 0; i <= sub; i++) P.rect(i * pw - 3 * k, 0, 6 * k, S, { a: '#6a6e70', h: 190, r: 0.4, m: 0.6 });
+  for (let f = 0; f <= FACADE_FLOORS; f++) P.rect(0, f * fh - 3 * k, S, 6 * k, { a: '#6a6e70', h: 190, r: 0.4, m: 0.6 });
   const st = dirtCanvas(blotch(8, 2, 4, seed + 4), 256, { color: [40, 38, 35], lo: 0.55, hi: 0.9, maxA: 0.35 });
   P.overlay('a', st, 'source-over', 1);
   return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
@@ -421,7 +421,7 @@ function paintTower(S, seed, q) {
   for (let f = 0; f < FACADE_FLOORS; f++) {
     for (let b = 0; b < FACADE_BAYS; b++) {
       const x = b * bw + bw * 0.18, w = bw * 0.64, y = f * fh + fh * 0.12, h = fh * 0.7;
-      const kind = pickWindowKind(rnd, 0.1);
+      const kind = pickWindowKind(rnd, 0.18);
       windowPane(P, x, y, w, h, rnd, { frame: '#2c2e30', cols: 2, rows: 1, kind: kind === 'curtain' ? 'blinds' : kind, lit: rnd() < 0.3, cool: rnd() < 0.5, recess: 0.08 });
       // dark spandrel panel below each window
       P.rect(x, y + h + 4 * k, w, fh * 0.12, { a: '#4a4d50', h: 120, r: 0.4, m: 0.4 });
@@ -541,18 +541,18 @@ function paintLobby(S, seed, q) {
   // 4 bays × 6 m, 4.6 m tall: granite piers, tall glazing, entrance doors
   const W = S, H = Math.round(S / 4);
   const rnd = mulberry32(seed);
-  const P = new Painter(W, H, { a: '#3b3c3e', h: 200, r: 0.35, m: 0.1 }, { emissive: true });
+  const P = new Painter(W, H, { a: '#6d6b67', h: 200, r: 0.5, m: 0.05 }, { emissive: true });
   const n = 4, bw = W / n, k = H / 256;
   for (let i = 0; i < n; i++) {
     const x = i * bw;
-    P.rect(x, 0, bw * 0.1, H, { a: shade('#4a4846', 1, 0.1, rnd), h: 220, r: 0.3, m: 0.1 });
+    P.rect(x, 0, bw * 0.1, H, { a: shade('#7a7772', 1, 0.1, rnd), h: 220, r: 0.5, m: 0.05 });
     const gx = x + bw * 0.1 + 4 * k, gw = bw * 0.9 - 8 * k;
     const kind = rnd() < 0.2 ? 'broken' : 'glass';
-    windowPane(P, gx, H * 0.1, gw, H * 0.78, rnd, { frame: '#1d1e1f', cols: 3, rows: 2, kind, lit: kind === 'glass' && rnd() < 0.6, cool: true, recess: 0.02 });
+    windowPane(P, gx, H * 0.1, gw, H * 0.78, rnd, { frame: '#3a3b3c', cols: 3, rows: 2, kind, lit: kind === 'glass' && rnd() < 0.6, cool: true, recess: 0.02 });
     if (i === 1 && kind === 'glass') P.rect(gx + gw * 0.36, H * 0.3, gw * 0.28, H * 0.58, { a: 'rgba(15,15,15,0.6)' });
   }
-  P.rect(0, 0, W, H * 0.08, { a: '#2a2b2c', h: 210, r: 0.4, m: 0.5 });
-  P.rect(0, H * 0.9, W, H * 0.1, { a: '#262626', h: 190, r: 0.5 });
+  P.rect(0, 0, W, H * 0.08, { a: '#5a5a58', h: 210, r: 0.5, m: 0.3 });
+  P.rect(0, H * 0.9, W, H * 0.1, { a: '#4a4946', h: 190, r: 0.6 });
   weather(P, rnd, { streaks: 0.15, dirt: 0.4, seed });
   return P.textures({ normal: 1.5, aniso: q.aniso, normals: q.normals, normalDiv: q.normalDiv });
 }
@@ -853,10 +853,10 @@ function paintMetal(S, seed, q) {
 // Burnt-out car body: soot, ash, orange rust, peeled paint islands.
 function paintBurnt(S, seed, q) {
   // burned-out steel: sooty grey-brown with fine rust bloom (not orange paint), ash and a few scraps of old paint
-  const P = new Painter(S, S, { a: '#4a4643', h: 140, r: 0.85, m: 0.3 });
-  const soot = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 5), (v) => [30, 28, 26, Math.max(0, v - 0.4) * 1.6 * 255]);
+  const P = new Painter(S, S, { a: '#6b6159', h: 140, r: 0.88, m: 0.3 });
+  const soot = noiseCanvas(256, 256, blotch(3, 3, 5, seed + 5), (v) => [30, 28, 26, Math.max(0, v - 0.45) * 1.3 * 255]);
   P.overlay('a', soot, 'source-over', 1);
-  const rust = noiseCanvas(256, 256, blotch(10, 10, 6, seed), (v) => [112 * (0.6 + v * 0.5), 70 * (0.6 + v * 0.4), 44 * (0.7 + v * 0.3), Math.max(0, v - 0.5) * 2.0 * 255]);
+  const rust = noiseCanvas(256, 256, blotch(10, 10, 6, seed), (v) => [128 * (0.6 + v * 0.5), 74 * (0.6 + v * 0.4), 42 * (0.7 + v * 0.3), Math.max(0, v - 0.42) * 2.0 * 255]);
   P.overlay('a', rust, 'source-over', 1);
   const ash = noiseCanvas(256, 256, blotch(8, 8, 5, seed + 1), (v) => [150, 145, 135, Math.max(0, v - 0.62) * 3 * 255 * 0.7]);
   P.overlay('a', ash, 'source-over', 1);

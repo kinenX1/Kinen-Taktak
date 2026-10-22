@@ -60,7 +60,8 @@ export function buildGround(ctx) {
   const intersections = world.intersections || [];
   const M = world.map;
   const PAINT = DECAL.paint;
-  const yellow = [0.95, 0.72, 0.12], white = [0.9, 0.9, 0.86];
+  // worn, dusty paint: never pure white or saturated yellow
+  const yellow = [0.8, 0.62, 0.16], white = [0.74, 0.73, 0.68];
   const night = ctx.preset.lamps;
 
   // --- terrain slab: one huge quad, shaded by the blended grass/dirt ground material
@@ -181,13 +182,13 @@ export function buildGround(ctx) {
   for (let i = 0; i < nRoad * 0.2; i++) damage(DECAL.manhole, 1.1, 1.1, 0.95, 1);
   for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.tyre, 5, 9, 0.5, 0.9);
   // street grit: litter, soft dark patches, skid smears and gutter drifts along both curbs
-  for (let i = 0; i < nRoad * 1.6; i++) damage(DECAL.litter, 4, 9, 0.55, 0.9);
+  for (let i = 0; i < nRoad * 1.3; i++) damage(DECAL.litter, 4, 9, 0.3, 0.6);
   for (let i = 0; i < nRoad * 0.45; i++) damage(DECAL.tarpatch, 3, 8, 0.5, 0.95);
   for (let i = 0; i < nRoad * 0.3; i++) damage(DECAL.skid, 6, 11, 0.4, 0.8);
   for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.bricks, 1.8, 3.2, 0.55, 0.9);
   // big soft blotches of grime and dust break up the flat colour of the asphalt at street scale
-  for (let i = 0; i < nRoad * 0.7; i++) damage(DECAL.tarpatch, 12, 26, 0.12, 0.28);
-  for (let i = 0; i < nRoad * 0.5; i++) damage(DECAL.dust, 14, 30, 0.14, 0.32);
+  for (let i = 0; i < nRoad * 1.0; i++) damage(DECAL.tarpatch, 12, 26, 0.15, 0.35);
+  for (let i = 0; i < nRoad * 1.2; i++) damage(DECAL.dust, 12, 30, 0.2, 0.45);
   for (const rc of roadCells) {
     const len = rc.alongX ? rc.x1 - rc.x0 : rc.z1 - rc.z0;
     const rot = rc.alongX ? 0 : Math.PI / 2;
@@ -217,7 +218,7 @@ export function buildGround(ctx) {
     if (k < 0.5) { sx = size * (0.6 + rnd() * 0.8); sy = size * (0.35 + rnd() * 0.4); sz = size * (0.5 + rnd() * 0.7); const v = rnd() < 0.25 ? 0.5 + rnd() * 0.4 : 1.1 + rnd() * 1.1; c = [v, v * 0.97, v * 0.92]; }
     else if (k < 0.72) { sx = 0.22; sy = 0.07; sz = 0.11; const v = 0.8 + rnd() * 0.5; c = [2.1 * v, 1.15 * v, 0.9 * v]; }
     else if (k < 0.88) { sx = 0.6 + rnd() * 1.3; sy = 0.025; sz = 0.08 + rnd() * 0.12; const v = 0.7 + rnd() * 0.5; c = [1.25 * v, 0.95 * v, 0.68 * v]; }
-    else { sx = size * (1.2 + rnd()); sy = 0.03; sz = size * (0.8 + rnd()); const v = 0.45 + rnd() * 0.5; c = [v, v * 0.97, v * 0.95]; }
+    else { sx = size * (1.2 + rnd()); sy = 0.03; sz = size * (0.8 + rnd()); const v = 0.85 + rnd() * 0.6; c = [v, v * 0.97, v * 0.93]; } // flat slab flakes: pale concrete, not black holes
     bits.push([x, y + sy * 0.35, z, sx, sy, sz, rnd() * 6.283, (rnd() - 0.5) * 0.5, (rnd() - 0.5) * 0.5, c[0], c[1], c[2]]);
   };
   for (const rc of roadCells) {
@@ -244,7 +245,7 @@ export function buildGround(ctx) {
         }
       }
     }
-    for (let i = 0; i < len / 6 * q.debris; i++) bitAt(rc.x0 + rnd() * (rc.x1 - rc.x0), 0, rc.z0 + rnd() * (rc.z1 - rc.z0), 0.1 + rnd() * rnd() * 0.4);
+    for (let i = 0; i < len / 3.5 * q.debris; i++) bitAt(rc.x0 + rnd() * (rc.x1 - rc.x0), 0, rc.z0 + rnd() * (rc.z1 - rc.z0), 0.1 + rnd() * rnd() * 0.5);
   }
 
   // --- blocks: sidewalks, parks, plazas, lots, rubble fields

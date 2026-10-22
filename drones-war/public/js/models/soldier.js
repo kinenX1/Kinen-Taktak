@@ -289,7 +289,7 @@ function soldierTemplate(suit, team, quality) {
   setDetail(q);
   const hi = q >= 2;
   const f = finishes(s, team, quality);
-  const rig = new Rig({ ground: 0.0 });
+  const rig = new Rig({ ground: 0.0, grime: 0.55, dust: 0.1 });
   rig.bone('root');
   rig.bone('hips', 'root', [0, 0.95, 0]);
   rig.bone('chest', 'hips', [0, 0.2, 0]);

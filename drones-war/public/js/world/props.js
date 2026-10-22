@@ -36,6 +36,7 @@ export function buildProps(ctx, bb) {
   buildLamps();
   buildWrecks();
   buildDebris();
+  buildStreetRubble();
   buildPoles();
   buildSigns();
   buildTrafficLights();
@@ -159,7 +160,7 @@ export function buildProps(ctx, bb) {
       // local → world (model +x forward, +z right) following the model convention rotation.y = -yaw
       const P3 = (lx, ly, lz) => [x + lx * cy + lz * sy, ly, z - lx * sy + lz * cy];
       const roll = (rnd() - 0.5) * 0.06, pitch = (rnd() - 0.5) * 0.05;
-      const lift = (lx, lz) => 0.02 + lx * pitch + lz * roll;
+      const lift = (lx, lz) => -0.08 + lx * pitch + lz * roll; // settled onto its rims
       const Q = (lx, ly, lz) => { const p = P3(lx, ly + lift(lx, lz), lz); return p; };
       const hw = dim.W / 2, hl = dim.L / 2;
       const T = 3;
@@ -243,6 +244,38 @@ export function buildProps(ctx, bb) {
         }
       }
       if (s > 1.1) decals.ground(x, z, r * 3, yaw, DECAL.chunks, 0.9, { y: y0 + 0.006 });
+    }
+  }
+
+  // Rubble washed into the gutters: heaps of broken masonry against the curb with planks, slabs and sheet
+  // metal, so every street reads as fought over (cosmetic only; heaps stay low and hug the road edge).
+  function buildStreetRubble() {
+    const block = tpl.box(1, 1, 1);
+    const crossing = (x, z) => (world.intersections || []).some((it) => x > it.x - 6 && x < it.x + it.w + 6 && z > it.z - 6 && z < it.z + it.d + 6);
+    for (const rd of world.roads) {
+      const alongX = rd.dir === 'x';
+      const len = alongX ? rd.w : rd.d;
+      for (let s = 8; s < len - 8; s += R(10, 24)) {
+        for (const side of [0, 1]) {
+          if (rnd() > 0.5 * q.debris) continue;
+          const off = R(0.6, 1.8);
+          const x = alongX ? rd.x + s : side ? rd.x + rd.w - off : rd.x + off;
+          const z = alongX ? (side ? rd.z + rd.d - off : rd.z + off) : rd.z + s;
+          if (x < 2 || x > world.map.w - 2 || z < 2 || z > world.map.d - 2 || crossing(x, z) || solid(x, z, 1)) continue;
+          const r = R(1.1, 2.6);
+          const g = at(x, z).get('rubble');
+          bb.mound(x, z, 0, r, R(0.35, 0.8), rnd);
+          // planks and beams thrown on top, a tilted slab of broken pavement
+          for (let i = 0; i < 2 + Math.floor(rnd() * 3); i++) {
+            const v = R(0.75, 1.1);
+            g.add(block, trs(x + R(-r, r) * 0.7, R(0.15, 0.5), z + R(-r, r) * 0.7, rnd() * TAU, R(1.4, 3.2), 0.06, R(0.14, 0.24), (rnd() - 0.5) * 0.6, (rnd() - 0.5) * 0.4), [1.15 * v, 0.82 * v, 0.55 * v], 0.4);
+          }
+          if (rnd() < 0.5) g.add(block, trs(x + R(-0.5, 0.5), 0.2, z + R(-0.5, 0.5), rnd() * TAU, R(1.2, 2.2), 0.16, R(0.9, 1.6), (rnd() - 0.5) * 0.9, (rnd() - 0.5) * 0.5), [0.95, 0.93, 0.9], 0.5);
+          if (rnd() < 0.3) metal(x, z).add(tpl.box(1, 0.03, 1), trs(x + R(-r, r) * 0.5, 0.35, z + R(-r, r) * 0.5, rnd() * TAU, R(1, 2.2), 1, R(0.7, 1.3), (rnd() - 0.5) * 0.8, (rnd() - 0.5) * 0.8), [0.5, 0.42, 0.36]);
+          decals.ground(x, z, r * 2.8, rnd() * TAU, rnd() < 0.5 ? DECAL.chunks : DECAL.dust, 0.75, { y: 0.021 });
+          for (let i = 0; i < 6 * q.debris; i++) ctx.chunks.push([x + R(-r, r) * 1.4, z + R(-r, r) * 1.4, 0.15 + rnd() * 0.4, rnd() * TAU, rnd()]);
+        }
+      }
     }
   }
 

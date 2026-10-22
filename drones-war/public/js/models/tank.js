@@ -80,10 +80,11 @@ function buildTemplate(suit, team, quality) {
   const hi = q >= 2;
   const P = paintFinishes(suit, team);
   const glass = glassMaterial();
-  const rig = new Rig({ ground: 0.5 });
+  const rig = new Rig({ ground: 0.5, grime: 1.15, dust: 0.35 });
   rig.bone('root');
   rig.bone('hull', 'root');
   rig.bone('turret', 'hull', [0, TURRET_Y, 0]);
+  rig.bone('shell', 'turret'); // outer armour, hidden from inside so the vision slits look out
   rig.bone('gun', 'turret', GUN);
   rig.bone('barrel', 'gun');
   rig.bone('cmdMG', 'turret', [-0.55, 0.98, 0.62]);
@@ -202,71 +203,71 @@ function buildTemplate(suit, team, quality) {
 
   // ---------- turret ----------
   const outer = mirrorPoly([[2.0, 0.55], [1.9, 0.82], [1.35, 1.2], [0.4, 1.32], [-0.9, 1.34], [-1.75, 1.28], [-2.12, 1.1], [-2.18, 0.5]]);
-  rig.add('turret', prism(outer, 0.0, 0.5, hi ? 0.03 : 0), P.paint);
+  rig.add('shell', prism(outer, 0.0, 0.5, hi ? 0.03 : 0), P.paint);
   const upper = mirrorPoly([[1.95, 0.5], [1.7, 0.7], [1.2, 1.0], [0.3, 1.12], [-0.9, 1.14], [-1.7, 1.08], [-2.0, 0.9], [-2.05, 0.5]]);
-  rig.add('turret', prism(upper, 0.5, 0.4, hi ? 0.06 : 0.0), P.paintDk);
-  rig.add('turret', prism(mirrorPoly([[1.0, 0.4], [0.8, 0.9], [-0.6, 0.95], [-1.4, 0.8], [-1.5, 0.4]]), 0.89, 0.05, 0.0), P.paint);
+  rig.add('shell', prism(upper, 0.5, 0.4, hi ? 0.06 : 0.0), P.paintDk);
+  rig.add('shell', prism(mirrorPoly([[1.0, 0.4], [0.8, 0.9], [-0.6, 0.95], [-1.4, 0.8], [-1.5, 0.4]]), 0.89, 0.05, 0.0), P.paint);
   // Front cheeks: wedge armor modules with seams.
   for (const s of sides) {
-    rig.add('turret', rbox(0.7, 0.7, 0.3, 0.05), P.paintDk, [1.7, 0.4, s * 0.9], [0, s * -0.55, 0]);
-    groove(rig, 'turret', [1.28, 0.55, s * 1.2], [0.01, 0.4, 0.02], [0, s * -0.4, 0]);
-    boltRow(rig, 'turret', F.darkSteel, [1.0, 0.7, s * 1.29], [-0.6, 0.7, s * 1.325], 6, 0.015);
+    rig.add('shell', rbox(0.7, 0.7, 0.3, 0.05), P.paintDk, [1.7, 0.4, s * 0.9], [0, s * -0.55, 0]);
+    groove(rig, 'shell', [1.28, 0.55, s * 1.2], [0.01, 0.4, 0.02], [0, s * -0.4, 0]);
+    boltRow(rig, 'shell', F.darkSteel, [1.0, 0.7, s * 1.29], [-0.6, 0.7, s * 1.325], 6, 0.015);
   }
   // Mantlet and gun cradle (static part) + coax port.
-  rig.add('turret', rbox(0.55, 0.74, 1.15, 0.08), P.paintDk, [1.95, 0.46, 0]);
-  rig.add('turret', rbox(0.22, 0.6, 1.0, 0.06), P.paint, [2.22, 0.46, 0]);
+  rig.add('shell', rbox(0.55, 0.74, 1.15, 0.08), P.paintDk, [1.95, 0.46, 0]);
+  rig.add('shell', rbox(0.22, 0.6, 1.0, 0.06), P.paint, [2.22, 0.46, 0]);
   // Rear bustle with ammo blowout panels, stowage basket, tarps.
-  rig.add('turret', rbox(1.2, 0.58, 2.1, 0.06), P.paint, [-2.0, 0.42, 0]);
-  rig.add('turret', rbox(0.9, 0.04, 2.0, 0.02), P.paintDk, [-2.05, 0.74, 0]);
-  rig.add('turret', rbox(0.9, 0.14, 1.9, 0.04), F.canvas, [-2.35, 0.86, 0]); // tarp roll
-  rig.add('turret', cylZ(0.2, 1.9, 12), F.canvas, [-2.55, 0.62, 0]);
-  rig.add('turret', rbox(0.5, 0.35, 0.5, 0.03), F.olive, [-2.35, 0.98, 0.5]);
-  rig.add('turret', rbox(0.5, 0.35, 0.5, 0.03), F.olive, [-2.35, 0.98, -0.5]);
-  for (const z of [-0.7, -0.3, 0.1, 0.5, 0.9]) rig.add('turret', box(0.05, 0.5, 0.05), F.webbing, [-2.62, 0.85, z]);
+  rig.add('shell', rbox(1.2, 0.58, 2.1, 0.06), P.paint, [-2.0, 0.42, 0]);
+  rig.add('shell', rbox(0.9, 0.04, 2.0, 0.02), P.paintDk, [-2.05, 0.74, 0]);
+  rig.add('shell', rbox(0.9, 0.14, 1.9, 0.04), F.canvas, [-2.35, 0.86, 0]); // tarp roll
+  rig.add('shell', cylZ(0.2, 1.9, 12), F.canvas, [-2.55, 0.62, 0]);
+  rig.add('shell', rbox(0.5, 0.35, 0.5, 0.03), F.olive, [-2.35, 0.98, 0.5]);
+  rig.add('shell', rbox(0.5, 0.35, 0.5, 0.03), F.olive, [-2.35, 0.98, -0.5]);
+  for (const z of [-0.7, -0.3, 0.1, 0.5, 0.9]) rig.add('shell', box(0.05, 0.5, 0.05), F.webbing, [-2.62, 0.85, z]);
   // Smoke grenade launchers: two banks of tubes on the cheeks.
   for (const s of sides) {
-    rig.add('turret', rbox(0.35, 0.3, 0.55, 0.03), F.darkSteel, [1.2, 0.58, s * 1.28], [0, s * -0.4, 0]);
+    rig.add('shell', rbox(0.35, 0.3, 0.55, 0.03), F.darkSteel, [1.2, 0.58, s * 1.28], [0, s * -0.4, 0]);
     for (let i = 0; i < 6; i++) {
       const ox = (i % 3 - 1) * 0.1, oy = (i < 3 ? 0.07 : -0.07);
-      rig.add('turret', cylX(0.035, 0.13, 6), F.soot, [1.38 + ox * 0.5, 0.58 + oy, s * 1.28 + ox * 0.4 * s], [0, s * -0.4, 0]);
+      rig.add('shell', cylX(0.035, 0.13, 6), F.soot, [1.38 + ox * 0.5, 0.58 + oy, s * 1.28 + ox * 0.4 * s], [0, s * -0.4, 0]);
     }
   }
   // Roof: commander's cupola with vision blocks and pintle MG, loader's hatch, gunner's sight, sensors.
   const cx = -0.55, cz = 0.62;
-  rig.add('turret', cyl(0.42, 0.44, 0.17, hi ? 20 : 12), P.paintDk, [cx, 0.98, cz]);
-  rig.add('turret', cyl(0.36, 0.38, 0.07, hi ? 20 : 12), P.paint, [cx, 1.12, cz]);
+  rig.add('shell', cyl(0.42, 0.44, 0.17, hi ? 20 : 12), P.paintDk, [cx, 0.98, cz]);
+  rig.add('shell', cyl(0.36, 0.38, 0.07, hi ? 20 : 12), P.paint, [cx, 1.12, cz]);
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * 6.283;
-    rig.add('turret', box(0.05, 0.07, 0.15), F.lens, [cx + Math.cos(a) * 0.42, 1.01, cz + Math.sin(a) * 0.42], [0, -a, 0]);
+    rig.add('shell', box(0.05, 0.07, 0.15), F.lens, [cx + Math.cos(a) * 0.42, 1.01, cz + Math.sin(a) * 0.42], [0, -a, 0]);
   }
-  rig.add('turret', cyl(0.26, 0.26, 0.03, 12), F.steel, [cx, 1.17, cz]);
-  rig.add('turret', rbox(0.1, 0.05, 0.4, 0.01), F.darkSteel, [cx, 1.19, cz]); // hatch handle
+  rig.add('shell', cyl(0.26, 0.26, 0.03, 12), F.steel, [cx, 1.17, cz]);
+  rig.add('shell', rbox(0.1, 0.05, 0.4, 0.01), F.darkSteel, [cx, 1.19, cz]); // hatch handle
   rig.add('cmdMG', rbox(0.1, 0.08, 0.1, 0.01), F.darkSteel, [0, 0.18, 0]); // MG pintle
   rig.add('cmdMG', rbox(0.55, 0.1, 0.1, 0.02), F.parkerized, [0.15, 0.2, 0]);
   rig.add('cmdMG', cylX(0.025, 0.35, 8), F.gunmetal, [0.55, 0.2, 0]);
   rig.add('cmdMG', rbox(0.22, 0.17, 0.12, 0.02), F.olive, [0.05, 0.1, 0.13]);
   rig.add('cmdMG', box(0.04, 0.2, 0.04), F.darkSteel, [-0.02, 0.1, 0]);
   const lx = -0.4, lz = -0.62;
-  rig.add('turret', cyl(0.4, 0.42, 0.07, hi ? 20 : 12), P.paintDk, [lx, 0.93, lz]);
-  rig.add('turret', cyl(0.3, 0.3, 0.04, 14), F.steel, [lx, 0.98, lz], [0.0, 0, 0]);
-  rig.add('turret', torus(0.33, 0.02, 5, hi ? 20 : 10).rotateX(Math.PI / 2), F.steel, [lx, 0.96, lz]);
-  rig.add('turret', rbox(0.5, 0.2, 0.3, 0.03), P.paint, [1.0, 1.0, 0.5]); // gunner's primary sight housing
-  rig.add('turret', rbox(0.12, 0.1, 0.22, 0.02), F.lens, [1.27, 1.02, 0.5]);
-  rig.add('turret', rbox(0.3, 0.16, 0.2, 0.02), P.paintDk, [0.75, 1.06, 0.5]);
-  rig.add('turret', cylX(0.05, 0.3, 8), F.darkSteel, [0.9, 1.15, 0.5]);
-  rig.add('turret', rbox(0.24, 0.12, 0.2, 0.03), F.darkSteel, [0.45, 1.0, -0.2]); // laser warning receivers
-  rig.add('turret', rbox(0.12, 0.1, 0.14, 0.02), F.darkSteel, [-1.0, 0.98, 0.3]);
-  rig.add('turret', cyl(0.025, 0.03, 0.55, 6), F.rubber, [-0.2, 1.18, 0.0]); // wind sensor mast
-  rig.add('turret', sph(0.05, 8, 6), F.steel, [-0.2, 1.48, 0.0]);
-  rig.add('turret', cyl(0.03, 0.04, 0.12, 6), F.darkSteel, [-1.3, 0.93, 0.0]);
-  rig.add('turret', rbox(0.25, 0.14, 0.18, 0.02), F.darkSteel, [0.35, 0.98, 0.0]);
-  rig.add('turret', rbox(0.34, 0.16, 0.2, 0.03), F.rubber, [-1.0, 0.94, -0.3]); // IR searchlight
+  rig.add('shell', cyl(0.4, 0.42, 0.07, hi ? 20 : 12), P.paintDk, [lx, 0.93, lz]);
+  rig.add('shell', cyl(0.3, 0.3, 0.04, 14), F.steel, [lx, 0.98, lz], [0.0, 0, 0]);
+  rig.add('shell', torus(0.33, 0.02, 5, hi ? 20 : 10).rotateX(Math.PI / 2), F.steel, [lx, 0.96, lz]);
+  rig.add('shell', rbox(0.5, 0.2, 0.3, 0.03), P.paint, [1.0, 1.0, 0.5]); // gunner's primary sight housing
+  rig.add('shell', rbox(0.12, 0.1, 0.22, 0.02), F.lens, [1.27, 1.02, 0.5]);
+  rig.add('shell', rbox(0.3, 0.16, 0.2, 0.02), P.paintDk, [0.75, 1.06, 0.5]);
+  rig.add('shell', cylX(0.05, 0.3, 8), F.darkSteel, [0.9, 1.15, 0.5]);
+  rig.add('shell', rbox(0.24, 0.12, 0.2, 0.03), F.darkSteel, [0.45, 1.0, -0.2]); // laser warning receivers
+  rig.add('shell', rbox(0.12, 0.1, 0.14, 0.02), F.darkSteel, [-1.0, 0.98, 0.3]);
+  rig.add('shell', cyl(0.025, 0.03, 0.55, 6), F.rubber, [-0.2, 1.18, 0.0]); // wind sensor mast
+  rig.add('shell', sph(0.05, 8, 6), F.steel, [-0.2, 1.48, 0.0]);
+  rig.add('shell', cyl(0.03, 0.04, 0.12, 6), F.darkSteel, [-1.3, 0.93, 0.0]);
+  rig.add('shell', rbox(0.25, 0.14, 0.18, 0.02), F.darkSteel, [0.35, 0.98, 0.0]);
+  rig.add('shell', rbox(0.34, 0.16, 0.2, 0.03), F.rubber, [-1.0, 0.94, -0.3]); // IR searchlight
   // Antennas
   for (const [b, h] of [['ant1', 3.0], ['ant2', 2.4]]) {
     rig.add(b, cyl(0.04, 0.06, 0.12, 8), F.darkSteel, [0, 0.04, 0]);
     rig.add(b, cyl(0.005, 0.014, h, 5), F.rubber, [0, h / 2 + 0.1, 0]);
   }
-  teamMarks(rig, 'turret', team, { roundel: [-0.2, 0.3, 1.33], size: 0.55, roofAt: [-1.1, 0.945, 0.0], roofSize: 0.9 });
+  teamMarks(rig, 'shell', team, { roundel: [-0.2, 0.3, 1.33], size: 0.55, roofAt: [-1.1, 0.945, 0.0], roofSize: 0.9 });
 
   // ---------- gun ----------
   // Breech and recoil mechanism (inside), barrel with fume extractor, muzzle ring.
@@ -298,8 +299,8 @@ function buildTemplate(suit, team, quality) {
     win[n + (n - 2 - k)] = { t0: 1 - t1, t1: 1 - t0, y0, y1 };
   }
   const roomMat = F.interior;
-  rig.add('turret', roomWalls(room, 0.0, 0.92, win), { ...roomMat, e: 0.5 });
-  rig.add('turret', plate(room, 0.92, false), { ...F.interior, e: 0.45 }); // ceiling
+  rig.add('turret', roomWalls(room, 0.0, 0.92, win), { ...roomMat, c: 0x9a9e90, e: 0.12 });
+  rig.add('turret', plate(room, 0.92, false), { ...F.interior, c: 0x80857a, e: 0.08 }); // ceiling
   rig.add('turret', plate(room, 0.05, true), F.interiorDark); // turret basket floor
   rig.add('turret', rbox(1.4, 0.03, 0.5, 0.01), F.steel, [-0.3, 0.07, -0.5]);
   // Window frames.
@@ -363,8 +364,8 @@ function template(suit, team, quality) {
 
 export class TankModel extends RigModel {
   constructor({ team, suit, quality }) {
-    super('tank', team, template(suit, team, quality), { cabin: { bone: 'turret', p: [0.1, 0.85, 0.15], i: 5, d: 6 }, views: { first: { hide: ['cmdMG'] }, gunner: { hide: ['barrel', 'cmdMG'] } }, flashScale: 0.45 });
-    this.anchor(this.anchors.first, 'turret', [0.1, 0.68, 0.12]);
+    super('tank', team, template(suit, team, quality), { cabin: { bone: 'turret', p: [-0.3, 0.55, 0.0], i: 1.4, d: 4 }, views: { first: { hide: ['cmdMG', 'shell'] }, gunner: { hide: ['barrel', 'cmdMG'] } }, flashScale: 0.45 });
+    this.anchor(this.anchors.first, 'turret', [-0.12, 0.74, 0.55]); // commander's station, beside the breech
     this.anchors.gunner = new THREE.Object3D();
     this.anchor(this.anchors.gunner, 'gun', [0.7, 0.42, 0.52]);
     this.anchor(this.anchors.muzzle[0], 'gun', [5.05, 0, 0]);

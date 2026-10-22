@@ -22,7 +22,7 @@ function buildTemplate(suit, team, quality) {
   const A = airFinishes(suit, team);
   const glass = glassMaterial();
   const canopy = canopyMaterial();
-  const rig = new Rig({ ground: 0 });
+  const rig = new Rig({ ground: 0, grime: 0.5, dust: 0.12 });
   const BP = { root: [0, 0, 0], body: [0, 0, 0] }; // bone positions (model space) so geometry can be written in model space and placed in the bone frame
   const bone = (name, parent, p) => { BP[name] = p; rig.bone(name, parent, p); };
   rig.bone('root');

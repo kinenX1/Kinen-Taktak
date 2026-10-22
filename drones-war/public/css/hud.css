@@ -649,6 +649,9 @@
 .hud-touch .h-unit { left: var(--hud-edge); top: calc(var(--hud-edge) + 10.6em); bottom: auto; width: 14em; padding: 0.3em 0.5em; }
 .hud-touch .h-unit-icon { width: 3em; }
 .hud-touch .h-chat { bottom: auto; top: calc(var(--hud-edge) + 16.5em); width: 22em; } /* em of its own 0.9 font: clears the vehicle panel */
+/* Air panels carry a third stat (throttle/alt) that wraps to two lines on phones: drop the chat further. */
+.hud-touch.h-vehicle .h-chat { top: calc(var(--hud-edge) + 19em); max-width: 40vw; }
+.hud-touch.h-vehicle .h-chat-log { max-height: 6.5em; }
 /* The touch menu buttons sit at the top centre: messages start below them. */
 .hud-touch .h-toasts { top: 46px; }
 .hud-touch .h-medal { top: 20%; }

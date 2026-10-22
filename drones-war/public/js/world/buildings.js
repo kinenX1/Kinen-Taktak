@@ -498,7 +498,7 @@ export class BuildingBuilder {
     F.forEach(([ax, az, bx, bz, nx, , nz], fi) => {
       const L = faceData[fi].L;
       // war damage: blast holes and scorch on damaged buildings, a few on intact ones too
-      const nb = Math.round((ruin > 0.1 ? 1 + ruin * 4 : rnd() < 0.25 ? 1 : 0) * (L / 20));
+      const nb = Math.round((ruin > 0.1 ? 1 + ruin * 4 : rnd() < 0.55 ? 1 : 0) * (L / 16));
       for (let i = 0; i < nb; i++) {
         const t = 0.1 + rnd() * 0.8, y = 2 + rnd() * Math.max(1, bodyTop - 3);
         const s = 2 + rnd() * 3;
@@ -514,10 +514,11 @@ export class BuildingBuilder {
         const t = 0.1 + rnd() * 0.8;
         dec.wall(ax + (bx - ax) * t, 1.4, az + (bz - az) * t, nx, nz, 2.2, 1.6, DECAL.graffiti);
       }
-      // grime streak under the parapet
-      if (rnd() < 0.5 && bodyTop > gH + 4) {
-        const t = 0.1 + rnd() * 0.8;
-        dec.wall(ax + (bx - ax) * t, bodyTop - 2.5, az + (bz - az) * t, nx, nz, 3, 5, DECAL.streak);
+      // grime streaks under the parapet and soot run-off down the face
+      const ns = bodyTop > gH + 4 ? Math.round(L / 14 + rnd()) : 0;
+      for (let k = 0; k < ns; k++) {
+        const t = 0.08 + rnd() * 0.84, y = k === 0 ? bodyTop - 2.5 : gH + 3 + rnd() * Math.max(1, bodyTop - gH - 6);
+        dec.wall(ax + (bx - ax) * t, y, az + (bz - az) * t, nx, nz, 2.5 + rnd() * 2, 4 + rnd() * 4, DECAL.streak);
       }
     });
   }

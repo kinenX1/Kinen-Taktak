@@ -48,7 +48,7 @@ function buildTemplate(suit, team, quality) {
   const hi = q >= 2;
   const P = paintFinishes(suit, team);
   const glass = glassMaterial();
-  const rig = new Rig({ ground: 0.35 });
+  const rig = new Rig({ ground: 0.35, grime: 1.0, dust: 0.35 });
   rig.bone('root');
   rig.bone('body', 'root');
   rig.bone('turret', 'body', [-0.55, 1.88, 0]);

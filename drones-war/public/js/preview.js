@@ -130,7 +130,13 @@ function dustMotes(count) {
   const m = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    // Additive in color but leaves alpha alone: the canvas is transparent over the menu backdrop, and
+    // writing alpha would stamp dark squares where the motes are dim.
+    blending: THREE.CustomBlending,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneFactor,
+    blendSrcAlpha: THREE.ZeroFactor,
+    blendDstAlpha: THREE.OneFactor,
     uniforms: { uTime: { value: 0 }, uSize: { value: new THREE.Vector3(4, 2, 4) }, uPx: { value: 1 } },
     vertexShader: `
       attribute float seed; uniform float uTime; uniform vec3 uSize; uniform float uPx; varying float vA;
@@ -211,19 +217,35 @@ export function createPreview(canvas, { quality = 'high' } = {}) {
   let raf = 0;
   let disposed = false;
   let last = performance.now();
-  let fitRadius = 2, fitHeight = 1.8, fitCenterY = 0.9;
-  let curRadius = 2, curCenterY = 0.9;
+  let fitHoriz = 1, fitHalf = 1, fitCenterY = 0.9;
+  let curHoriz = 1, curHalf = 1, curCenterY = 0.9;
   let intro = 1;
   const clock0 = performance.now();
 
+  // Bounds of what is actually drawn: hidden parts (muzzle flashes, interiors) are skipped and skinned
+  // meshes are measured with their bones applied, so the framing hugs the real silhouette.
   function measure(model, type) {
     model.update(idleState(type, 0), 1 / 60, 0);
     model.object.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(model.object);
+    const box = new THREE.Box3();
+    const part = new THREE.Box3();
+    const visible = (o) => {
+      for (let p = o; p; p = p.parent) if (!p.visible) return false;
+      return true;
+    };
+    model.object.traverse((o) => {
+      if (!o.isMesh || !visible(o)) return;
+      part.makeEmpty();
+      part.expandByObject(o, true);
+      box.union(part);
+    });
     if (!Number.isFinite(box.min.x) || box.isEmpty()) box.set(new THREE.Vector3(-1, 0, -1), new THREE.Vector3(1, 1.8, 1));
     const size = box.getSize(new THREE.Vector3());
-    const horiz = Math.hypot(size.x, size.z) * 0.5;
-    return { radius: Math.max(horiz, size.y * 0.5, 0.4), height: box.max.y, minY: box.min.y, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2 };
+    const horiz = Math.max(0.3, Math.hypot(size.x, size.z) * 0.5);
+    const minY = Math.min(0, box.min.y);
+    const centerY = minY + (box.max.y - minY) * (FRAMING[type]?.focusY ?? 0.5);
+    const halfH = Math.max(centerY - minY, box.max.y - centerY, 0.3);
+    return { radius: Math.max(horiz, halfH, 0.4), horiz, halfH, height: box.max.y, minY, centerY, cx: (box.min.x + box.max.x) / 2, cz: (box.min.z + box.max.z) / 2 };
   }
 
   // Place lights and floor for a unit of this size so shadows stay crisp on a soldier and on a jet.
@@ -258,9 +280,9 @@ export function createPreview(canvas, { quality = 'high' } = {}) {
     const m = measure(model, type);
     holder.position.set(-m.cx, 0, -m.cz);
     current = { model, type, key, m };
-    fitRadius = m.radius;
-    fitHeight = m.height;
-    fitCenterY = m.minY + (m.height - m.minY) * (FRAMING[type]?.focusY ?? 0.5);
+    fitHoriz = m.horiz;
+    fitHalf = m.halfH;
+    fitCenterY = m.centerY;
     stage(m.radius);
     if (!keepSpin) {
       intro = 0;
@@ -268,19 +290,21 @@ export function createPreview(canvas, { quality = 'high' } = {}) {
     }
   }
 
-  function placeCamera(cam, aspect, radius, centerY, type, angle = 0) {
+  // Fit the turning model: its full diameter across, its height top to bottom, whichever needs more room.
+  function placeCamera(cam, aspect, horiz, halfH, centerY, type, angle = 0) {
     const fr = FRAMING[type] || FRAMING.tank;
     cam.aspect = aspect;
-    // Fit the bounding sphere into the narrower of the two frustum dimensions.
-    const vfov = THREE.MathUtils.degToRad(cam.fov);
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * aspect);
-    const half = Math.min(vfov, hfov) / 2;
-    const dist = (radius / Math.sin(half)) / fr.fill;
+    const tv = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+    const th = tv * aspect;
     const el = fr.elev;
+    const dv = (halfH * Math.cos(el) + horiz * Math.sin(el)) / tv + horiz * 0.5;
+    const dh = horiz / th + horiz * 0.35;
+    const dist = Math.max(dv, dh) / fr.fill;
     cam.position.set(Math.cos(angle) * Math.cos(el) * dist, centerY + Math.sin(el) * dist, Math.sin(angle) * Math.cos(el) * dist);
     cam.lookAt(0, centerY, 0);
-    cam.near = Math.max(0.05, dist - radius * 4);
-    cam.far = dist + radius * 6;
+    const r = Math.max(horiz, halfH);
+    cam.near = Math.max(0.05, dist - r * 4);
+    cam.far = dist + r * 6;
     cam.updateProjectionMatrix();
   }
 
@@ -312,12 +336,14 @@ export function createPreview(canvas, { quality = 'high' } = {}) {
     }
     intro = Math.min(1, intro + dt * 1.6);
     const ease = 1 - (1 - intro) ** 3;
-    curRadius += (fitRadius - curRadius) * Math.min(1, dt * 6);
+    curHoriz += (fitHoriz - curHoriz) * Math.min(1, dt * 6);
+    curHalf += (fitHalf - curHalf) * Math.min(1, dt * 6);
     curCenterY += (fitCenterY - curCenterY) * Math.min(1, dt * 6);
     holder.rotation.y = spin + (1 - ease) * 0.9;
     current.model.update(idleState(current.type, t), dt, t);
     motes.material.uniforms.uTime.value = t;
-    placeCamera(camera, canvas.clientWidth / canvas.clientHeight, curRadius * (1 + (1 - ease) * 0.25), curCenterY, current.type, 0.5);
+    const zoom = 1 + (1 - ease) * 0.25;
+    placeCamera(camera, canvas.clientWidth / canvas.clientHeight, curHoriz * zoom, curHalf * zoom, curCenterY, current.type, 0.5);
     renderer.render(scene, camera);
   }
 
@@ -388,8 +414,7 @@ export function createPreview(canvas, { quality = 'high' } = {}) {
     scene.add(wrap);
     stage(m.radius);
     motes.visible = false;
-    const centerY = m.minY + (m.height - m.minY) * (FRAMING[type]?.focusY ?? 0.5);
-    placeCamera(r.cam, TW / TH, m.radius * 0.93, centerY, type, 0.5);
+    placeCamera(r.cam, TW / TH, m.horiz * 0.74, m.halfH * 0.86, m.centerY, type, 0.5);
     const prevTarget = renderer.getRenderTarget();
     renderer.setRenderTarget(r.hdr);
     renderer.setClearColor(0x000000, 0);

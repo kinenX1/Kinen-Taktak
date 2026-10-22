@@ -197,15 +197,34 @@ export function cached(key, make) {
 // values (uber materials use roughness = metalness = 1, so `rm` is absolute).
 function patchRM(shader) {
   shader.vertexShader = shader.vertexShader
-    .replace('#include <common>', '#include <common>\nattribute vec3 rm;\nvarying vec3 vRM;')
-    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRM = rm;');
+    .replace('#include <common>', '#include <common>\nattribute vec3 rm;\nattribute float grime;\nvarying vec3 vRM;\nvarying float vGrime;\nvarying vec3 vGPos;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRM = rm;\nvGrime = grime;\nvGPos = position;');
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', '#include <common>\nvarying vec3 vRM;')
-    .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor *= vRM.x;')
-    .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= vRM.y;')
+    .replace('#include <common>', '#include <common>\nvarying vec3 vRM;\nvarying float vGrime;\nvarying vec3 vGPos;\n' + GRIME_NOISE)
+    // Mud and dust: a per-vertex weight (low on the body, on top faces) broken up by model-space noise, so
+    // vehicles and boots look used rather than factory-clean. Model space keeps the pattern glued to the part.
+    .replace('#include <color_fragment>', `#include <color_fragment>
+float gG = 0.0;
+if (vGrime > 0.002) {
+  float gN = gNoise(vGPos * 2.6) * 0.65 + gNoise(vGPos * 9.5) * 0.35;
+  gG = clamp(vGrime * (gN * 1.7 - 0.2), 0.0, 1.0);
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.15, 0.125, 0.095) * (0.7 + 0.6 * gN), gG);
+}`)
+    .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor * vRM.x, 0.96, gG);')
+    .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor * vRM.y, 0.0, gG);')
     // vRM.z = self-illumination: that share of the albedo is emitted (keeps cabs readable inside roof shadow).
     .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vRM.z;');
 }
+
+// Cheap 3D value noise for the grime layer.
+const GRIME_NOISE = `
+float gHash(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float gNoise(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(gHash(i), gHash(i + vec3(1, 0, 0)), f.x), mix(gHash(i + vec3(0, 1, 0)), gHash(i + vec3(1, 1, 0)), f.x), f.y),
+    mix(mix(gHash(i + vec3(0, 0, 1)), gHash(i + vec3(1, 0, 1)), f.x), mix(gHash(i + vec3(0, 1, 1)), gHash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}`;
 
 const uberCache = new WeakMap();
 // Vertex-colored clone of a standard material reading roughness/metalness from the `rm` attribute.
@@ -219,7 +238,7 @@ export function uber(base, { vertexColors = true } = {}) {
   m.roughness = 1;
   m.metalness = 1;
   m.onBeforeCompile = patchRM;
-  m.customProgramCacheKey = () => 'uber-rm';
+  m.customProgramCacheKey = () => 'uber-rm-grime';
   m.userData = { ...base.userData, uber: true };
   m.name = (base.name || 'm') + '+uber';
   byVc[k] = m;
@@ -326,9 +345,12 @@ const IDENT = new THREE.Matrix4();
 
 export class Rig {
   // ground: darken vertices near y = 0 (contact shadow) within this height, or 0 to disable.
-  constructor({ ground = 0, ao = 1 } = {}) {
+  // grime: mud fades out over this height above y = 0 (0 = none); dust: dust on upward faces (0..1).
+  constructor({ ground = 0, ao = 1, grime = 0, dust = 0 } = {}) {
     this.ground = ground;
     this.ao = ao;
+    this.grime = grime;
+    this.dust = dust;
     this.boneDefs = [];
     this.byName = new Map();
     this.buckets = new Map();
@@ -378,7 +400,8 @@ export class Rig {
       }
     }
     _col.set(c);
-    const col = new Float32Array(n * 3), rm = new Float32Array(n * 3);
+    const col = new Float32Array(n * 3), rm = new Float32Array(n * 3), grime = new Float32Array(n);
+    const dirty = !isGlow && !mat.userData?.clean && (this.grime > 0 || this.dust > 0);
     const skI = new Uint16Array(n * 4), skW = new Float32Array(n * 4);
     for (let i = 0; i < n; i++) {
       let ao = 1;
@@ -394,10 +417,15 @@ export class Rig {
       }
       col[i * 3] = _col.r * ao * intensity; col[i * 3 + 1] = _col.g * ao * intensity; col[i * 3 + 2] = _col.b * ao * intensity;
       rm[i * 3] = rough; rm[i * 3 + 1] = metal; rm[i * 3 + 2] = emit;
+      if (dirty) {
+        const low = this.grime > 0 ? Math.max(0, 1 - pos.getY(i) / this.grime) : 0;
+        grime[i] = Math.min(1, 0.9 * low * Math.sqrt(low) + this.dust * Math.max(0, nor.getY(i)) ** 2);
+      }
       skI[i * 4] = bi; skW[i * 4] = 1;
     }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3));
     g.setAttribute('rm', new THREE.BufferAttribute(rm, 3));
+    g.setAttribute('grime', new THREE.BufferAttribute(grime, 1));
     g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skI, 4));
     g.setAttribute('skinWeight', new THREE.BufferAttribute(skW, 4));
     let list = this.buckets.get(mat);

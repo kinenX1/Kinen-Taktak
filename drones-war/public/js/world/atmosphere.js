@@ -6,17 +6,18 @@ const deg = Math.PI / 180;
 
 export const PRESETS = {
   overcast: {
-    top: '#5d7e9d', horizon: '#b4c0c6', below: '#a3adb1', fog: '#b0bcc2', fogDensity: 0.0044, fogMax: 0.95,
-    cloudCover: 0.8, cloudLit: '#eef1f2', cloudDark: '#70808f', cloudScale: 1.0, cloudSpeed: 0.004,
-    sunColor: '#ffdcb0', sunIntensity: 3.1, sunElev: 38, sunAz: 215, sunDisc: 0, sunGlow: 0.35,
-    hemiSky: '#9fb6cc', hemiGround: '#5a5955', hemiIntensity: 1.0, envIntensity: 0.8, exposure: 1.1,
-    shadowStrength: 0.85, lit: 0.0, lamps: false, stars: 0, moon: 0, tintDesat: 0.5,
+    // mostly diffuse skylight with a weak, soft sun so shaded facades keep their detail (CoD: Ghosts grey)
+    top: '#62798f', horizon: '#b3bdc2', below: '#a3adb1', fog: '#a9b4b9', fogDensity: 0.0054, fogMax: 0.95,
+    cloudCover: 0.86, cloudLit: '#e6eaec', cloudDark: '#6d7a86', cloudScale: 1.0, cloudSpeed: 0.004,
+    sunColor: '#ffe2c0', sunIntensity: 2.2, sunElev: 38, sunAz: 215, sunDisc: 0, sunGlow: 0.3,
+    hemiSky: '#a9bccd', hemiGround: '#9a958c', hemiIntensity: 2.4, envIntensity: 1.1, exposure: 1.0,
+    shadowStrength: 0.7, lit: 0.0, lamps: false, stars: 0, moon: 0, tintDesat: 0.5,
   },
   day: {
     top: '#3f6ea8', horizon: '#b9cbd8', below: '#9aa6ae', fog: '#aebdc7', fogDensity: 0.0024, fogMax: 0.9,
     cloudCover: 0.48, cloudLit: '#ffffff', cloudDark: '#9aa5b1', cloudScale: 1.0, cloudSpeed: 0.006,
     sunColor: '#fff3e0', sunIntensity: 3.0, sunElev: 50, sunAz: 140, sunDisc: 1, sunGlow: 0.5,
-    hemiSky: '#b8d0ea', hemiGround: '#6b5f4e', hemiIntensity: 0.9, envIntensity: 0.8, exposure: 0.95,
+    hemiSky: '#b8d0ea', hemiGround: '#8a7e6c', hemiIntensity: 1.6, envIntensity: 0.9, exposure: 0.92,
     shadowStrength: 1, lit: 0.0, lamps: false, stars: 0, moon: 0,
   },
   sunset: {

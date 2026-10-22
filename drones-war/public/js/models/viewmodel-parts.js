@@ -6,11 +6,11 @@
 // should appear and the runtime only has to set bone transforms.
 import * as THREE from 'three';
 import {
-  Rig, setDetail, getDetail, qlevel, uber, cloneUber, F, box, rbox, cyl, cylX, cylZ, sph, lathe, extrude, capsule,
+  Rig, setDetail, getDetail, qlevel, uber, cloneUber, F, box, rbox, cyl, cylX, cylZ, sph, lathe, latheX, torus, extrude, capsule,
 } from './kit.js';
 import { suitMaterials, TEAM_HEX, shade, makeCanvas } from '../suit.js';
 import { sanitizeSuit, teamDefaultSuit } from '../shared/suit-options.js';
-import { buildRPG, buildGrenade, gripMatrix, M4, RPG, BORE } from './weapons.js';
+import { buildGrenade, gripMatrix, M4, RPG, BORE } from './weapons.js';
 
 // Viewmodel arms are a little longer than a real arm: the shoulders stay off screen and the left hand still
 // reaches the handguard when the rifle is shouldered.
@@ -26,8 +26,8 @@ export const GRIPS = {
   rifleMag: grip(M4.gripMag, true),
   rpgR: grip(RPG.gripR, false),
   rpgL: grip(RPG.gripL, true),
-  // Left hand wrapped around the rocket body (cylinder along x) from above.
-  rpgRocket: grip({ p: [0.42, -0.07, 0], axis: [1, 0, 0], back: [0, 1, 0.1] }, true),
+  // Left hand cupping the warhead from below-left, so the arm hangs down and never hides the rocket.
+  rpgRocket: grip({ p: [0.6, -0.088, -0.018], axis: [1, 0, 0], back: [0, -0.7, -0.7] }, true),
 };
 
 // ---------- materials ----------
@@ -325,16 +325,51 @@ function buildArm(rig, f, side, n) {
   buildViewHand(rig, H, { mirror: side < 0, glove: f.gloves, knuckles: f.knuckle, trigger: side > 0, hi: n >= 1 });
 }
 
-// The RPG is seen from 30 cm, where the shared third-person finishes read too clean and orange: swap in a dark,
-// weathered wood heat shield, blackened steel and faded olive paint without touching weapons.js.
-const RPG_FINISH = new Map([
-  [F.wood, { c: 0x3c2819, r: 0.82, m: 0 }],
-  [F.parkerized, { c: 0x1f201f, r: 0.6, m: 0.6 }],
-  [F.olive, { c: 0x434a34, r: 0.82, m: 0.05 }],
-  [F.darkSteel, { c: 0x1a1b1c, r: 0.55, m: 0.7 }],
-]);
-function rpgFinish(rig) {
-  return { add: (bone, g, f, ...rest) => rig.add(bone, g, RPG_FINISH.get(f) || f, ...rest) };
+const RPG_TUBE = { c: 0x232422, r: 0.5, m: 0.62 };
+const RPG_WOOD = { c: 0x4a3020, r: 0.78, m: 0 };
+const RPG_WOOD_DARK = { c: 0x2e1d13, r: 0.85, m: 0 };
+const RPG_HEAD = { c: 0x4b5138, r: 0.72, m: 0.12 };
+
+// First-person RPG-7: same frame, grips and muzzle as weapons.js buildRPG (tube axis T below the iron sights),
+// but slimmer real proportions and without the side optic, which from the shooter's eye hid half the screen.
+function buildViewRPG(rig, bone, { hi = true, rocket = bone } = {}) {
+  const T = -0.07, n = hi ? 20 : 12;
+  // Launch tube: thin front section, rear section and flared venturi with a sooty throat.
+  rig.add(bone, cylX(0.0215, 0.36, n), RPG_TUBE, [0.18, T, 0]);
+  rig.add(bone, cylX(0.03, 0.03, n), RPG_TUBE, [0.345, T, 0]); // muzzle ring
+  rig.add(bone, cylX(0.024, 0.008, n), F.soot, [0.361, T, 0]);
+  rig.add(bone, cylX(0.026, 0.32, n), RPG_TUBE, [-0.36, T, 0]);
+  rig.add(bone, latheX([[0.026, 0], [0.03, -0.05], [0.05, -0.13], [0.058, -0.17], [0.054, -0.18]], n), RPG_TUBE, [-0.52, T, 0]);
+  rig.add(bone, latheX([[0.05, 0], [0.05, -0.17], [0.0, -0.17]], n), F.soot, [-0.52, T, 0]);
+  // Wooden heat shield in two halves with steel bands, a scorched front edge.
+  rig.add(bone, cylX(0.04, 0.29, n), RPG_WOOD, [-0.06, T, 0]);
+  if (hi) for (const a of [0, Math.PI]) rig.add(bone, box(0.29, 0.003, 0.004), RPG_WOOD_DARK, [-0.06, T + Math.sin(a + 1.2) * 0.0402, Math.cos(a + 1.2) * 0.0402], [a + 1.2, 0, 0]);
+  for (const x of [-0.2, -0.06, 0.08]) rig.add(bone, cylX(0.0418, 0.012, n), F.darkSteel, [x, T, 0]);
+  rig.add(bone, cylX(0.034, 0.012, n), F.soot, [0.091, T, 0]);
+  // Trigger housing, pistol grip, trigger guard and the front grip.
+  rig.add(bone, rbox(0.075, 0.03, 0.026, 0.004), F.darkSteel, [0.005, -0.103, 0]);
+  rig.add(bone, extrude([[0.0, -0.11], [-0.032, -0.11], [-0.06, -0.215], [-0.03, -0.222], [-0.012, -0.14]], 0.026, hi ? 0.003 : 0), RPG_WOOD, [0, 0, 0]);
+  rig.add(bone, box(0.006, 0.02, 0.005), F.steel, [0.025, -0.125, 0], [0, 0, 0.3]);
+  rig.add(bone, box(0.055, 0.004, 0.012), F.darkSteel, [0.022, -0.14, 0]);
+  rig.add(bone, rbox(0.03, 0.016, 0.024, 0.004), F.darkSteel, [0.158, -0.1, 0]);
+  rig.add(bone, extrude([[0.18, -0.105], [0.14, -0.105], [0.135, -0.205], [0.165, -0.21]], 0.026, hi ? 0.003 : 0), RPG_WOOD, [0, 0, 0]);
+  // Rear sight: block on the tube with a U-notched leaf; front sight: post between protective ears.
+  rig.add(bone, rbox(0.03, 0.03, 0.024, 0.004), F.darkSteel, [-0.012, -0.036, 0]);
+  rig.add(bone, box(0.006, 0.026, 0.026), F.darkSteel, [-0.006, -0.012, 0]);
+  for (const z of [-0.008, 0.008]) rig.add(bone, box(0.006, 0.01, 0.008), F.darkSteel, [-0.006, 0.004, z]);
+  rig.add(bone, rbox(0.024, 0.026, 0.014, 0.003), F.darkSteel, [0.25, -0.04, 0]);
+  rig.add(bone, box(0.006, 0.034, 0.004), F.darkSteel, [0.25, -0.013, 0]);
+  for (const z of [-0.011, 0.011]) rig.add(bone, box(0.01, 0.03, 0.003), F.darkSteel, [0.25, -0.016, z]);
+  // Optic dovetail on the left (optic removed), sling swivel and a rolled sling.
+  rig.add(bone, box(0.09, 0.022, 0.012), F.darkSteel, [-0.03, T + 0.008, -0.03]);
+  rig.add(bone, torus(0.008, 0.002, 6, 10), F.steel, [-0.24, T - 0.034, 0], [Math.PI / 2, 0, 0]);
+  rig.add(bone, box(0.42, 0.004, 0.022), F.webbing, [-0.02, T - 0.046, 0.024], [0.25, 0, 0.02]);
+  // PG-7V: booster tail in the muzzle, flaring body, ogive head with a black band and the piezo nose probe.
+  rig.add(rocket, cylX(0.019, 0.06, n), F.darkSteel, [0.33, T, 0]);
+  rig.add(rocket, latheX([[0.019, 0], [0.022, 0.03], [0.034, 0.08], [0.0425, 0.13], [0.0425, 0.27], [0.037, 0.31], [0.022, 0.37],
+    [0.011, 0.42], [0.008, 0.45], [0.005, 0.47], [0, 0.472]], n), RPG_HEAD, [0.36, T, 0]);
+  rig.add(rocket, cylX(0.0432, 0.012, n), F.darkSteel, [0.5, T, 0]);
+  if (hi) rig.add(rocket, cylX(0.0434, 0.02, n), { c: 0x1c1c1a, r: 0.8, m: 0 }, [0.58, T, 0]);
 }
 
 // ---------- template ----------
@@ -388,7 +423,7 @@ function build(s, team, quality) {
   // Reticle floats on the sight's front pane plane (the sight axis is the weapon frame origin).
   const ret = new THREE.PlaneGeometry(0.026, 0.026).rotateY(Math.PI / 2);
   rig.add('ret', ret, reticleMaterial(), [RETICLE_X, 0, 0]);
-  buildRPG(rpgFinish(rig), 'rpg', { hi, rocket: 'rocket' });
+  buildViewRPG(rig, 'rpg', { hi, rocket: 'rocket' });
   buildGrenade(rig, 'gren', { hi });
   buildArm(rig, f, -1, n);
   buildArm(rig, f, 1, n);

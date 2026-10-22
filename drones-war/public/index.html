@@ -2,171 +2,336 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#11160e">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d0f">
+  <meta name="color-scheme" content="dark">
   <title>Drones War</title>
-  <meta name="description" content="Online team battle. Defenders vs attackers with drones, rockets, jeeps, commandos and a lot of tanks.">
+  <meta name="description" content="Online combined-arms battle in a ruined city. Defenders vs Attackers: operators, jeeps, tanks, rocket trucks, drones, gunships and fighter jets.">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/hud.css">
+  <script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script>
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
+  <!-- Animated battlefield backdrop shared by every menu screen. -->
+  <div class="backdrop" aria-hidden="true">
+    <div class="bd-sky"></div>
+    <div class="bd-flash"></div>
+    <svg class="bd-city bd-far" id="bd-far" preserveAspectRatio="xMidYMax slice"></svg>
+    <div class="bd-smoke bd-smoke-a"></div>
+    <div class="bd-smoke bd-smoke-b"></div>
+    <svg class="bd-city bd-near" id="bd-near" preserveAspectRatio="xMidYMax slice"></svg>
+    <div class="bd-haze"></div>
+    <div class="bd-embers" id="bd-embers"></div>
+    <div class="bd-grain"></div>
+    <div class="bd-vignette"></div>
+  </div>
+
+  <!-- Top bar (menus only) -->
+  <header class="topbar" id="topbar">
+    <a class="brand-mini" href="./" aria-label="Drones War home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-text">DRONES <b>WAR</b></span>
+    </a>
+    <div class="topbar-right">
+      <span id="net" class="net" data-state="connecting"><i></i><span>Connecting</span></span>
+      <button class="icon-btn" id="btn-armory-top" title="Armory"><svg viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 5-3.2 9.4-7 11-3.8-1.6-7-6-7-11V5l7-3zm0 2.2L7 6.3V11c0 3.9 2.3 7.4 5 8.8 2.7-1.4 5-4.9 5-8.8V6.3l-5-2.1z"/></svg><span>Armory</span></button>
+      <button class="icon-btn" id="btn-settings-top" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 000-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 00-1.7-1L15 3h-4l-.3 2.9a7.4 7.4 0 00-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 000 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.3-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" transform="translate(-1 0)"/></svg><span>Settings</span></button>
+      <button class="icon-btn hidden" id="btn-fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg></button>
+    </div>
+  </header>
+
   <!-- Home -->
   <section id="home" class="screen">
-    <div class="home-card">
-      <p class="eyebrow">Online team battle</p>
-      <h1 class="logo">Drones <span>War</span></h1>
-      <p class="tagline">Defenders vs Attackers. Drones, rockets, jeeps, commandos in military suits and a lot of tanks.</p>
+    <div class="home-grid">
+      <div class="home-menu">
+        <div class="hero">
+          <p class="eyebrow"><span class="tick"></span>Combined arms · Online</p>
+          <h1 class="logo">DRONES<span>WAR</span></h1>
+          <p class="tagline">Hold the HQ or burn it down. Operators, armor, artillery, drones, gunships and jets fight street by street through a ruined city.</p>
+        </div>
 
-      <p id="invite-note" class="invite-note hidden"></p>
+        <div id="invite" class="invite hidden">
+          <div>
+            <p class="eyebrow">You've been invited</p>
+            <p class="invite-line">Lobby <b id="invite-code">-----</b></p>
+          </div>
+          <button id="invite-join" class="btn btn-primary">Join now</button>
+        </div>
 
-      <label class="field">
-        <span>Your callsign</span>
-        <input id="name" maxlength="16" autocomplete="nickname" placeholder="e.g. Falcon">
-      </label>
+        <label class="field">
+          <span class="label">Callsign</span>
+          <input id="callsign" maxlength="16" autocomplete="nickname" spellcheck="false" placeholder="Enter your callsign">
+        </label>
 
-      <button id="create" class="btn btn-primary btn-big">Create a lobby</button>
+        <div class="card">
+          <div class="card-head"><h2>Create lobby</h2><span class="card-num">01</span></div>
+          <label class="field">
+            <span class="label">Lobby name</span>
+            <input id="lobby-name" maxlength="24" spellcheck="false" placeholder="Operation Overcast">
+          </label>
+          <div class="row">
+            <div class="seg" id="create-vis" role="radiogroup" aria-label="Lobby visibility">
+              <button type="button" data-v="public" class="on" role="radio" aria-checked="true">Public</button>
+              <button type="button" data-v="private" role="radio" aria-checked="false">Private</button>
+            </div>
+            <button id="btn-create" class="btn btn-primary grow">Create lobby</button>
+          </div>
+        </div>
 
-      <div class="divider"><span>or join your friends</span></div>
-
-      <div class="join-row">
-        <input id="code" maxlength="5" placeholder="CODE" autocapitalize="characters" spellcheck="false">
-        <button id="join" class="btn">Join lobby</button>
+        <div class="card">
+          <div class="card-head"><h2>Join by code</h2><span class="card-num">02</span></div>
+          <div class="row">
+            <input id="join-code" class="code-input" maxlength="5" placeholder="CODE" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Lobby code">
+            <button id="btn-join" class="btn grow">Join</button>
+          </div>
+        </div>
+        <p id="home-error" class="error" role="alert"></p>
       </div>
 
-      <p id="home-error" class="error" role="alert"></p>
-      <p id="conn" class="conn">Connecting to the server…</p>
+      <div class="home-stage" id="home-stage">
+        <div class="stage-mount" id="home-mount"></div>
+        <div class="stage-caption">
+          <p class="eyebrow">Your operator</p>
+          <p class="stage-title" id="home-camo">Woodland</p>
+          <button class="btn btn-ghost btn-sm" id="btn-armory-home">Open Armory</button>
+        </div>
+      </div>
+
+      <div class="home-browser card">
+        <div class="card-head">
+          <h2>Public lobbies</h2>
+          <span class="live"><i></i><span id="lobby-count">0</span> live</span>
+        </div>
+        <ul id="lobby-list" class="lobby-list"></ul>
+        <div id="lobby-empty" class="empty">
+          <p>No public lobbies right now.</p>
+          <p class="muted">Create one and send the invite link — friends join with the 5-letter code.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- Lobby -->
   <section id="lobby" class="screen hidden">
-    <header class="lobby-head">
-      <div>
+    <div class="lobby-head">
+      <button id="btn-leave" class="btn btn-ghost btn-sm back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Leave</button>
+      <div class="lobby-title">
+        <p class="eyebrow"><span id="lobby-vis" class="badge">Public</span><span id="lobby-phase" class="badge badge-live hidden">In battle</span></p>
+        <input id="lobby-name-edit" class="title-input" maxlength="24" spellcheck="false" aria-label="Lobby name">
+        <h1 id="lobby-name-text" class="title-text hidden"></h1>
+      </div>
+      <div class="lobby-code">
         <p class="eyebrow">Lobby code</p>
-        <div class="code-row">
-          <span id="room-code" class="room-code">-----</span>
-          <button id="copy-invite" class="btn btn-small">Copy invite link</button>
-          <button id="share-invite" class="btn btn-small hidden">Share</button>
+        <div class="code-tiles" id="code-tiles"></div>
+        <div class="code-actions">
+          <button id="btn-copy" class="btn btn-sm">Copy invite link</button>
+          <button id="btn-share" class="btn btn-sm hidden">Share</button>
         </div>
-        <p class="muted">Send the link to your friends. They open it, type a callsign and they're in.</p>
-      </div>
-      <button id="leave-lobby" class="btn btn-ghost btn-small">Leave</button>
-    </header>
-
-    <div class="teams">
-      <div class="team team-def">
-        <div class="team-head">
-          <h2>Defenders</h2>
-          <span class="team-goal">Protect the HQ until time runs out</span>
-        </div>
-        <ul id="list-def" class="roster"></ul>
-        <button class="btn btn-team" data-team="def">Join Defenders</button>
-      </div>
-      <div class="vs">VS</div>
-      <div class="team team-atk">
-        <div class="team-head">
-          <h2>Attackers</h2>
-          <span class="team-goal">Destroy the defenders' HQ</span>
-        </div>
-        <ul id="list-atk" class="roster"></ul>
-        <button class="btn btn-team" data-team="atk">Join Attackers</button>
       </div>
     </div>
 
-    <h3 class="section-title">Choose your loadout</h3>
-    <div id="unit-picker" class="unit-picker"></div>
-
-    <div class="lobby-bottom">
-      <div class="panel settings">
-        <h3>Battle settings <span id="host-tag" class="muted"></span></h3>
-        <label class="setting">
-          <span>AI tankers per team: <b id="bots-val">4</b></span>
-          <input id="bots" type="range" min="0" max="15" step="1" value="4">
-        </label>
-        <label class="setting">
-          <span>Match length</span>
-          <select id="minutes">
-            <option value="3">3 minutes</option>
-            <option value="5" selected>5 minutes</option>
-            <option value="8">8 minutes</option>
-            <option value="12">12 minutes</option>
-          </select>
-        </label>
-        <div class="actions">
-          <button id="ready" class="btn">I'm ready</button>
-          <button id="start" class="btn btn-primary">Start battle</button>
+    <div class="lobby-grid">
+      <div class="lobby-teams">
+        <div class="team team-def" data-team="def">
+          <div class="team-head">
+            <div><h2>Defenders</h2><p class="team-goal">Hold the HQ until the timer runs out</p></div>
+            <span class="team-count" id="count-def">0</span>
+          </div>
+          <ul class="roster" id="roster-def"></ul>
+          <button class="btn btn-team" data-team="def">Join Defenders</button>
         </div>
-        <p id="wait-host" class="muted hidden">Waiting for the host to start the battle…</p>
+        <div class="team team-atk" data-team="atk">
+          <div class="team-head">
+            <div><h2>Attackers</h2><p class="team-goal">Destroy the Defenders' HQ</p></div>
+            <span class="team-count" id="count-atk">0</span>
+          </div>
+          <ul class="roster" id="roster-atk"></ul>
+          <button class="btn btn-team" data-team="atk">Join Attackers</button>
+        </div>
       </div>
 
-      <div class="panel chat">
-        <h3>Chat</h3>
-        <ul id="lobby-chat" class="chat-log"></ul>
-        <form id="lobby-chat-form" class="chat-form">
-          <input id="lobby-chat-input" maxlength="140" placeholder="Say something…" autocomplete="off">
-          <button class="btn btn-small">Send</button>
-        </form>
+      <div class="lobby-main">
+        <div class="loadout">
+          <div class="loadout-stage">
+            <div class="stage-mount" id="lobby-mount"></div>
+            <div class="loadout-info" id="loadout-info"></div>
+            <button class="btn btn-ghost btn-sm stage-armory" id="btn-armory-lobby">Armory</button>
+          </div>
+          <div class="unit-grid" id="unit-grid" role="listbox" aria-label="Choose your unit"></div>
+        </div>
+      </div>
+
+      <aside class="lobby-side">
+        <div class="card settings-card">
+          <div class="card-head"><h2>Match</h2><span class="muted small" id="host-note"></span></div>
+          <div class="setting">
+            <div class="setting-label"><span>AI per team</span><b id="bots-val">4</b></div>
+            <input type="range" id="set-bots" min="0" max="15" step="1" value="4">
+          </div>
+          <div class="setting">
+            <div class="setting-label"><span>Match length</span><span class="muted small">minutes</span></div>
+            <div class="seg seg-wide" id="set-minutes"></div>
+          </div>
+          <div class="setting">
+            <div class="setting-label"><span>Time of day</span></div>
+            <div class="tod" id="set-tod"></div>
+          </div>
+          <div class="setting setting-row">
+            <span>Public lobby</span>
+            <button class="switch" id="set-public" role="switch" aria-checked="true"><i></i></button>
+          </div>
+        </div>
+        <div class="ready-bar">
+          <button id="btn-ready" class="btn grow">Ready</button>
+          <button id="btn-start" class="btn btn-primary grow">Start battle</button>
+        </div>
+        <p class="muted small center" id="ready-note"></p>
+        <div class="card chat-card">
+          <div class="card-head"><h2>Comms</h2></div>
+          <ul id="chat-log" class="chat-log"></ul>
+          <form id="chat-form" class="chat-form" autocomplete="off">
+            <input id="chat-input" maxlength="140" placeholder="Say something…">
+            <button class="btn btn-sm">Send</button>
+          </form>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Armory (suit editor) -->
+  <section id="armory" class="screen hidden">
+    <div class="armory-grid">
+      <div class="armory-stage">
+        <div class="armory-top">
+          <button id="btn-armory-back" class="btn btn-ghost btn-sm back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>Done</button>
+          <div>
+            <p class="eyebrow">Armory</p>
+            <h1 class="title-text">Operator kit</h1>
+          </div>
+        </div>
+        <div class="stage-mount" id="armory-mount"></div>
+        <p class="drag-hint">Drag to rotate</p>
+        <div class="armory-preview-bar">
+          <div class="chips chips-scroll" id="preview-units"></div>
+          <div class="seg seg-team" id="preview-team">
+            <button type="button" data-v="def" class="on">Defenders</button>
+            <button type="button" data-v="atk">Attackers</button>
+          </div>
+        </div>
+      </div>
+      <div class="armory-editor">
+        <div class="ed-section">
+          <h3>Camo</h3>
+          <div class="camo-grid" id="camo-grid"></div>
+        </div>
+        <div class="ed-section">
+          <h3>Pattern colors</h3>
+          <div class="color-row" id="camo-colors"></div>
+        </div>
+        <div class="ed-section"><h3>Headgear</h3><div class="chips" id="opt-helmet"></div></div>
+        <div class="ed-section"><h3>Face</h3><div class="chips" id="opt-face"></div></div>
+        <div class="ed-section"><h3>Vest</h3><div class="chips" id="opt-vest"></div></div>
+        <div class="ed-section"><h3>Pack</h3><div class="chips" id="opt-pack"></div></div>
+        <div class="ed-section">
+          <h3>Skin tone</h3>
+          <div class="skins" id="opt-skin"></div>
+        </div>
+        <div class="ed-section ed-two">
+          <div><h3>Shoulder patch</h3><div class="color-row" id="opt-patch"></div></div>
+          <div><h3>Gloves</h3><div class="color-row" id="opt-gloves"></div></div>
+        </div>
+        <div class="ed-section setting-row">
+          <div><b>Paint my vehicles</b><p class="muted small">Your camo on every jeep, tank, truck and aircraft you drive.</p></div>
+          <button class="switch" id="opt-paint" role="switch" aria-checked="false"><i></i></button>
+        </div>
+        <div class="ed-actions">
+          <button class="btn" id="btn-random">Randomize</button>
+          <button class="btn btn-ghost" id="btn-reset">Reset</button>
+          <button class="btn btn-primary grow" id="btn-armory-done">Done</button>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Game -->
   <section id="game" class="hidden">
-    <canvas id="cv"></canvas>
-
-    <div class="hud-top">
-      <div class="score score-def"><span>DEF</span><b id="score-def">0</b></div>
-      <div class="hud-center">
-        <div id="timer" class="timer">5:00</div>
-        <div class="hq-bar"><i id="hq-fill"></i><span id="hq-text">HQ 1500</span></div>
+    <div id="game-view"></div>
+    <div id="hud"></div>
+    <div id="touch"></div>
+    <div id="overlay" data-ui></div>
+    <div id="deploy" class="deploy hidden" data-ui>
+      <div class="deploy-inner">
+        <p class="eyebrow" id="deploy-eyebrow">Deploying</p>
+        <h1 class="deploy-title" id="deploy-title">Operation</h1>
+        <p class="deploy-sub" id="deploy-sub"></p>
+        <div class="deploy-bar"><i></i></div>
+        <p class="deploy-tip" id="deploy-tip"></p>
+        <div class="deploy-error hidden" id="deploy-error">
+          <p id="deploy-error-text"></p>
+          <div class="row center-row">
+            <button class="btn btn-primary" id="btn-deploy-retry">Retry</button>
+            <button class="btn btn-ghost" id="btn-deploy-back">Back to lobby</button>
+          </div>
+        </div>
       </div>
-      <div class="score score-atk"><b id="score-atk">0</b><span>ATK</span></div>
-    </div>
-
-    <button id="leave-game" class="btn btn-ghost btn-small leave-game">Leave</button>
-    <button id="mute" class="btn btn-ghost btn-small mute" title="Sound (M)">Sound on</button>
-
-    <ul id="killfeed" class="killfeed"></ul>
-    <ul id="game-chat" class="game-chat"></ul>
-    <form id="game-chat-form" class="game-chat-form hidden">
-      <input id="game-chat-input" maxlength="140" placeholder="Team talk… (Enter to send, Esc to cancel)" autocomplete="off">
-    </form>
-
-    <div class="hud-me">
-      <div id="me-unit" class="me-unit">Tank</div>
-      <div class="bar hp"><i id="hp-fill"></i><span id="hp-text">480</span></div>
-      <div class="bar alt"><i id="alt-fill"></i><span id="alt-text">Cannon</span></div>
-    </div>
-
-    <canvas id="minimap" class="minimap" width="240" height="150"></canvas>
-
-    <p id="help" class="help">WASD move · Mouse aim · Click fire · Right-click / Space special · 1–4 switch unit · Tab scores · Enter chat</p>
-
-    <div id="dead" class="overlay dead hidden">
-      <h2>Destroyed</h2>
-      <p>Back in the fight in <b id="respawn">5</b>s. Pick your next unit:</p>
-      <div id="dead-units" class="dead-units"></div>
-    </div>
-
-    <div id="scoreboard" class="overlay scoreboard hidden"></div>
-
-    <div id="over" class="overlay over hidden">
-      <h2 id="over-title">Victory</h2>
-      <p id="over-sub" class="muted"></p>
-      <div id="over-board"></div>
-      <p class="muted">Back to the lobby in a few seconds…</p>
-    </div>
-
-    <div id="touch" class="touch hidden">
-      <div id="stick-move" class="stick stick-left"><i></i></div>
-      <div id="stick-aim" class="stick stick-right"><i></i></div>
-      <button id="touch-alt" class="touch-alt">SPECIAL</button>
     </div>
   </section>
 
-  <script src="game.js"></script>
+  <!-- Settings -->
+  <div id="settings" class="modal hidden" data-ui role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal-card">
+      <div class="card-head"><h2 id="settings-title">Settings</h2><button class="icon-btn" id="btn-settings-close" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="setting">
+        <div class="setting-label"><span>Graphics quality</span></div>
+        <div class="seg seg-wide" id="opt-quality">
+          <button type="button" data-v="low">Low</button>
+          <button type="button" data-v="medium">Medium</button>
+          <button type="button" data-v="high">High</button>
+          <button type="button" data-v="ultra">Ultra</button>
+        </div>
+        <p class="muted small" id="quality-note"></p>
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Look sensitivity</span><b id="v-sens"></b></div>
+        <input type="range" id="opt-sens" min="0.2" max="3" step="0.05">
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Aim-down-sights sensitivity</span><b id="v-ads"></b></div>
+        <input type="range" id="opt-ads" min="0.2" max="1.5" step="0.05">
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Field of view</span><b id="v-fov"></b></div>
+        <input type="range" id="opt-fov" min="60" max="100" step="1">
+      </div>
+      <div class="setting">
+        <div class="setting-label"><span>Volume</span><b id="v-vol"></b></div>
+        <input type="range" id="opt-vol" min="0" max="1" step="0.05">
+      </div>
+      <div class="setting setting-row">
+        <span>Invert look Y</span>
+        <button class="switch" id="opt-invert" role="switch" aria-checked="false"><i></i></button>
+      </div>
+      <div class="controls-help">
+        <h3>Controls</h3>
+        <dl>
+          <dt>WASD</dt><dd>Move / drive / throttle</dd>
+          <dt>Mouse</dt><dd>Look · LMB fire · RMB aim / zoom</dd>
+          <dt>Shift · Space · C</dt><dd>Sprint · jump / climb · crouch / descend</dd>
+          <dt>Q · 1 2 · R · G</dt><dd>Swap · weapons · reload · grenade</dd>
+          <dt>F / MMB</dt><dd>Vehicle secondary weapon</dd>
+          <dt>V</dt><dd>Switch view (first, third, gunner)</dd>
+          <dt>Tab · Enter · M</dt><dd>Scores · chat · mute</dd>
+        </dl>
+      </div>
+      <button class="btn btn-primary wide" id="btn-settings-done">Done</button>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 </body>
 </html>

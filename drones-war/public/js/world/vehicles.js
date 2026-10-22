@@ -18,7 +18,7 @@ export function addCarWreck({ g, m, tpl, Q, yaw, kind, burn, rnd, T = 3 }) {
   const dark = [burn[0] * 0.45, burn[1] * 0.45, burn[2] * 0.45];
   const soot = [0.1, 0.09, 0.085];
   const pt = (lx, ly, lz) => Q(lx, ly, lz);
-  const ring = (x, ytop, w, yb = 0.3) => [
+  const ring = (x, ytop, w, yb = 0.16) => [ // sills sag almost to the ground: tyres burnt flat
     pt(x, yb, -w * 0.88), pt(x, yb, w * 0.88), pt(x, yb + (ytop - yb) * 0.45, w), pt(x, ytop, w * 0.93), pt(x, ytop, -w * 0.93), pt(x, yb + (ytop - yb) * 0.45, -w),
   ];
   const loft = (rings, color, caps = true) => {

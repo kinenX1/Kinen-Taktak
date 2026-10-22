@@ -360,7 +360,7 @@ export class Hud {
     const w = info.warning || '';
     setText(this.warn, w);
     setClass(this.warn, 'h-on', !!w);
-    setClass(this.warn, 'h-missile', /MISSILE|LOCK/i.test(w));
+    setClass(this.warn, 'h-missile', /MISSILE|LOCK|PULL UP/i.test(w));
 
     // Blood vignette: soldiers only use this as their health display.
     const low = alive ? clamp(info.lowHealth || 0, 0, 1) : 0;
@@ -682,7 +682,8 @@ export class Hud {
     c.lineWidth = 0.8;
     c.strokeStyle = 'rgba(10, 14, 16, 0.75)';
     for (const b of world.buildings || []) {
-      c.fillStyle = b.ruined > 0.5 ? 'rgba(150, 146, 136, 0.78)' : b.h > 45 ? 'rgba(205, 218, 224, 0.86)' : 'rgba(168, 182, 190, 0.82)';
+      // Muted grey-blue footprints (taller = lighter) so the map reads without glaring over the scene.
+      c.fillStyle = b.ruined > 0.5 ? 'rgba(124, 120, 112, 0.72)' : b.h > 45 ? 'rgba(170, 184, 192, 0.8)' : 'rgba(136, 150, 158, 0.76)';
       c.fillRect(b.x, b.z, b.w, b.d);
       c.strokeRect(b.x + 0.4, b.z + 0.4, b.w - 0.8, b.d - 0.8);
     }
@@ -973,8 +974,11 @@ export class Hud {
     this.chat.classList.add('h-open');
     this.chatInput.value = '';
     this.chatLog.scrollTop = this.chatLog.scrollHeight;
-    // Focus after the key event that opened chat, so the Enter/T doesn't land in the field.
-    setTimeout(() => this.chatInput.focus(), 0);
+    // Focus right away so the first typed letters are never lost on a busy frame. Input already
+    // preventDefault()s the Enter/T keydown that opens chat, so that key doesn't land in the field;
+    // the deferred retry covers callers that open chat from a click (focus moves on mouseup).
+    this.chatInput.focus();
+    setTimeout(() => { if (this._chatOpen && document.activeElement !== this.chatInput) this.chatInput.focus(); }, 0);
   }
 
   closeChat() {

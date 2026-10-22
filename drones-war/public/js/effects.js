@@ -1136,8 +1136,8 @@ export class Effects {
     const sz = s * (big ? 1.35 : 1);
 
     // Short core flash (bloom does the rest) and a light that briefly paints the street.
-    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, big ? 0.14 : 0.1, r * 0.75 * (big ? 1.2 : 1));
-    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, 0.06, r * 1.8 * (big ? 1.2 : 1), 0, 0.12);
+    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, big ? 0.14 : 0.1, r * 0.6 * (big ? 1.2 : 1));
+    this.emit(LOOK.flash, x, y + 0.5 * s, z, 0, 0, 0, 0.06, r * 1.3 * (big ? 1.2 : 1), 0, 0.07);
     this.flashLight(x, y + 1.5, z, 60 * r * r * (big ? 1.25 : 1), r * (big ? 9 : 7.5), big ? 0.55 : 0.4, 0xffa45a);
 
     // Fireball: flame sprites that swell, rise and cool into soot.
@@ -1593,9 +1593,9 @@ export class Effects {
         const ox = rand(-0.65, 0.65);
         const oz = rand(-0.65, 0.65);
         const centre = 1 - Math.hypot(ox, oz); // taller tongues in the middle of the fire
-        if (Math.random() < 0.4) {
-          this.emit(LOOK.flame, b.x + ox, b.y + rand(0, 0.3), b.z + oz,
-            rand(-0.3, 0.3), rand(0.8, 1.6), rand(-0.3, 0.3), rand(0.3, 0.55), rand(0.8, 1.3) * (0.6 + 0.5 * k));
+        if (Math.random() < 0.55) {
+          this.emit(LOOK.flame, b.x + ox * 0.8, b.y + rand(0, 0.3), b.z + oz * 0.8,
+            rand(-0.3, 0.3), rand(0.8, 1.6), rand(-0.3, 0.3), rand(0.35, 0.6), rand(1, 1.6) * (0.6 + 0.5 * k));
         } else {
           this.emit(LOOK.lick, b.x + ox, b.y + rand(0.1, 0.5), b.z + oz,
             rand(-0.3, 0.3), rand(1.5, 3.2) * (0.7 + 0.6 * centre), rand(-0.3, 0.3), rand(0.35, 0.65), rand(0.7, 1.1) * (0.6 + 0.5 * k));
