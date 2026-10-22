@@ -37,6 +37,8 @@ export class Predictor {
     this.corrections = 0;
     this.snaps = 0;
     this.lastResult = { impact: 0, crashed: false };
+    this.lastSeq = 0;
+    this.ignoreBefore = 0;
   }
 
   get active() {
@@ -54,6 +56,9 @@ export class Predictor {
     this.prev = copyState({}, s);
     this.history.length = 0;
     this.offset.x = this.offset.y = this.offset.z = this.offset.yaw = 0;
+    // Snapshots already in flight acknowledge inputs from before this reset; comparing them with the
+    // fresh state would trigger another reset on every snapshot (a loop for fast units like jets).
+    this.ignoreBefore = this.lastSeq + 1;
     this.snaps++;
   }
 
@@ -76,6 +81,7 @@ export class Predictor {
   step(input, seq, aimPoint) {
     const s = this.s;
     if (!s) return this.lastResult;
+    this.lastSeq = seq;
     copyState(this.prev, s);
     const res = stepUnit(s, input, TICK, this.def, this.index);
     if (this.def.kind !== 'soldier' && this.def.kind !== 'jet' && aimPoint) {
@@ -94,15 +100,25 @@ export class Predictor {
     const s = this.s;
     if (!s) return;
     const ack = row[U.ACK];
+    if (ack < this.ignoreBefore) return;
     const hist = this.history;
+    // Each seq covers two 60 Hz ticks here, and the server may have applied it for one, two or three
+    // of its own ticks depending on when the packet arrived. Compare against whichever predicted tick
+    // around that seq is closest to the server's position, so tick phase is never mistaken for error.
+    const sx = row[U.X], sy = row[U.Y], sz = row[U.Z];
     let i = -1;
+    let best = Infinity;
     for (let j = hist.length - 1; j >= 0; j--) {
-      if (hist[j].seq === ack) { i = j; break; }
-      if (hist[j].seq < ack) break;
+      const q = hist[j].seq;
+      if (q < ack - 1) break;
+      if (q > ack + 1) continue;
+      const d = (hist[j].x - sx) ** 2 + (hist[j].y - sy) ** 2 + (hist[j].z - sz) ** 2;
+      if (d < best) { best = d; i = j; }
     }
     if (i < 0) {
       // Nothing recorded for that seq (just spawned, or a long stall): trust the server if far off.
-      if (Math.hypot(row[U.X] - s.x, row[U.Z] - s.z) > SNAP_DIST) this.reset(row);
+      const v = Math.hypot(s.vx, s.vy, s.vz);
+      if (Math.hypot(row[U.X] - s.x, row[U.Z] - s.z) > SNAP_DIST + v * 0.25) this.reset(row);
       return;
     }
     const h = hist[i];
@@ -111,7 +127,9 @@ export class Predictor {
     const ey = row[U.Y] - h.y;
     const ez = row[U.Z] - h.z;
     const err = Math.hypot(ex, ey, ez);
-    if (err > SNAP_DIST) {
+    // A jet covers ~2 m per tick, so the hard-snap threshold grows with speed.
+    const speed0 = Math.hypot(h.vx, h.vy, h.vz);
+    if (err > SNAP_DIST + speed0 * TICK * 6) {
       this.reset(row);
       return;
     }
@@ -132,11 +150,11 @@ export class Predictor {
       const eyaw = angleDiff(h.yaw, row[U.YAW]);
       if (Math.abs(eyaw) > 0.02 + Math.abs(h.spd) * 0.0006) { c.yaw = eyaw * 0.5; any = true; }
       const espd = row[U.SPD] - h.spd;
-      if (Math.abs(espd) > 0.5) { c.spd = espd * 0.5; any = true; }
+      if (Math.abs(espd) > 0.5 + (kind === 'jet' ? 1.2 : 0)) { c.spd = espd * 0.5; any = true; }
     }
     if (kind === 'jet') {
       const ep = row[U.PITCH] - h.pitch;
-      if (Math.abs(ep) > 0.03) { c.pitch = ep * 0.5; any = true; }
+      if (Math.abs(ep) > 0.06) { c.pitch = ep * 0.5; any = true; }
       const et = row[U.THROTTLE] - h.throttle;
       if (Math.abs(et) > 0.04) { c.throttle = et; any = true; }
     }

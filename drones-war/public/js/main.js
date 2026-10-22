@@ -5,6 +5,9 @@ import {
   CAMOS, HELMETS, FACES, VESTS, PACKS, SKINS, DEFAULT_SUIT, sanitizeSuit, randomSuit,
 } from './shared/suit-options.js';
 
+// Remember ?debug=1 before the lobby rewrites the URL; game.js reads it to install test hooks.
+window.__dwDebugFlag = /[?&]debug=1/.test(location.search);
+
 const $ = (id) => document.getElementById(id);
 const TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const MINUTES = [3, 5, 8, 12, 20];

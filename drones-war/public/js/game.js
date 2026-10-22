@@ -7,7 +7,7 @@
 // between its last two ticks; mouse look is applied to the camera every frame (never smoothed);
 // everybody else is drawn 100 ms in the past between two snapshots on a smoothed server clock.
 import * as THREE from 'three';
-import { UNITS, UNIT_TYPES, TEAMS, TEAM_COLORS, WEAPON_KINDS, U, FLAG } from './shared/units.js';
+import { UNITS, UNIT_TYPES, TEAMS, TEAM_COLORS, WEAPON_KINDS, PROJ_KINDS, U, FLAG } from './shared/units.js';
 import { createWorldIndex, raycast, hitTestUnit, angleDiff, wrapAngle } from './shared/physics.js';
 import { teamDefaultSuit } from './shared/suit-options.js';
 import { buildWorld } from './world.js';
@@ -21,7 +21,11 @@ import { Renderer, qualityOf } from './game/post.js';
 import { SnapBuffer } from './game/net.js';
 import { Predictor, TICK } from './game/predict.js';
 import { Entities } from './game/entities.js';
+import { createUnitModel, createProjectileModel } from './models.js';
 import { PauseMenu } from './game/menu.js';
+
+// main.js records this at page load, before the lobby rewrites the URL to ?room=CODE.
+const DEBUG = !!window.__dwDebugFlag;
 
 const SURFACES = ['ground', 'building', 'metal', 'flesh', 'hq'];
 const SEND_EVERY = 2; // fixed ticks per input message → 30 Hz
@@ -166,16 +170,75 @@ export class Game {
     audio.unlock().catch(() => {});
     this.cur = this._neutralInput();
 
-    // Compile the big shaders before the first frame so the first seconds don't stutter.
-    try { this.r.renderer.compile(scene, this.camera); } catch { /* compile is only a warm-up */ }
+    // Compile every shader the match can need before the first frame, so shooting, explosions,
+    // wrecks and new vehicle types never freeze the game mid-fight.
+    this._warmup();
 
-    if (/[?&]debug=1/.test(location.search)) this._installDebug();
+    if (DEBUG) this._installDebug();
     this.ready = true;
     this.running = true;
     const latest = this.buffer.latest;
     if (latest) this._onMyRow(latest.units.get(this.myId));
     this._last = performance.now();
     this._raf = requestAnimationFrame((t) => this._frame(t));
+  }
+
+  // Builds one of everything (each unit for both teams, intact and wrecked, every projectile, the
+  // first-person weapons mid-shot, every effect pool), makes it all visible and renders it once.
+  // The models are kept (not disposed) so three.js keeps their compiled programs cached.
+  _warmup() {
+    const { scene, camera } = this;
+    const group = new THREE.Group();
+    this._warm = [];
+    const fwd = new THREE.Vector3();
+    camera.getWorldDirection(fwd);
+    group.position.copy(camera.position).addScaledVector(fwd, 30);
+    for (const team of TEAMS) {
+      for (const type of UNIT_TYPES) {
+        for (const wrecked of [false, true]) {
+          try {
+            const m = createUnitModel(type, { team, suit: teamDefaultSuit(team), quality: this.quality });
+            if (wrecked) {
+              m.setWrecked(true);
+              // Vehicles swap to the burnt material on their next update, so apply it now.
+              if (m.applyWreck) m.applyWreck(true);
+            }
+            m.flash?.(0);
+            m.flash?.(1);
+            group.add(m.object);
+            this._warm.push(m);
+          } catch { /* a model that fails here would fail in play too; skip it */ }
+        }
+      }
+      for (const kind of PROJ_KINDS) {
+        try { group.add(createProjectileModel(kind, team)); } catch { /* ignore */ }
+      }
+    }
+    let vm = null;
+    try {
+      vm = createViewModel({ suit: teamDefaultSuit(this.myTeam), team: this.myTeam, quality: this.quality });
+      vm.fire(0);
+      this.vmScene.add(vm.object);
+      this._warm.push(vm);
+    } catch { vm = null; }
+
+    const shown = [];
+    const reveal = (root) => root?.traverse((o) => {
+      if (!o.visible) { o.visible = true; shown.push(o); }
+    });
+    scene.add(group);
+    reveal(group);
+    reveal(this.effects.group);
+    reveal(vm?.object);
+    const r = this.r.renderer;
+    try {
+      r.compile(scene, camera);
+      r.compile(this.vmScene, this.vmCamera);
+      this.r.render(0, true); // also builds shadow and post-processing programs
+    } catch { /* warm-up is best effort */ }
+    for (const o of shown) o.visible = false;
+    scene.remove(group);
+    if (vm) this.vmScene.remove(vm.object);
   }
 
   _wireInput() {
@@ -278,6 +341,8 @@ export class Game {
       this.hud?.dispose();
       this.menu?.dispose();
       this.vm?.dispose();
+      for (const m of this._warm || []) m.dispose?.();
+      this._warm = null;
       this.entities?.dispose();
       this.effects?.dispose();
       this.worldView?.dispose();
