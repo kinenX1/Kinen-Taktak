@@ -7,7 +7,13 @@
   <meta name="color-scheme" content="dark">
   <title>Drones War</title>
   <meta name="description" content="Online combined-arms battle in a ruined city. Defenders vs Attackers: operators, jeeps, tanks, rocket trucks, drones, gunships and fighter jets.">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Drones War">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
@@ -41,6 +47,7 @@
       <span id="net" class="net" data-state="connecting"><i></i><span>Connecting</span></span>
       <button class="icon-btn" id="btn-armory-top" title="Armory"><svg viewBox="0 0 24 24"><path d="M12 2l7 3v6c0 5-3.2 9.4-7 11-3.8-1.6-7-6-7-11V5l7-3zm0 2.2L7 6.3V11c0 3.9 2.3 7.4 5 8.8 2.7-1.4 5-4.9 5-8.8V6.3l-5-2.1z"/></svg><span>Armory</span></button>
       <button class="icon-btn" id="btn-settings-top" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 000-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 00-1.7-1L15 3h-4l-.3 2.9a7.4 7.4 0 00-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 000 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.3-2.9c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" transform="translate(-1 0)"/></svg><span>Settings</span></button>
+      <button class="icon-btn hidden" id="btn-install" title="Install the app"><svg viewBox="0 0 24 24"><path d="M11 3h2v10.2l3.6-3.6 1.4 1.4-6 6-6-6 1.4-1.4 3.6 3.6V3zM5 19h14v2H5v-2z"/></svg><span>Install app</span></button>
       <button class="icon-btn hidden" id="btn-fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg></button>
     </div>
   </header>
@@ -281,6 +288,17 @@
       </div>
     </div>
   </section>
+
+  <!-- How to install on phones whose browser has no install prompt (iPhone Safari, etc.) -->
+  <div id="install-help" class="modal hidden" data-ui role="dialog" aria-modal="true" aria-labelledby="install-title">
+    <div class="modal-card">
+      <div class="card-head"><h2 id="install-title">Install Drones War</h2><button class="icon-btn" id="btn-install-close" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <p class="muted">Put the game on your home screen. It opens full screen like a normal app, no app store needed.</p>
+      <p><b>iPhone / iPad (Safari):</b> tap the <b>Share</b> button (square with an arrow), then <b>Add to Home Screen</b>, then <b>Add</b>.</p>
+      <p><b>Android (Chrome):</b> tap the <b>⋮</b> menu, then <b>Install app</b> or <b>Add to Home screen</b>.</p>
+      <p class="muted small">Open the game in Safari on iPhone or Chrome on Android; other browsers may not offer it.</p>
+    </div>
+  </div>
 
   <!-- Settings -->
   <div id="settings" class="modal hidden" data-ui role="dialog" aria-modal="true" aria-labelledby="settings-title">

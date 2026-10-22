@@ -1091,7 +1091,46 @@ function leaveLobby() {
 
 // ---- wiring --------------------------------------------------------------------------------------
 
+// ---- install as an app -----------------------------------------------------------------------------
+
+// The game is a Progressive Web App: phones can add it to the home screen and open it full screen
+// without an app store. Chrome/Edge/Samsung Internet fire beforeinstallprompt so we can show a real
+// install button; iPhone Safari has no prompt, so the button opens short instructions instead.
+function setupInstall() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  const installed = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+  if (installed) return;
+  const btn = $('btn-install');
+  const help = $('install-help');
+  let prompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    prompt = e;
+    btn.classList.remove('hidden');
+  });
+  window.addEventListener('appinstalled', () => {
+    prompt = null;
+    btn.classList.add('hidden');
+  });
+  if (TOUCH) btn.classList.remove('hidden');
+  btn.addEventListener('click', async () => {
+    if (prompt) {
+      prompt.prompt();
+      await prompt.userChoice.catch(() => {});
+      prompt = null;
+    } else {
+      help.classList.remove('hidden');
+    }
+  });
+  $('btn-install-close').addEventListener('click', () => help.classList.add('hidden'));
+  help.addEventListener('click', (e) => {
+    if (e.target === help) help.classList.add('hidden');
+  });
+}
+
 function wire() {
+  setupInstall();
+
   // Top bar.
   $('btn-armory-top').addEventListener('click', openArmory);
   $('btn-settings-top').addEventListener('click', () => openSettings(false));
