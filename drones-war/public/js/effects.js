@@ -1,4 +1,4 @@
-// Visual effects for Drones War 3D: explosions, muzzle flashes, tracers, impacts, projectile trails,
+// Visual effects for Spartans V1: explosions, muzzle flashes, tracers, impacts, projectile trails,
 // burning wrecks, dust, shell casings and decals.
 //
 // Almost everything is drawn by one GPU particle system: every particle is an instanced quad whose

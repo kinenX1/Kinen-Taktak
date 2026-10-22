@@ -1,4 +1,4 @@
-// Bot AI for Drones War 3D. `thinkBot(match, bot, dt)` runs every simulation tick for each living
+// Bot AI for Spartans V1. `thinkBot(match, bot, dt)` runs every simulation tick for each living
 // bot and fills `bot.input` with exactly the message a human client would send, so bots move,
 // aim and shoot through the same code paths (and limits) as players.
 //

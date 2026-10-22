@@ -1,62 +1,58 @@
-# Drones War
+# Spartans V1
 
-An online team battle you play in the browser with your friends. Two teams fight over a city:
+An online 3D war game for the browser and phones. Two teams fight through a ruined city:
 
-- **Defenders** (blue) protect their **HQ** until the timer runs out.
-- **Attackers** (red) try to blow up the HQ before time is up.
+- **Defenders** hold their HQ until the timer runs out.
+- **Attackers** try to destroy the HQ first.
 
-Everyone picks a loadout, and AI **tankers** fill out both armies.
+Pick your unit: **Operator** (first-person soldier in your own custom suit), **Jeep**, **Tank**, **Rocket Truck**, **Drone**, **Attack Helicopter** or **Fighter Jet**. AI bots fill both teams.
 
-| Unit | What it is | Fire (click) | Special (right-click / Space) |
-| --- | --- | --- | --- |
-| **Commando** | Soldier in a military suit | Assault rifle | Rocket launcher |
-| **Jeep** | Fast armored car | Machine gun | 3-rocket pod |
-| **Tank** | Heavy armor, slow | Cannon (splash damage) | Coaxial machine gun |
-| **Drone** | Flies over walls and buildings | Minigun | Bomb drop |
+## Playing
 
-## How a game works
+1. Enter a callsign and a lobby name, then press **Create lobby**. You get a random 5-letter code.
+2. Press **Copy invite link** and send it to friends, or they can find your lobby in the public list.
+3. Design your soldier in the **Armory**: camo, colors, helmet, mask, vest and backpack.
+4. Pick a team and a unit. The host sets the number of AI and the match length, then presses **Start battle**.
 
-1. Open the game, type a callsign and press **Create a lobby**.
-2. Press **Copy invite link** (or **Share** on a phone) and send it to your friends. They open the link, type a callsign and press **Join**. They can also type the 5-letter lobby code.
-3. Everyone chooses a team (**Join Defenders** / **Join Attackers**) and a unit. New players are put on the smaller team automatically.
-4. The host picks the number of **AI tankers per team** (0–15) and the match length, then presses **Start battle**.
-5. If you get destroyed, you respawn after 5 seconds and can switch units while you wait. Friends can also join a battle that's already running.
-6. When the match ends you see the results, and then everyone goes back to the lobby for a rematch.
+| Action | Keyboard and mouse |
+| --- | --- |
+| Move / sprint / jump / crouch | WASD / Shift / Space / C |
+| Aim and fire | Mouse, left click |
+| Aim down sights / zoom | Right click |
+| Reload, grenade, switch weapon | R, G, Q or 1/2 |
+| Vehicle secondary weapon | F |
+| Fly up / down | Space / Shift |
+| Change camera view | V (first person, third person, inside the tank, cockpit) |
+| Scores, chat, pause | Tab, Enter, Esc |
 
-### Controls
+Phones get on-screen sticks and buttons.
 
-| | Keyboard and mouse | Phone / tablet |
-| --- | --- | --- |
-| Move | WASD or arrow keys | Left stick |
-| Aim and fire | Mouse and left click | Right stick (push it out to fire) |
-| Special weapon | Right click or Space | SPECIAL button |
-| Switch unit (next respawn) | 1–4 | Buttons on the "Destroyed" screen |
-| Scoreboard | Hold Tab | |
-| Chat | Enter | |
-| Sound on/off | M | Sound button |
+### Install it as an app
 
-## Run it
+It installs on phones without an app store:
 
-You need Node.js 20 or later.
+- **Android (Chrome):** open the game and tap **Install app** at the top.
+- **iPhone (Safari):** tap **Share**, then **Add to Home Screen**.
+
+## Running it
+
+Requires Node.js 20 or later.
 
 ```bash
 cd drones-war
 npm install
 npm start          # http://localhost:3000
+npm test           # simulation, physics and server tests
 ```
 
-Set `PORT` to use another port. `npm run dev` restarts the server whenever you change it, and `npm test` runs the simulation tests.
-
-### Play with friends
-
-- **Same Wi-Fi:** run `npm start` on one computer. Friends on the same network open `http://<that computer's IP>:3000` (for example `http://192.168.1.20:3000`). The invite link in the lobby uses whatever address you opened the game on, so open it by IP address before you copy the link.
-- **Over the internet:** deploy the `drones-war` folder to any host that runs a long-lived Node server with WebSockets, such as Render, Railway or Fly.io. Use `npm install` as the build command and `npm start` as the start command, and the host provides `PORT`. Serverless platforms like Vercel won't work, because the battle runs in a live server process.
+`render.yaml` in the repository root deploys it to Render.com: create a Blueprint from this repository and branch.
 
 ## How it's built
 
-- `server.mjs` serves the page and runs a WebSocket server on `/ws`. It handles lobbies, invite codes, teams, the host's settings and chat.
-- `game.mjs` is the battle simulation. It runs 30 times a second on the server: movement and wall collisions, weapons, splash damage, the HQ, respawns, the AI tankers and the win conditions. Clients only send their inputs, so nobody can cheat by editing the page.
-- `public/` holds the client: the lobby UI and a canvas renderer that smooths movement between server snapshots, with particle explosions, a minimap, a kill feed and synthesized sound effects (no asset files).
-- `test/` holds the simulation tests (`npm test`).
+- `server.mjs` serves the client and runs lobbies over WebSockets at `/ws`.
+- `game.mjs` runs the server-side battle simulation at 60 ticks a second, with AI from `bots.mjs`, the city from `city.mjs` and path finding from `nav.mjs`.
+- `public/js/shared/` contains code shared by server and client: unit definitions, physics and suit options.
+- `public/js/` contains the three.js client: world rendering, models, effects, audio, camera, input, HUD, client-side prediction and the menus.
+- Everything is procedural (no image, model or sound files). The only dependencies are `three` and `ws`.
 
-The only dependency is [`ws`](https://github.com/websockets/ws).
+The folder is still named `drones-war` because the Render deployment points at it.

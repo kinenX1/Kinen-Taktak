@@ -1,4 +1,4 @@
-// Camera rig for Drones War 3D: mouse-look angles, chase / first-person / gunner / cockpit views,
+// Camera rig for Spartans V1: mouse-look angles, chase / first-person / gunner / cockpit views,
 // building collision, smooth FOV (ADS, zoom, jet speed kick), trauma shake and the death cam.
 //
 // Look angles follow the shared convention: yaw 0 looks along +X, increasing yaw turns right,

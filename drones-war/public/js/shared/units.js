@@ -1,4 +1,4 @@
-// Unit definitions and snapshot layout for Drones War 3D. Pure data: the server imports this
+// Unit definitions and snapshot layout for Spartans V1. Pure data: the server imports this
 // file too, so no DOM and no three.js here.
 //
 // Model space for hit spheres and collision footprints: x forward (nose), y up, z right,

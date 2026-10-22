@@ -1,4 +1,4 @@
-// Service worker that makes Drones War installable as an app. The game is online-only, so it always
+// Service worker that makes Spartans V1 installable as an app. The game is online-only, so it always
 // tries the network first (players get updates as soon as they are deployed) and only falls back to
 // the cached copy when offline, so the app still opens and can show its menus.
 const CACHE = 'drones-war-v1';

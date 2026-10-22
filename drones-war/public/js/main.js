@@ -371,7 +371,7 @@ function showScreen(name) {
 }
 
 function updateTitle() {
-  document.title = app.room ? `${app.room.name} · Drones War` : 'Drones War';
+  document.title = app.room ? `${app.room.name} · Spartans V1` : 'Spartans V1';
 }
 
 // ---- networking ----------------------------------------------------------------------------------
@@ -1197,7 +1197,7 @@ function wire() {
     const sh = $('btn-share');
     sh.classList.remove('hidden');
     sh.addEventListener('click', () => {
-      navigator.share({ title: `Drones War · ${app.room?.name ?? ''}`, text: `Join my Drones War lobby: ${app.room?.code}`, url: inviteLink() }).catch(() => {});
+      navigator.share({ title: `Spartans V1 · ${app.room?.name ?? ''}`, text: `Join my Spartans V1 lobby: ${app.room?.code}`, url: inviteLink() }).catch(() => {});
     });
   }
   for (const b of document.querySelectorAll('.btn-team')) {

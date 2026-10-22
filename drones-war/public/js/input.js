@@ -1,4 +1,4 @@
-// Keyboard, mouse (pointer lock, raw deltas) and touch controls for Drones War 3D.
+// Keyboard, mouse (pointer lock, raw deltas) and touch controls for Spartans V1.
 //
 // `state` holds the live movement/fire values the game samples every frame; one-shot actions
 // (view, weapon, reload, grenade, unit, scores, chat, mute, pause, jump) are events.

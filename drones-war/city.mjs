@@ -1,4 +1,4 @@
-// Procedural war-torn city for Drones War 3D (server side). The same seed always gives the same
+// Procedural war-torn city for Spartans V1 (server side). The same seed always gives the same
 // city, so the server only has to send the generated world once per match.
 //
 // Layout (x east, z south, meters): the Attackers' field camp on the west edge (x 0-80), the

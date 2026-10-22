@@ -1,4 +1,4 @@
-// Procedural audio for Drones War 3D: every sound is synthesised with WebAudio, no files.
+// Procedural audio for Spartans V1: every sound is synthesised with WebAudio, no files.
 //
 // One-shots are described as small "builders" (noise bursts, pitch-swept oscillators, filters,
 // waveshaper distortion, slap-back echoes) that work on any BaseAudioContext. After the first user

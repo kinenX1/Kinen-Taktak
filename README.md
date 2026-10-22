@@ -122,6 +122,6 @@ src/
 - Set real `SMTP_*` credentials so clients receive confirmations and password-reset emails.
 - The legal pages (`/privacy`, `/terms`) contain clearly marked placeholder text that must be replaced with reviewed legal copy.
 
-## Drones War
+## Spartans V1
 
-`drones-war/` holds a separate online team battle game with its own Node server and package. It doesn't share any code with the website. See [`drones-war/README.md`](drones-war/README.md) to run it.
+`drones-war/` holds Spartans V1, a separate online 3D war game, with its own Node server and package. It doesn't share any code with the website. See [`drones-war/README.md`](drones-war/README.md) to run it.

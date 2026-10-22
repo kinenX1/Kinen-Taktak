@@ -1,4 +1,4 @@
-// Drones War 3D server: static files, lobbies over WebSocket and one match loop per lobby.
+// Spartans V1 server: static files, lobbies over WebSocket and one match loop per lobby.
 // Run with `node server.mjs` (PORT env var, default 3000). Importable for tests via startServer().
 
 import http from 'node:http';
@@ -610,7 +610,7 @@ export function startServer({ port = 3000, host, resultsSeconds = RESULTS_SECOND
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.PORT) || 3000;
   startServer({ port }).then((s) => {
-    console.log(`Drones War 3D is running on http://localhost:${s.port}`);
+    console.log(`Spartans V1 is running on http://localhost:${s.port}`);
     const stop = () => s.close().then(() => process.exit(0));
     process.on('SIGINT', stop);
     process.on('SIGTERM', stop);

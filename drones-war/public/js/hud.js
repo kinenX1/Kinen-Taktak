@@ -1,4 +1,4 @@
-// In-game HUD for Drones War 3D (DOM + two small canvases), CoD-style layout:
+// In-game HUD for Spartans V1 (DOM + two small canvases), CoD-style layout:
 // minimap top-left, scores / timer / HQ bar top-right with the killfeed under it, ammo
 // bottom-right, vehicle armor bottom-left, dynamic crosshair, hit markers, popups, medals,
 // damage arcs, blood vignette, objective markers, death screen, scoreboard, game over, chat,

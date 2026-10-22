@@ -1,4 +1,4 @@
-// Shared movement + collision for Drones War 3D. The server runs this at 60 ticks/s for every unit and
+// Shared movement + collision for Spartans V1. The server runs this at 60 ticks/s for every unit and
 // the client runs the very same code to predict its own unit, so everything here is pure and
 // deterministic (no Math.random, no clocks) and must not allocate much in the hot paths.
 //

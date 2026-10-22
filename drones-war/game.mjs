@@ -1,4 +1,4 @@
-// Match simulation for Drones War 3D: units, weapons, projectiles, scoring and snapshots.
+// Match simulation for Spartans V1: units, weapons, projectiles, scoring and snapshots.
 // Pure logic, no sockets: server.mjs owns rooms and the network, bots.mjs owns the AI.
 // Units move with the very same physics code the client uses for prediction (public/js/shared).
 

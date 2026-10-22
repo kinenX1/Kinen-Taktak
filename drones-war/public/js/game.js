@@ -1,4 +1,4 @@
-// Drones War 3D game client (contract §9.8): renderer + post chain, snapshot interpolation, own-unit
+// Spartans V1 game client (contract §9.8): renderer + post chain, snapshot interpolation, own-unit
 // prediction and reconciliation, entities, projectiles, events → effects/audio/HUD, camera views,
 // first-person viewmodel, aim raycast, 30 Hz input, HUD, minimap, death cam, scoreboard, pause menu,
 // game over, engine sound and footsteps.

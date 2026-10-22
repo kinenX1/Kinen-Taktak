@@ -1,4 +1,4 @@
-// World renderer for Drones War 3D: turns the server's city description into a gritty, hazy war-torn city.
+// World renderer for Spartans V1: turns the server's city description into a gritty, hazy war-torn city.
 //
 // Everything static is merged into per-material, per-chunk meshes (chunks keep frustum culling and the
 // shadow pass cheap), repeated rubble is instanced, and all fire/smoke/glow sprites are two draw calls.
