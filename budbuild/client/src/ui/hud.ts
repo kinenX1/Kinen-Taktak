@@ -72,8 +72,8 @@ export class Hud {
     this.playerList = el("ul", { class: "player-list" });
     const inviteBtn = el("button", {
       class: "btn small",
-      text: "🔗 Copy invite link",
-      attrs: { type: "button" },
+      text: "🔗 Invite",
+      attrs: { type: "button", title: "Copy invite link", "aria-label": "Copy invite link" },
       on: { click: () => this.copyInvite() },
     });
     const roomCard = el("section", { class: "panel room-card" }, [

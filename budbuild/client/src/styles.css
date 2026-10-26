@@ -492,6 +492,11 @@ kbd {
   margin-right: auto;
 }
 
+.room-title .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .player-list {
   list-style: none;
   margin: 0;

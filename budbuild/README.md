@@ -26,6 +26,8 @@ An online multiplayer browser game. You and your friends start on an empty islan
 | M / L / ? | Sea chart / logbook / help |
 | Drag, wheel | Look around, zoom |
 
+The ✨ button switches the graphics between Pretty (bloom and soft shadows), Balanced (the default on phones) and Fast. The resolution also lowers itself on slow devices to keep the game smooth.
+
 ## Deploy on Render
 
 The repository has a `render.yaml` Blueprint at its root that deploys this folder as one web service. The game page and the multiplayer server run on the same port.
@@ -63,7 +65,7 @@ npm install
 npm run dev          # game server on :3001 + Vite on http://localhost:5173
 ```
 
-To use the AI locally, put `ANTHROPIC_API_KEY=...` in your environment before `npm run dev`. While the dev server runs, `http://localhost:5173/dev/world.html?at=sunspire` lets you fly around the world without joining (`at` can be `home`, `slip` or any city id).
+To use the AI locally, put `ANTHROPIC_API_KEY=...` in your environment before `npm run dev`. While the dev server runs, `http://localhost:5173/dev/world.html?at=sunspire` lets you fly around the world without joining (`at` can be `home`, `slip` or any city id), and `/dev/avatar.html` shows the sailors walking, running and swimming.
 
 | Script | Purpose |
 | --- | --- |

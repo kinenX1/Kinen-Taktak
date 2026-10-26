@@ -8,6 +8,7 @@ import { TAU, hashString, makeRng } from "../../../../shared/math";
 import { CITIES, HOME_ISLAND, islandRadiusAt, terrainHeight, type CityStyle, type Island } from "../../../../shared/world";
 import type { Collider } from "../../contracts";
 import { GeometryBatch, UNIT, trs } from "../batch";
+import { GLOW_BOOST } from "../renderer";
 import { SurfaceSet, addCollider, addPier, glowMaterial, instanced, palmGeometry, textSprite, vertexColorMaterial, type Placement } from "./props";
 
 export interface Cities {
@@ -549,7 +550,7 @@ export function createCities(colliders: Collider[], surfaces: SurfaceSet): Citie
       for (const g of anim.spin) g.rotation.z += dt * 0.35;
       for (let i = 0; i < anim.pulse.length; i++) {
         const v = 0.85 + 0.15 * Math.sin(time * 2.2 + i);
-        anim.pulse[i].color.setScalar(v);
+        anim.pulse[i].color.setScalar(v * GLOW_BOOST);
       }
       for (let i = 0; i < sweepers.length; i++) sweepers[i].rotation.y = time * 0.6 + i;
       // Beams brighten with distance so they read as guides, not glare.

@@ -11,12 +11,16 @@ import { SLIPS, clampToWorld, terrainHeight, waveHeight, windAt } from "../../..
 import type { BoatView, WorldView } from "../contracts";
 import type { Input } from "./input";
 
-const WALK_SPEED = 5;
-const RUN_SPEED = 8.5;
-const SWIM_SPEED = 2.8;
-const DECK_SPEED = 3.5;
-const GRAVITY = 20;
-const JUMP_SPEED = 6.5;
+const WALK_SPEED = 6.5;
+const RUN_SPEED = 11;
+const SWIM_SPEED = 4.2;
+const DECK_SPEED = 4.8;
+const GRAVITY = 24;
+const JUMP_SPEED = 8.2;
+/** How quickly the avatar reaches its target speed (per second). */
+const ACCEL = 14;
+/** Longest physics step; slower frames are split into several steps. */
+const MAX_STEP = 1 / 30;
 const SWIM_DEPTH = -1.2;
 const AVATAR_RADIUS = 0.35;
 
@@ -50,6 +54,7 @@ export class LocalPlayer {
   aboard: string | null = null;
   moving = false;
   private vy = 0;
+  private readonly vel = { x: 0, z: 0 };
   private grounded = true;
 
   readonly boat: BoatMotion = { x: 0, z: 0, heading: 0, speed: 0, yawRate: 0 };
@@ -93,6 +98,7 @@ export class LocalPlayer {
   /** Puts the avatar at a world position on foot (or swimming). */
   placeInWorld(x: number, z: number, world: WorldView, time: number): void {
     this.aboard = null;
+    this.vel.x = this.vel.z = 0;
     const ground = this.groundAt(x, z, world);
     if (ground === null) {
       this.mode = "swim";
@@ -108,6 +114,7 @@ export class LocalPlayer {
   board(ownerId: string, view: BoatView, lx: number, lz: number, helm: boolean): void {
     this.aboard = ownerId;
     this.mode = helm ? "helm" : "passenger";
+    this.vel.x = this.vel.z = 0;
     const x = clamp(lx, -GRID_W / 2 + 0.4, GRID_W / 2 - 0.4);
     const z = clamp(lz, -GRID_L / 2 + 0.4, GRID_L / 2 - 0.4);
     if (view.deckHeightAt(x, z) > 0) this.pos.set(x, view.deckHeightAt(x, z) + 0.02, z);
@@ -156,7 +163,15 @@ export class LocalPlayer {
     return h < SWIM_DEPTH ? null : h;
   }
 
-  update(f: PlayerFrame): void {
+  update(frame: PlayerFrame): void {
+    // Split long frames so a slow phone doesn't play in slow motion or
+    // tunnel through things.
+    const steps = Math.min(6, Math.max(1, Math.ceil(frame.dt / MAX_STEP)));
+    const dt = frame.dt / steps;
+    for (let i = 0; i < steps; i++) this.step({ ...frame, dt });
+  }
+
+  private step(f: PlayerFrame): void {
     this.bumpCooldown -= f.dt;
     this.updateBoat(f);
     switch (this.mode) {
@@ -211,10 +226,16 @@ export class LocalPlayer {
     const speed = swimming ? SWIM_SPEED : f.input.running ? RUN_SPEED : WALK_SPEED;
     const fw = forwardOf(f.cameraYaw);
     const rt = rightOf(f.cameraYaw);
-    let vx = (fw.x * a.y + rt.x * a.x) * speed;
-    let vz = (fw.z * a.y + rt.z * a.x) * speed;
-    this.moving = Math.hypot(vx, vz) > 0.1;
-    if (this.moving) this.ry = lerpAngle(this.ry, Math.atan2(vx, vz), 1 - Math.exp(-f.dt * 12));
+    const tx = (fw.x * a.y + rt.x * a.x) * speed;
+    const tz = (fw.z * a.y + rt.z * a.x) * speed;
+    // Ease towards the wanted velocity: snappy, but no robotic starts and stops.
+    const k = 1 - Math.exp(-f.dt * ACCEL);
+    this.vel.x += (tx - this.vel.x) * k;
+    this.vel.z += (tz - this.vel.z) * k;
+    const vx = this.vel.x;
+    const vz = this.vel.z;
+    this.moving = Math.hypot(vx, vz) > 0.3;
+    if (Math.hypot(tx, tz) > 0.1) this.ry = lerpAngle(this.ry, Math.atan2(tx, tz), 1 - Math.exp(-f.dt * 14));
 
     let x = this.pos.x + vx * f.dt;
     let z = this.pos.z + vz * f.dt;
@@ -276,9 +297,12 @@ export class LocalPlayer {
     const localYaw = wrapAngle(f.cameraYaw - boatHeading);
     const fw = forwardOf(localYaw);
     const rt = rightOf(localYaw);
-    const vx = (fw.x * a.y + rt.x * a.x) * DECK_SPEED;
-    const vz = (fw.z * a.y + rt.z * a.x) * DECK_SPEED;
-    this.moving = Math.hypot(vx, vz) > 0.1;
+    const k = 1 - Math.exp(-f.dt * ACCEL);
+    this.vel.x += ((fw.x * a.y + rt.x * a.x) * DECK_SPEED - this.vel.x) * k;
+    this.vel.z += ((fw.z * a.y + rt.z * a.x) * DECK_SPEED - this.vel.z) * k;
+    const vx = this.vel.x;
+    const vz = this.vel.z;
+    this.moving = Math.hypot(vx, vz) > 0.3;
     if (this.moving) this.ry = lerpAngle(this.ry, Math.atan2(vx, vz), 1 - Math.exp(-f.dt * 12));
     const x = clamp(this.pos.x + vx * f.dt, -GRID_W / 2 + 0.3, GRID_W / 2 - 0.3);
     const z = clamp(this.pos.z + vz * f.dt, -GRID_L / 2 + 0.3, GRID_L / 2 - 0.3);

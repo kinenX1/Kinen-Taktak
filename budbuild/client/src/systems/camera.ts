@@ -8,8 +8,8 @@ import { terrainHeight, waveHeight } from "../../../shared/world";
 export class CameraRig {
   /** Heading the camera looks along (same convention as boats). */
   yaw = 0;
-  pitch = 0.35;
-  distance = 10;
+  pitch = 0.3;
+  distance = 7.5;
   minDistance = 3.5;
   maxDistance = 45;
   private readonly smoothTarget = new THREE.Vector3();

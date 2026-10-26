@@ -12,7 +12,7 @@ import type { GameSocket } from "./net/socket";
 import { Avatar } from "./scene/avatar";
 import { createBoatView } from "./scene/boatView";
 import { Effects } from "./scene/fx";
-import { createSceneContext, getQuality, setQuality } from "./scene/renderer";
+import { createSceneContext, getQuality, qualityLabel, setQuality } from "./scene/renderer";
 import { createWorld } from "./scene/world";
 import type { GameState } from "./state";
 import { createBuilder } from "./systems/builder";
@@ -89,10 +89,11 @@ export class Game {
     this.hud = new Hud(opts.uiRoot, this.state, {
       onToggleSound: () => toggleMuted(),
       onToggleQuality: () => {
-        const next = getQuality() === "high" ? "low" : "high";
+        const order = ["high", "medium", "low"] as const;
+        const next = order[(order.indexOf(getQuality()) + 1) % order.length];
         setQuality(next);
-        window.setTimeout(() => location.reload(), 600);
-        return next === "low" ? "Graphics: fast. Reloading…" : "Graphics: pretty. Reloading…";
+        window.setTimeout(() => location.reload(), 700);
+        return `Graphics: ${qualityLabel(next)}. Reloading…`;
       },
       onRespawn: () => this.respawn(),
       onLeave: () => opts.onLeave(),
@@ -249,7 +250,7 @@ export class Game {
       if (boat) this.boats.get(id)!.setBoat(boat);
       let avatar = this.avatars.get(id);
       if (!avatar) {
-        avatar = new Avatar(p.name, p.color);
+        avatar = new Avatar(p.name, p.color, id);
         this.ctx.scene.add(avatar.root);
         this.avatars.set(id, avatar);
       }
@@ -595,7 +596,8 @@ export class Game {
 
   private frame(): void {
     const now = performance.now();
-    const dt = Math.min(0.05, (now - this.last) / 1000);
+    // Physics sub-steps long frames, so allow them (but not after a pause).
+    const dt = Math.min(0.15, (now - this.last) / 1000);
     this.last = now;
     const time = this.state.worldTime();
     const selfId = this.state.selfId;
@@ -684,7 +686,7 @@ export class Game {
       if (p.mode === "walk" || p.mode === "swim") {
         cam.minDistance = 3.5;
         cam.maxDistance = 40;
-        if (cam.distance > 16) cam.distance = 10;
+        if (cam.distance > 16) cam.distance = 7.5;
       } else if (p.mode === "helm") {
         cam.minDistance = 8;
         cam.maxDistance = 60;

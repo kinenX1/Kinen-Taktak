@@ -5,6 +5,7 @@
 import * as THREE from "three";
 import { type Anim, type Material, type Part, type PieceDef, type Shape } from "../../../shared/pieces";
 import { GeometryBatch } from "./batch";
+import { GLOW_BOOST } from "./renderer";
 
 // ---------------------------------------------------------------------------
 // Unit geometries: every shape spans -0.5..0.5 on each axis (see shared/pieces.ts).
@@ -198,7 +199,7 @@ export function pieceMaterials(): Record<Material, THREE.Material> {
     stone: std({ map: speckle, roughness: 0.95, metalness: 0 }),
     plastic: std({ roughness: 0.42, metalness: 0, envMap: env, envMapIntensity: 0.35 }),
     gold: std({ roughness: 0.28, metalness: 1, envMap: env, envMapIntensity: 1.2 }),
-    glow: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }),
+    glow: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false, color: new THREE.Color(GLOW_BOOST, GLOW_BOOST, GLOW_BOOST) }),
   };
   return materials;
 }
@@ -261,7 +262,7 @@ export function animatePart(a: AnimatedPart, time: number, speed: number): void 
       break;
     case "pulse": {
       const k = 0.75 + 0.25 * Math.sin(t * 3);
-      if (a.material) a.material.color.setScalar(k);
+      if (a.material) a.material.color.setScalar(k * GLOW_BOOST);
       else a.pivot.scale.setScalar(0.96 + 0.04 * k);
       break;
     }

@@ -7,6 +7,7 @@ import { TAU, forwardOf, makeRng, rightOf } from "../../../../shared/math";
 import { HOME_ISLAND, SLIPS, SPAWN, islandRadiusAt, terrainHeight } from "../../../../shared/world";
 import type { Collider } from "../../contracts";
 import { GeometryBatch, UNIT, trs } from "../batch";
+import { GLOW_BOOST } from "../renderer";
 import {
   SurfaceSet,
   addCollider,
@@ -102,8 +103,8 @@ export function createHomeIsland(colliders: Collider[], surfaces: SurfaceSet): H
     batch.add(UNIT.cylinderLow, trs(bx, terrainHeight(bx, bz) + 0.25, bz, Math.PI / 2, a + Math.PI / 2, 0, 0.5, 2.2, 0.5), "#7a5c40");
     addCollider(colliders, bx, bz, 0.6);
   }
-  const flameMat = new THREE.MeshBasicMaterial({ color: "#ff8a1f", transparent: true, opacity: 0.9, toneMapped: false });
-  const flameMat2 = new THREE.MeshBasicMaterial({ color: "#ffe066", transparent: true, opacity: 0.95, toneMapped: false });
+  const flameMat = new THREE.MeshBasicMaterial({ color: new THREE.Color("#ff8a1f").multiplyScalar(GLOW_BOOST), transparent: true, opacity: 0.9, toneMapped: false });
+  const flameMat2 = new THREE.MeshBasicMaterial({ color: new THREE.Color("#ffe066").multiplyScalar(GLOW_BOOST), transparent: true, opacity: 0.95, toneMapped: false });
   const flame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 1.3, 8), flameMat);
   const flameCore = new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.8, 8), flameMat2);
   flame.position.set(SPAWN.x, fireY + 0.75, SPAWN.z);

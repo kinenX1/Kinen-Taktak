@@ -33,8 +33,8 @@ export function createOcean(): Ocean {
       THREE.UniformsLib.fog,
       {
         uTime: { value: 0 },
-        uDeep: { value: new THREE.Color("#0b5f8a") },
-        uShallow: { value: new THREE.Color("#2fc4c0") },
+        uDeep: { value: new THREE.Color("#0a4f7a") },
+        uShallow: { value: new THREE.Color("#33d1c6") },
         uFoam: { value: new THREE.Color("#f4fbff") },
         uSkyTop: { value: SKY_TOP_COLOR.clone() },
         uHorizon: { value: HORIZON_COLOR.clone() },
@@ -88,10 +88,16 @@ export function createOcean(): Ocean {
       void main() {
         vec2 p = vWorld.xz;
         float t = uTime;
+        float dist = length(cameraPosition.xz - p);
         vec2 g = waveGrad(p, t);
-        // Small ripples for sparkle.
-        g += 0.06 * vec2(sin(p.x * 0.9 + t * 1.7 + sin(p.y * 0.7)), cos(p.y * 1.1 - t * 1.3 + sin(p.x * 0.6)));
-        g += 0.035 * vec2(sin((p.x + p.y) * 1.9 + t * 2.6), cos((p.x - p.y) * 2.3 - t * 2.2));
+        // Small ripples for detail up close, faded out with distance so the
+        // horizon doesn't shimmer.
+        float near = 1.0 - smoothstep(30.0, 260.0, dist);
+        float mid = 1.0 - smoothstep(8.0, 70.0, dist);
+        g += near * 0.07 * vec2(sin(p.x * 0.9 + t * 1.7 + sin(p.y * 0.7)), cos(p.y * 1.1 - t * 1.3 + sin(p.x * 0.6)));
+        g += near * 0.045 * vec2(sin((p.x + p.y) * 1.9 + t * 2.6), cos((p.x - p.y) * 2.3 - t * 2.2));
+        g += mid * 0.03 * vec2(sin(p.x * 4.1 - p.y * 1.3 + t * 3.4), cos(p.y * 3.7 + p.x * 1.1 - t * 3.1));
+        g += mid * 0.02 * (vec2(noise(p * 2.3 + t * 0.6), noise(p.yx * 2.1 - t * 0.5)) - 0.5);
         vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
 
         float shallow = 0.0;
@@ -99,32 +105,40 @@ export function createOcean(): Ocean {
         for (int i = 0; i < ISLAND_COUNT; i++) {
           vec4 isl = uIslands[i];
           vec2 dv = p - isl.xy;
-          float dist = length(dv);
-          if (dist > isl.z * 2.0) continue;
+          float d0 = length(dv);
+          if (d0 > isl.z * 2.0) continue;
           float r = islandRadius(isl, atan(dv.x, dv.y));
-          float d = dist / r;
+          float d = d0 / r;
           shallow = max(shallow, smoothstep(1.65, 1.0, d));
-          float band = smoothstep(1.14, 1.0, d) * smoothstep(0.95, 1.0, d);
-          float surf = 0.5 + 0.5 * sin(dist * 0.85 - t * 2.1 + isl.w);
-          foam = max(foam, band * (0.45 + 0.55 * surf));
+          float band = smoothstep(1.13, 1.0, d) * smoothstep(0.95, 1.0, d);
+          float surf = 0.5 + 0.5 * sin(d0 * 0.85 - t * 2.1 + isl.w);
+          float breakers = 0.5 + 0.5 * sin(d0 * 0.32 - t * 1.1 + isl.w * 2.0);
+          foam = max(foam, band * (0.4 + 0.6 * surf) + smoothstep(1.2, 1.05, d) * smoothstep(0.75, 1.0, breakers) * 0.35);
         }
 
         vec3 V = normalize(cameraPosition - vWorld);
+        vec3 L = normalize(uSunDir);
         float facing = max(dot(n, V), 0.0);
         float fres = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
         vec3 R = reflect(-V, n);
         vec3 sky = mix(uHorizon, uSkyTop, pow(clamp(R.y, 0.0, 1.0), 0.5));
         vec3 water = mix(uDeep, uShallow, shallow * shallow);
-        float crest = clamp((vWorld.y + 0.25) * 0.7, 0.0, 1.0);
-        water += uShallow * 0.18 * crest;
-        vec3 col = mix(water, sky, clamp(fres * 0.9, 0.0, 0.85));
-        float spec = pow(max(dot(R, normalize(uSunDir)), 0.0), 240.0);
-        col += uSunColor * spec * 3.0;
+        // Light shining through the backs of the waves.
+        float crest = clamp((vWorld.y + 0.2) * 0.8, 0.0, 1.0);
+        float through = pow(max(dot(V, -L + vec3(0.0, 0.6, 0.0)), 0.0), 3.0) * crest;
+        water += uShallow * (0.15 * crest + 0.35 * through);
+        water *= 0.85 + 0.15 * max(dot(n, L), 0.0);
+        vec3 col = mix(water, sky, clamp(fres * 0.95, 0.0, 0.88));
+        // Sun: a tight bright highlight plus scattered glitter.
+        float rl = max(dot(R, L), 0.0);
+        col += uSunColor * (pow(rl, 900.0) * 9.0 + pow(rl, 120.0) * 1.2);
+        float glitter = step(0.985, noise(p * 7.0 + t * 2.0)) * pow(rl, 18.0) * mid;
+        col += uSunColor * glitter * 4.0;
         float fn = noise(p * 1.7 + vec2(t * 0.3, -t * 0.2));
         col = mix(col, uFoam, clamp(foam * (0.55 + 0.6 * fn), 0.0, 1.0) * 0.92);
-        // Rare whitecaps on the open sea.
-        float cap = smoothstep(0.62, 0.72, vWorld.y) * smoothstep(0.55, 0.85, noise(p * 0.35 + t * 0.15));
-        col = mix(col, uFoam, cap * 0.5);
+        // Whitecaps on the open sea.
+        float cap = smoothstep(0.6, 0.72, vWorld.y) * smoothstep(0.55, 0.85, noise(p * 0.35 + t * 0.15));
+        col = mix(col, uFoam, cap * 0.55);
         gl_FragColor = vec4(col, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

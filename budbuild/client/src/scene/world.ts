@@ -7,6 +7,7 @@ import type { Collider, CreateWorld } from "../contracts";
 import { SUN_DIRECTION } from "./renderer";
 import { createCities } from "./world/cities";
 import { createHomeIsland } from "./world/home";
+import { createNature } from "./world/nature";
 import { SurfaceSet, addCollider, instanced, palmGeometry, rockGeometry, type Placement } from "./world/props";
 import { createClouds, createSky } from "./world/sky";
 import { createTerrain } from "./world/terrain";
@@ -50,7 +51,10 @@ export const createWorld: CreateWorld = (ctx) => {
   const terrain = createTerrain();
   const home = createHomeIsland(colliders, surfaces);
   const cities = createCities(colliders, surfaces);
-  ctx.scene.add(sky, clouds.group, ocean.group, terrain, home.group, cities.group, ...islets(colliders));
+  const isletProps = islets(colliders);
+  // After every collider exists, so grass keeps clear of buildings and rocks.
+  const nature = createNature(colliders);
+  ctx.scene.add(sky, clouds.group, ocean.group, terrain, home.group, cities.group, nature.group, ...isletProps);
 
   const sunOffset = SUN_DIRECTION.clone().multiplyScalar(200);
 
@@ -63,9 +67,11 @@ export const createWorld: CreateWorld = (ctx) => {
       clouds.update(dt, time, focus);
       home.update(dt, time);
       cities.update(dt, time, focus);
+      nature.update(dt, time);
       // Keep the shadow box centred on the focus, snapped to texels so
       // shadows don't shimmer as you move.
-      const snap = 140 / 2048;
+      const sc = ctx.sun.shadow.camera;
+      const snap = (sc.right - sc.left) / Math.max(1, ctx.sun.shadow.mapSize.x);
       const fx = Math.round(focus.x / snap) * snap;
       const fz = Math.round(focus.z / snap) * snap;
       ctx.sun.position.set(fx + sunOffset.x, focus.y + sunOffset.y, fz + sunOffset.z);

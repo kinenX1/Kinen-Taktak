@@ -5,9 +5,15 @@ import * as THREE from "three";
 import { forwardOf, makeRng, rightOf } from "../../../../shared/math";
 import type { Collider } from "../../contracts";
 import { GeometryBatch, UNIT, trs } from "../batch";
+import { GLOW_BOOST } from "../renderer";
 
 export const vertexColorMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0.02 });
-export const glowMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, toneMapped: false });
+export const glowMaterial = new THREE.MeshBasicMaterial({
+  vertexColors: true,
+  fog: false,
+  toneMapped: false,
+  color: new THREE.Color(GLOW_BOOST, GLOW_BOOST, GLOW_BOOST),
+});
 
 // ---------------------------------------------------------------------------
 // Walkable surfaces (oriented rectangles).
