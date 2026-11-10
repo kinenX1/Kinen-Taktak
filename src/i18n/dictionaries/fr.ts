@@ -143,6 +143,7 @@ export const fr: Dictionary = {
       secondary: "Voir nos réalisations",
       strip: "Design · Technologie · Stratégie · Ingénierie",
       scroll: "Défiler",
+      xray: "Déplacez le curseur pour passer le site aux rayons X",
       fragmentDeploy: "déploiement — production",
       fragmentLive: "en ligne",
       fragmentBuild: "build compilé",

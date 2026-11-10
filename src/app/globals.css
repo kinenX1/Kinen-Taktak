@@ -239,8 +239,8 @@
 
   .glass {
     background: rgb(19 22 28 / 0.62);
-    backdrop-filter: blur(18px) saturate(140%);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
     border: 1px solid var(--color-line);
   }
 
@@ -516,5 +516,91 @@
   .nav-active-pill::before,
   .scanline::after {
     animation: none;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Hero X-ray lens — see components/home/hero-xray.tsx
+   ════════════════════════════════════════════════════════════════ */
+@property --xray-r {
+  syntax: "<length>";
+  initial-value: 0px;
+  inherits: true;
+}
+
+@layer components {
+  .xray {
+    --xray-x: 50%;
+    --xray-y: 50%;
+    --xray-r: 0px;
+    transition: --xray-r 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .xray[data-active] {
+    --xray-r: 170px;
+  }
+
+  /* Mask and backdrop-filter must sit on the same element: a masked parent
+     would hide the page from a child's backdrop-filter. */
+  .xray-mask {
+    -webkit-mask-image: radial-gradient(circle at var(--xray-x) var(--xray-y), #000 calc(var(--xray-r) * 0.9), transparent var(--xray-r));
+    mask-image: radial-gradient(circle at var(--xray-x) var(--xray-y), #000 calc(var(--xray-r) * 0.9), transparent var(--xray-r));
+  }
+
+  .xray-film {
+    background: radial-gradient(circle at var(--xray-x) var(--xray-y), rgb(139 156 255 / 0.12), rgb(6 7 9 / 0.35) var(--xray-r));
+    /* Unprefixed last: the CSS minifier keeps only the final declaration. */
+    -webkit-backdrop-filter: grayscale(1) sepia(1) hue-rotate(175deg) saturate(2.4) contrast(1.35) brightness(1.25);
+    backdrop-filter: grayscale(1) sepia(1) hue-rotate(175deg) saturate(2.4) contrast(1.35) brightness(1.25);
+  }
+
+  .xray-grid {
+    background-image:
+      linear-gradient(to right, rgb(184 194 255 / 0.16) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(184 194 255 / 0.16) 1px, transparent 1px),
+      linear-gradient(to right, rgb(184 194 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(184 194 255 / 0.06) 1px, transparent 1px);
+    background-size: 72px 72px, 72px 72px, 12px 12px, 12px 12px;
+  }
+
+  .xray-scan {
+    top: 0;
+    background: linear-gradient(to bottom, transparent, rgb(184 194 255 / 0.18), transparent);
+    animation: xray-scan 2.6s linear infinite;
+  }
+
+  .xray-ring {
+    left: var(--xray-x);
+    top: var(--xray-y);
+    width: calc(var(--xray-r) * 2);
+    height: calc(var(--xray-r) * 2);
+    transform: translate(-50%, -50%);
+    border-radius: 9999px;
+    border: 1px solid rgb(184 194 255 / 0.5);
+    box-shadow: 0 0 40px -6px rgb(139 156 255 / 0.45), inset 0 0 30px -10px rgb(139 156 255 / 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .xray[data-active] .xray-ring {
+    opacity: 1;
+  }
+
+  .xray-flash {
+    left: var(--xray-x);
+    top: var(--xray-y);
+    width: 360px;
+    height: 360px;
+    border-radius: 9999px;
+    transform: translate(-50%, -50%);
+    /* No mix-blend-mode here: it would isolate .xray and blank the film's backdrop. */
+    background: radial-gradient(circle, rgb(255 255 255 / 0.7), rgb(184 194 255 / 0.3) 40%, transparent 70%);
+  }
+}
+
+@keyframes xray-scan {
+  from {
+    transform: translateY(-6rem);
+  }
+  to {
+    transform: translateY(100svh);
   }
 }

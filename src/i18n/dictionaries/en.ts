@@ -145,6 +145,7 @@ export const en = {
       secondary: "Explore Our Work",
       strip: "Design · Technology · Strategy · Engineering",
       scroll: "Scroll",
+      xray: "Move your cursor to x-ray the build",
       fragmentDeploy: "deploy — production",
       fragmentLive: "live",
       fragmentBuild: "build compiled",

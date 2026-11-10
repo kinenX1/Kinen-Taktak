@@ -9,6 +9,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Magnetic } from "@/components/motion/magnetic";
 import { SplitReveal } from "@/components/motion/split-reveal";
 import { HeroFragments } from "./hero-fragments";
+import { HeroXRay } from "./hero-xray";
 
 // The canvas is purely decorative — load it after the critical content.
 const FlowField = dynamic(() => import("@/components/visuals/flow-field").then((m) => m.FlowField), {
@@ -47,12 +48,14 @@ export function Hero() {
       </motion.div>
 
       <HeroFragments progress={progress} />
+      <HeroXRay targetRef={ref} />
 
       <motion.div style={{ y: contentY, opacity: contentOpacity }} className="container-x flex flex-1 flex-col justify-end pb-10 pt-16 md:pb-14">
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: ease.outExpo, delay: 0.2 }}
+          data-xray="p.eyebrow"
           className="eyebrow mb-8 flex items-center gap-3"
         >
           <span className="relative flex size-2">
@@ -62,7 +65,7 @@ export function Hero() {
           {t.eyebrow}
         </motion.p>
 
-        <h1 id="hero-title" className="max-w-[15ch] text-display-xl font-medium text-fog-50">
+        <h1 id="hero-title" data-xray="h1" className="max-w-[15ch] text-display-xl font-medium text-fog-50">
           <SplitReveal
             immediate
             delay={0.25}
@@ -94,6 +97,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: ease.outExpo, delay: 0.9 }}
+            data-xray="div.intro"
             className="md:col-span-6 lg:col-span-5"
           >
             <p className="flex flex-wrap gap-x-3 gap-y-1 text-lead font-medium text-fog-50">
@@ -117,6 +121,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: ease.outExpo, delay: 1.1 }}
+            data-xray="nav.cta"
             className="flex flex-wrap items-center gap-3 md:col-span-6 md:justify-end lg:col-span-7"
           >
             <Magnetic>
@@ -140,6 +145,7 @@ export function Hero() {
           aria-hidden="true"
         >
           <span className="eyebrow">{t.strip}</span>
+          <span className="eyebrow hidden text-ion-soft/80 [@media(hover:hover)_and_(pointer:fine)]:inline">{t.xray}</span>
           <span className="eyebrow flex items-center gap-3">
             {t.scroll}
             <span className="relative h-8 w-px overflow-hidden bg-line-strong">
