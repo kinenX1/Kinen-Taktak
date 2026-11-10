@@ -8,8 +8,8 @@ import { useT } from "@/i18n/client";
 import { ButtonLink } from "@/components/ui/button";
 import { Magnetic } from "@/components/motion/magnetic";
 import { SplitReveal } from "@/components/motion/split-reveal";
-import { HeroFragments } from "./hero-fragments";
 import { HeroXRay } from "./hero-xray";
+import { HeroSpeedster } from "./hero-speedster";
 
 // The canvas is purely decorative — load it after the critical content.
 const FlowField = dynamic(() => import("@/components/visuals/flow-field").then((m) => m.FlowField), {
@@ -47,7 +47,15 @@ export function Hero() {
         <div className="absolute -right-[10%] -top-[20%] size-[60vw] rounded-full bg-[radial-gradient(circle,rgb(255_90_31/0.14),transparent_60%)] blur-2xl" />
       </motion.div>
 
-      <HeroFragments progress={progress} />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.8, ease: "easeOut", delay: 0.4 }}
+        className="absolute inset-0 -z-[7]"
+      >
+        <HeroSpeedster />
+      </motion.div>
+
       <HeroXRay targetRef={ref} />
 
       <motion.div style={{ y: contentY, opacity: contentOpacity }} className="container-x flex flex-1 flex-col justify-end pb-10 pt-16 md:pb-14">

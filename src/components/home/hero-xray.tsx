@@ -2,12 +2,14 @@
 
 import { useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { HeroSpeedster } from "./hero-speedster";
 
 type Box = { id: string; label: string; x: number; y: number; w: number; h: number };
 
 /**
  * X-ray flashlight for the hero. Following a fine pointer, a lens turns the
- * area under the cursor into cyan "film" and draws the layout skeleton (each
+ * area under the cursor into cyan "film", shows the hero figure's skeleton
+ * (an X-ray version of the same image in the same frame), and draws the layout skeleton (each
  * `[data-xray]` element's tag and size, plus a blueprint grid). It pops in
  * with a short flash. Decorative only: pointer-events are off, it is hidden
  * from assistive technology and does not render on touch screens.
@@ -128,8 +130,9 @@ export function HeroXRay({ targetRef }: { targetRef: RefObject<HTMLElement | nul
       {/* The "film": everything under the lens, desaturated and tinted cyan */}
       <div className="xray-film xray-mask absolute inset-0" />
 
-      {/* The skeleton: blueprint grid, element boxes and a scan line */}
+      {/* The skeleton: the figure's bones, blueprint grid, element boxes and a scan line */}
       <div className="xray-mask absolute inset-0">
+        <HeroSpeedster xray />
         <div className="xray-grid absolute inset-0" />
         {boxes.map((b) => (
           <div

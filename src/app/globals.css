@@ -604,3 +604,18 @@
     transform: translateY(100svh);
   }
 }
+
+/* Hero figure: fade into the page at the bottom, and on wide screens also on
+   the left so the headline stays readable. */
+.speedster-frame {
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 22%);
+  mask-image: linear-gradient(to top, transparent 0%, #000 22%);
+}
+@media (min-width: 1024px) {
+  .speedster-frame {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 38%), linear-gradient(to top, transparent 0%, #000 22%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, #000 38%), linear-gradient(to top, transparent 0%, #000 22%);
+    mask-composite: intersect;
+  }
+}
