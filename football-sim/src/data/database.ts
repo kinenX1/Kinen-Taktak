@@ -101,10 +101,16 @@ export function makePlayer(rng: RNG, id: string, position: Position, base: numbe
   const first = rng.pick(pool.f), last = rng.pick(pool.l);
   const age = opts.age ?? clamp(Math.round(rng.gauss(26, 4)), 17, 36);
   const t = TEMPLATE[position];
-  const lvl = base + rng.gauss(0, 2.6);
+  const lvl = base + rng.gauss(0, 2.2);
   const v = (o: number) => clamp(Math.round(lvl + o + rng.gauss(0, 4)), 20, 99);
   const attrs: Attrs = { pac: v(t[0]), sho: v(t[1]), pas: v(t[2]), dri: v(t[3]), def: v(t[4]), phy: v(t[5]), gk: position === 'GK' ? clamp(Math.round(lvl + rng.gauss(0, 2)), 30, 99) : rng.int(5, 18) };
   if (age > 31) attrs.pac = clamp(attrs.pac - (age - 31) * 2, 20, 99);
+  // Normalise so the position rating lands on the intended level (keeps squads in line with club strength).
+  const target = clamp(Math.round(lvl), 40, 95);
+  for (let it = 0; it < 3 && position !== 'GK'; it++) {
+    const d = target - ratingAt(attrs, position); if (!d) break;
+    for (const k of ['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const) attrs[k] = clamp(attrs[k] + d, 20, 97);
+  }
   const overall = ratingAt(attrs, position);
   const potential = clamp(overall + (age < 24 ? rng.int(2, 14 - Math.max(0, age - 18)) : age < 28 ? rng.int(0, 3) : 0), overall, 97);
   const style = rng.pick(STYLES[GROUP[position]]);
@@ -196,7 +202,7 @@ export class Database {
       SQUAD.forEach((pos, i) => {
         const starter = [0, 2, 3, 6, 8, 10, 12, 13, 15, 16, 17, 18].includes(i);
         const nation = national ? country : rng.chance(0.62) ? country : rng.pick(Object.keys(NATION_POOL));
-        const p = makePlayer(rng, `${id}-${i}`, pos, strength + (starter ? 1.5 : -3.5), nation, { number: nums[i] });
+        const p = makePlayer(rng, `${id}-${i}`, pos, strength + (starter ? -2 : -7), nation, { number: nums[i] });
         p.wage = Math.round(p.value / 220 / 100) * 100;
         team.players.push(p);
       });

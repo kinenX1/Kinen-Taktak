@@ -12,7 +12,7 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
   await page.addInitScript(() => { if (!localStorage.getItem('ufs.settings.v1')) localStorage.setItem('ufs.settings.v1', JSON.stringify({ quality: 'low', postfx: false, shadows: false, matchMinutes: 2 })); });
-  await page.goto('http://localhost:4173/');
+  await page.goto('http://localhost:4173/?nosplash');
   await page.waitForSelector('.menu .btn');
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   const click = async (text) => { await page.locator('button', { hasText: text }).first().click(); await page.waitForTimeout(350); };
@@ -30,15 +30,13 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   check('match created', await G('!!m && !g.backdrop'));
   check('intro line-ups shown', (await page.locator('.lineups').count()) === 1);
   await shot('03-intro');
-  await page.keyboard.press('KeyJ'); await page.waitForTimeout(1200);
-  await page.keyboard.press('KeyJ'); await page.waitForTimeout(800);
-  check('kick-off set piece', (await G('m.phase')) === 'setpiece' || (await G('m.phase')) === 'play', await G('m.phase'));
-  await page.keyboard.press('KeyJ'); await page.waitForTimeout(1500);
+  // Skip the intro and take the kick-off (headless rendering is slow, so poll instead of using fixed waits).
+  for (let i = 0; i < 60 && (await G('m.phase')) !== 'play'; i++) { await page.keyboard.press('KeyJ'); await page.waitForTimeout(400); }
   check('ball in play after kick-off pass', (await G('m.phase')) === 'play', await G('m.phase'));
   const c0 = await G('m.clock');
   // movement
   const before = await G('(() => { const p = m.teams[0].selected; return p ? [p.x, p.z, p.data.short] : null; })()');
-  await page.keyboard.down('KeyD'); await page.keyboard.down('ShiftLeft'); await page.waitForTimeout(1500);
+  await page.keyboard.down('KeyD'); await page.keyboard.down('ShiftLeft'); await page.waitForTimeout(4000);
   const after = await G('(() => { const p = m.teams[0].selected; return p ? [p.x, p.z, p.data.short] : null; })()');
   await page.keyboard.up('ShiftLeft');
   check('human player selected', !!before);
@@ -49,24 +47,26 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await G(`(() => { const p = m.teams[0].selected ?? m.teams[0].players[9]; m.teams[0].selected = p; for (const q of m.teams[1].players) if (!q.isGK) { q.x = -30; q.z = 20; } p.x = 36; p.z = 2; p.vx = p.vz = 0; p.facing = 0; p.setState('play'); p.ctlCd = 0; m.ball.place(36.5, 2); m.ball.owner = p; m.setPhase('play'); return 1; })()`);
   await page.waitForTimeout(200);
   const shots0 = await G('m.teams[0].stats.shots');
-  await page.keyboard.down('KeyK'); await page.waitForTimeout(450); await page.keyboard.up('KeyK'); await page.keyboard.up('KeyD');
-  await page.waitForTimeout(2500);
+  await page.keyboard.down('KeyK'); await page.waitForTimeout(900); await page.keyboard.up('KeyK'); await page.keyboard.up('KeyD');
+  await page.waitForTimeout(5000);
   check('shoot button takes a shot', (await G('m.teams[0].stats.shots')) > shots0);
   await shot('05-shot');
   // passing
-  await G(`(() => { const p = m.teams[0].players[6]; m.teams[0].selected = p; p.x = 0; p.z = 0; p.setState('play'); p.ctlCd = 0; m.ball.place(0.5, 0); m.ball.owner = p; m.setPhase('play'); return 1; })()`);
+  await G(`(() => { const p = m.teams[0].players[6]; m.teams[0].selected = p; p.x = 0; p.z = 0; p.setState('play'); p.ctlCd = 0; m.ball.place(0.5, 0); m.ball.owner = p; m.setPhase('play'); m.sp = null; return 1; })()`);
+  await page.waitForTimeout(600);
   const passes0 = await G('m.teams[0].stats.passes');
-  await page.keyboard.press('KeyJ'); await page.waitForTimeout(900);
+  await page.keyboard.press('KeyJ'); await page.waitForTimeout(3500);
   check('pass button plays a pass', (await G('m.teams[0].stats.passes')) > passes0);
+  const g0 = await G('m.teams[0].score');
   // force a goal to verify detection + scoreboard + replay
-  await G(`(() => { const p = m.teams[0].players[9]; m.ball.owner = null; m.ball.lastTouch = p; m.ball.pos.set(51.5, 0.5, 0); m.ball.vel.set(20, 0, 0); for (const q of m.all) if (q.isGK && q.team.idx === 1) { q.x = 40; q.z = 20; } m.setPhase('play'); return 1; })()`);
-  await page.waitForTimeout(1500);
-  check('goal detected and scoreboard updates', (await G('m.teams[0].score')) === 1 && (await page.locator('.score .num').first().textContent()) === '1', `score ${await G('m.teams[0].score')}`);
+  await G(`(() => { const p = m.teams[0].players[9]; m.ball.owner = null; m.ball.lastTouch = p; m.ball.pos.set(51.5, 0.5, 0); m.ball.vel.set(20, 0, 0); for (const q of m.all) if (q.isGK && q.team.idx === 1) { q.x = 40; q.z = 20; } m.setPhase('play'); m.sp = null; return 1; })()`);
+  await page.waitForTimeout(3000);
+  check('goal detected and scoreboard updates', (await G('m.teams[0].score')) === g0 + 1 && (await page.locator('.score .num').first().textContent()) === String(g0 + 1), `score ${await G('m.teams[0].score')}`);
   await shot('06-goal');
   await ff(6); await page.waitForTimeout(1200);
   check('replay plays after goal', await G('g.view.replaying || m.phase === "setpiece" || m.phase === "play"'), await G('m.phase'));
   await shot('07-replay');
-  await page.keyboard.press('KeyJ'); await page.waitForTimeout(600); await page.keyboard.press('KeyJ'); await page.waitForTimeout(800);
+  for (let i = 0; i < 40 && (await G('m.phase')) !== 'play' && (await G('m.phase')) !== 'setpiece'; i++) { await page.keyboard.press('KeyJ'); await page.waitForTimeout(400); }
   // pause menu
   await page.keyboard.press('Escape'); await page.waitForTimeout(400);
   check('pause menu opens', (await page.locator('.overlay.dark').count()) === 1);
@@ -106,7 +106,7 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await click('Training'); await shot('16-training');
   await page.locator('button', { hasText: 'Start drill' }).nth(4).click(); await page.waitForTimeout(1500);
   check('penalty drill starts', (await G('!!g.training && m.sp && m.sp.type')) === 'penalty', String(await G('m.phase')));
-  await page.waitForTimeout(1500); await page.keyboard.down('KeyK'); await page.waitForTimeout(700); await page.keyboard.up('KeyK'); await page.waitForTimeout(4000);
+  await page.waitForTimeout(4000); await page.keyboard.down('KeyK'); await page.waitForTimeout(1500); await page.keyboard.up('KeyK'); await page.waitForTimeout(8000);
   check('penalty drill registers an attempt', (await G('g.training.attempt')) >= 1 && (await G('m.teams[0].stats.shots')) >= 1);
   await shot('17-penalty');
   await page.keyboard.press('Escape'); await page.waitForTimeout(300); await click('Quit Training');

@@ -187,7 +187,7 @@ export class Game {
           this.goalCam = true; const c = m.celebrant;
           this.cam.setShot({ kind: 'follow', target: () => new THREE.Vector3(c.x, 0, c.z), facing: () => c.facing, dist: 6.5, height: 1.9, fov: 30 });
         }
-        if (v.replaying && this.input.anyAction && v.replayProgress > 0.12) v.stopReplay();
+        if (v.replaying && ((this.input.anyAction && v.replayProgress > 0.12) || m.phase !== 'replay')) v.stopReplay();
       } else if (m.phase === 'fulltime' && m.phaseT > 6) { this.showBackdrop(); return; }
       if (!this.paused) {
         m.update(dt);
