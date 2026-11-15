@@ -280,7 +280,9 @@ function carrierAI(m: MatchManager, p: Player, dt: number) {
   if (top === shotS && shotS > 0.55) {
     const power = dGoal < 11 ? rng.range(0.38, 0.55) : clamp(0.42 + dGoal / 55 + rng.range(-0.08, 0.1), 0.4, 0.85);
     const fin = (style === 'Playmaker' || style === 'Dribbler') && dGoal > 13 && dGoal < 25 && rng.chance(0.5);
-    startKick(m, p, planShot(m, p, null, power, fin, P.shotErr));
+    const gk = opp.gk, gkOut = dist(gk.x, gk.z, gx, 0);
+    const st = gkOut > 7.5 && dGoal > 13 && dGoal < 30 ? 'chip' : fin ? 'finesse' : dGoal > 22 && rng.chance(0.3) ? 'knuckle' : dGoal < 14 && rng.chance(0.4) ? 'driven' : style === 'Playmaker' && rng.chance(0.2) ? 'trivela' : 'power';
+    startKick(m, p, planShot(m, p, null, power, false, P.shotErr, 'shot', st));
   } else if (top === passS && passTo) {
     startKick(m, p, planPass(m, p, passTo, kind, P.passErr));
   } else if (top === clearS) {

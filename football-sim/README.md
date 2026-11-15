@@ -18,6 +18,33 @@ npm run preview    # serve the production build on :4173
 
 `dist/` is a plain static site (relative asset paths), so it can be hosted anywhere.
 
+## Online play, friends and the club hub
+
+`Play` on the main menu opens **My Club**: your profile with a 6-digit ID, coins, your own team (shown as cards on a pitch),
+friends, and lobbies. Friends are added by ID, show as connected or offline, and can be invited to a lobby. The host sets the
+match time (5/10/15/20 minutes), stadium and conditions, then starts the match. Winning earns coins.
+
+Friends and online lobbies need the game server, which also serves the game itself:
+
+```bash
+npm run build
+npm start          # http://localhost:8080  (PORT env var to change)
+```
+
+Deploy that as a Node web service (root `football-sim`, build `npm install && npm run build`, start `npm start`).
+A static host such as GitHub Pages can run everything except friends and online lobbies; point it at a server with
+`?server=your-server-host` in the address. The host simulates the match and the guest mirrors it, so the guest sees a
+little more delay than the host. Friend lists are kept in a JSON file next to the server.
+
+The player shop (buy and sell with Match / Month / Year deals), the coin store and Events are built behind a
+"Coming soon" switch (`SHOP_OPEN` in `src/ui/hubScreens.ts`).
+
+## Install on a phone
+
+The game is a web app with touch controls. Open it in the phone's browser, turn the phone to landscape, and use
+"Add to Home screen" to install it with an icon and full-screen mode. There is no APK: packaging one needs an Android
+build (for example Capacitor) that is not part of this project yet.
+
 ## Controls
 
 | Action | Player 1 | Player 2 | Gamepad |
@@ -31,6 +58,8 @@ npm run preview    # serve the production build on :4173
 | Switch player | Space | Numpad 0 | LB |
 | Skill move (direction picks the move) | E | Numpad 4 | LT |
 | Modifier: finesse shot, shield, jockey | Q | Numpad 6 | RB |
+| Change kick style (power, finesse, chip, driven, knuckleball, trivela) | R | Numpad 7 | R3 |
+| Switch camera | C | | |
 | Pause | Esc / P | | Start |
 
 Every key can be rebound in **Settings → Controls**. One gamepad drives Player 1 (Player 2 in local multiplayer); two gamepads
@@ -74,6 +103,7 @@ tests/
   sim.test.ts   headless AI-vs-AI matches (npm run test:sim)
   summary.ts    aggregate match statistics for tuning
   e2e.cjs       drives the real game in headless Chromium (npm run test:e2e, needs `npm run preview`)
+  online.cjs    two browsers play each other through server.js (npm run test:online, needs `npm start`)
 ```
 
 ## Known limits

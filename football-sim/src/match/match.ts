@@ -24,7 +24,7 @@ export interface MatchConfig {
 }
 export interface LogEntry { minute: number; type: 'goal' | 'yellow' | 'red' | 'sub' | 'pen'; team: number; text: string }
 export interface MatchEvents extends Record<string, unknown> {
-  kick: { player: Player; type: KickType; power: number };
+  kick: { player: Player; type: KickType; power: number; style?: string };
   bounce: { speed: number }; post: { speed: number }; net: Record<string, never>;
   whistle: { kind: 'short' | 'long' | 'half' | 'full' };
   goal: { team: MatchTeam; scorer: Player; assist: Player | null; own: boolean; minute: number };
@@ -67,6 +67,8 @@ export class MatchManager {
   /** Maps stick/keys to world axes; set by the camera so "up" is always away from the camera. */
   basis = { rx: 1, rz: 0, ux: 0, uz: -1 };
   useReplays = false;
+  /** Online guest: this match is a mirror driven by snapshots from the host and never simulates. */
+  remote = false;
   winner = -1;
   lastGoal: MatchEvents['goal'] | null = null;
   so: { kicks: boolean[][]; turn: number; order: Player[][]; active: boolean; resolveT: number; resolved: boolean } | null = null;
@@ -116,11 +118,12 @@ export class MatchManager {
   say(text: string, tone = 0) { this.events.emit('commentary', { text, tone }); }
   setPhase(p: Phase) { this.phase = p; this.phaseT = 0; this.events.emit('phase', { phase: p }); }
 
-  begin() { if (this.phase === 'intro') { this.say(`Welcome to ${this.cfg.title ?? 'today\'s match'}: ${this.teams[0].data.name} against ${this.teams[1].data.name}.`); this.setupSetPiece('kickoff', 0, 0, this.teams[0]); } }
-  resume() { if (this.phase === 'halftime') this.startSecondHalf(); }
-  endReplay() { if (this.phase === 'replay') this.setupSetPiece('kickoff', 0, 0, this.teams[this.kickoffTeam]); }
+  begin() { if (this.remote) return; if (this.phase === 'intro') { this.say(`Welcome to ${this.cfg.title ?? 'today\'s match'}: ${this.teams[0].data.name} against ${this.teams[1].data.name}.`); this.setupSetPiece('kickoff', 0, 0, this.teams[0]); } }
+  resume() { if (!this.remote && this.phase === 'halftime') this.startSecondHalf(); }
+  endReplay() { if (!this.remote && this.phase === 'replay') this.setupSetPiece('kickoff', 0, 0, this.teams[this.kickoffTeam]); }
 
   update(dt: number) {
+    if (this.remote) return;
     this.acc += Math.min(dt, 0.1);
     let n = 0;
     while (this.acc >= STEP && n < 6) { this.tick(STEP); this.acc -= STEP; n++; }
@@ -250,6 +253,7 @@ export class MatchManager {
       }
       return;
     }
+    if (ball.knuckle > 0) { ball.knuckle -= dt; if (ball.pos.y > 0.25) { ball.vel.z += this.rng.gauss(0, 9) * dt * 6; ball.vel.y += this.rng.gauss(0, 5) * dt * 6; ball.pathValid = false; } }
     for (let i = 0; i < 2; i++) {
       const ev = ball.step(dt / 2);
       if (!ev) continue;
@@ -370,7 +374,7 @@ export class MatchManager {
   }
 
   onKick(p: Player, k: KickPlan) {
-    this.events.emit('kick', { player: p, type: k.type, power: k.power });
+    this.events.emit('kick', { player: p, type: k.type, power: k.power, style: k.style });
     p.stats.touches++;
     const t = p.team;
     let from: SetPieceType | null = null;
@@ -570,7 +574,7 @@ export class MatchManager {
     this.setPhase('fulltime');
   }
   /** Called by the game once the full-time presentation has been shown. */
-  complete() { this.setPhase('done'); }
+  complete() { if (!this.remote) this.setPhase('done'); }
 
   /** Match rating out of 10 for a player, used by careers. */
   rating(p: Player) {

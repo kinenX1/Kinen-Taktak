@@ -4,14 +4,17 @@ import { fmtMoney } from '../core/math';
 import { DB, lineStrength, teamRating } from '../data/database';
 import { STADIUMS, WEATHERS, WEATHER_NAMES, Weather } from '../data/stadiums';
 import { ATTRS, PlayerData, TeamData } from '../data/types';
-import { HAIR, SKIN } from '../engine/textures';
+import { FACES, FACE_BY_SKIN } from './facesData';
+import { hashStr } from '../core/rng';
 import type { Game } from '../game';
 import type { Control } from '../match/team';
 import { DRILLS } from '../modes/training';
 import { Save } from '../modes/league';
 import { btn, chooser, clear, div, h, slider, table, tabs, toggle } from './dom';
 import { careerEntry, playerCareerEntry, tournamentEntry } from './modeScreens';
+import { Hub, friends, hubHome } from './hubScreens';
 
+export const CAM_STEPS = [0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3, 1.5];
 export function frame(title: string, accent: string, sub: string, body: Node | Node[], foot: Node[] = [], solid = true) {
   return div(`screen ${solid ? 'solid' : ''}`, div('screen-head', h('h1', null, title, ' ', h('span', null, accent)), div('sub', sub)), div('screen-body', body), div('screen-foot', foot));
 }
@@ -22,8 +25,13 @@ export function playerCard(p: PlayerData) {
   const tier = p.overall >= 84 ? 'gold' : p.overall >= 75 ? 'silver' : p.overall >= 66 ? 'bronze' : '';
   const keys = p.position === 'GK' ? (['gk', 'pas', 'phy', 'pac'] as const) : (['pac', 'sho', 'pas', 'dri', 'def', 'phy'] as const);
   return div(`pcard ${tier}`, div('ovr', p.overall), div('pos', p.position),
-    h('div', { class: 'face', style: { background: SKIN[p.look.skin] } }, p.look.hair ? h('i', { style: { background: HAIR[p.look.hairColor] } }) : null),
+    h('div', { class: 'face', style: { backgroundImage: `url(${FACES})`, backgroundPosition: facePos(p) } }),
+    div('nat', p.nation.slice(0, 3).toUpperCase()),
     div('nm', p.short), div('at', keys.map((k) => h('span', null, h('b', null, p.attrs[k]), k.toUpperCase()))), div('tr', `${p.style} · ${p.personality} · ${p.age}y`));
+}
+function facePos(p: PlayerData) {
+  const list = FACE_BY_SKIN[p.look.skin] ?? FACE_BY_SKIN[1], i = list[hashStr(p.id) % list.length];
+  return `${(i % 6) * 20}% ${Math.floor(i / 6) * 50}%`;
 }
 export function kitSwatch(t: TeamData, away = false) {
   const k = t.kits[away ? 1 : 0];
@@ -52,11 +60,16 @@ export function teamPicker(initial: string, onChange: (id: string) => void, leag
 }
 
 export function mainMenu(g: Game): HTMLElement {
-  const item = (label: string, sub: string, go: () => void) => btn([h('span', null, label), h('small', null, sub)], go);
+  const item = (label: string, sub: string, go: () => void, cls = '') => btn([h('span', null, label), h('small', null, sub)], go, cls);
+  const hub = Hub.of(g);
+  const shopBtn = btn(`Buy coins · ${hub.club.s.money.toLocaleString()}`, () => g.screen(comingSoon(g, 'Buy', 'Coins', 'The coin store is not open yet. Earn coins by winning matches.', () => g.screen(mainMenu(g)))), 'small');
+  shopBtn.style.cssText = 'position:absolute;right:clamp(16px,4vw,60px);top:clamp(14px,3vh,34px)';
   return div('screen',
     h('h1', { class: 'logo' }, h('small', null, 'ULTIMATE'), 'Football', h('br'), h('em', null, 'Simulator')),
     div('menu',
-      item('Play', 'Quick match', () => g.screen(quickMatch(g, false))),
+      item('Play', 'My club · online & shop', () => hubHome(g), 'primary'),
+      item('Friends', 'Add, invite, play', () => friends(g)),
+      item('Quick Match', 'Any two teams', () => g.screen(quickMatch(g, false))),
       item('Career', 'Manage a club', () => careerEntry(g)),
       item('Player Career', 'Become a legend', () => playerCareerEntry(g)),
       item('Tournaments', 'Cups & knockouts', () => tournamentEntry(g)),
@@ -64,6 +77,7 @@ export function mainMenu(g: Game): HTMLElement {
       item('Multiplayer', 'Two players, one screen', () => g.screen(quickMatch(g, true))),
       item('Settings', 'Graphics, audio, controls', () => g.screen(settingsScreen(g))),
       item('Exit', 'Leave the stadium', () => g.screen(exitScreen(g)))),
+    shopBtn,
     div('tagline', `${DB.teams.size} teams · ${[...DB.teams.values()].reduce((s, t) => s + t.players.length, 0)} players · ${STADIUMS.length} stadiums`, h('br'), 'All clubs and players are fictional.'));
 }
 
@@ -124,7 +138,9 @@ export function settingsScreen(g: Game): HTMLElement {
     chooser('Default difficulty', DIFFICULTY_NAMES.map((n, i) => ({ value: i as Difficulty, label: n })), s.difficulty, (v) => { s.difficulty = v; save(); }),
     chooser('Default match length', [2, 4, 6, 8, 10, 14, 20].map((m) => ({ value: m, label: `${m} minutes` })), s.matchMinutes, (v) => { s.matchMinutes = v; save(); }),
     chooser<CameraMode>('Camera', [{ value: 'broadcast', label: 'Broadcast' }, { value: 'tele', label: 'Tele Broadcast' }, { value: 'dynamic', label: 'Dynamic' }, { value: 'tactical', label: 'Tactical' }, { value: 'endtoend', label: 'End to End' }], s.camera, (v) => { s.camera = v; save(); }),
-    chooser('Camera distance', [0.8, 0.9, 1, 1.15, 1.3].map((v) => ({ value: v, label: `${Math.round(v * 100)}%` })), s.cameraZoom, (v) => { s.cameraZoom = v; save(); }),
+    chooser('Camera distance', CAM_STEPS.map((v) => ({ value: v, label: `${Math.round(v * 100)}%` })), s.cameraZoom, (v) => { s.cameraZoom = v; save(); }),
+    chooser('Camera height', CAM_STEPS.map((v) => ({ value: v, label: `${Math.round(v * 100)}%` })), s.cameraHeight, (v) => { s.cameraHeight = v; save(); }),
+    div('muted', 'During a match press C (or the CAM button on a phone) to switch camera, and open Pause to adjust distance and height.'),
     toggle('Radar', s.radar, (v) => { s.radar = v; save(); }), toggle('Commentary ticker', s.commentary, (v) => { s.commentary = v; save(); }), toggle('Goal replays', s.replays, (v) => { s.replays = v; save(); }),
     toggle('Gamepad controls Player 1', s.gamepadP1, (v) => { s.gamepadP1 = v; save(); }));
   const controls = () => {
@@ -147,6 +163,9 @@ export function settingsScreen(g: Game): HTMLElement {
   return frame('Game', 'Settings', 'Tune the experience', t.root, [backBtn('Back', () => { g.input.capture = null; g.screen(mainMenu(g)); })]);
 }
 
+export function comingSoon(g: Game, a: string, b: string, text: string, back: () => void): HTMLElement {
+  return frame(a, b, '', h('div', { style: { margin: 'auto', textAlign: 'center' } }, h('h1', { class: 'logo', style: { fontSize: 'clamp(40px, 10vh, 72px)' } }, 'Coming ', h('em', null, 'Soon')), div('muted', text)), [backBtn('Back', back)]);
+}
 export function exitScreen(g: Game): HTMLElement {
   return div('screen solid', h('div', { style: { margin: 'auto', textAlign: 'center' }, class: 'col' }, h('h1', { class: 'logo', style: { fontSize: '64px' } }, 'Full ', h('em', null, 'Time')),
     div('muted', 'Thanks for playing Ultimate Football Simulator. Your careers and settings are saved in this browser.'), div('muted', 'You can now close this tab.'),

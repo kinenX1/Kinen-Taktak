@@ -8,7 +8,7 @@ function tex(c: HTMLCanvasElement, srgb = true, repeat = false) {
   const t = new THREE.CanvasTexture(c);
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }
-  t.anisotropy = 8;
+  t.anisotropy = 16;
   return t;
 }
 function noiseCanvas(size: number, lo: number, hi: number, seed = 7) {

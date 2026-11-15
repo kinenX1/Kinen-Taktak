@@ -26,6 +26,7 @@ export class MatchView {
   private head = 0; private count = 0; private recT = 0;
   replaying = false; private repT = 0; private repEnd = 0; private repSpeed = 0.5; private repDone: (() => void) | null = null;
   private tmpQ = new THREE.Quaternion(); private axis = new THREE.Vector3();
+  private trail: THREE.Line; private trailPos = new Float32Array(28 * 3); private trailN = 0;
   private ctx: AnimCtx = { ballX: 0, ballZ: 0, time: 0, hasBall: false, ready: false, lost: false };
 
   constructor(public match: MatchManager, scene: THREE.Scene, private blobShadows: boolean) {
@@ -48,6 +49,8 @@ export class MatchView {
     const ag = new THREE.PlaneGeometry(1, 0.35); ag.rotateX(-Math.PI / 2); ag.translate(0.5, 0, 0);
     this.aim = new THREE.Mesh(ag, new THREE.MeshBasicMaterial({ color: '#ffe14d', transparent: true, opacity: 0.75, depthWrite: false }));
     this.aim.position.y = 0.04; this.aim.visible = false; this.group.add(this.aim);
+    const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.BufferAttribute(this.trailPos, 3)); tg.setDrawRange(0, 0);
+    this.trail = new THREE.Line(tg, new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.7, depthWrite: false })); this.trail.frustumCulled = false; this.group.add(this.trail);
     for (let i = 0; i < FRAME_HZ * REPLAY_SECONDS; i++) this.frames.push(new Float32Array(FRAME_LEN));
     this.sync();
   }
@@ -95,6 +98,11 @@ export class MatchView {
     const s = m.ball.spin; const sl = s.length();
     if (sl > 0.5 && b.y > 0.2) { this.axis.copy(s).normalize(); this.tmpQ.setFromAxisAngle(this.axis, sl * dt * 0.4); this.ball.quaternion.premultiply(this.tmpQ); }
     this.markers(time);
+    // Shot trail, coloured by kick style
+    const fast = !m.ball.owner && m.ball.style && m.ball.speed > 11;
+    if (fast) { this.trailPos.copyWithin(3, 0, 27 * 3); this.trailPos[0] = b.x; this.trailPos[1] = b.y; this.trailPos[2] = b.z; this.trailN = Math.min(28, this.trailN + 1); } else this.trailN = Math.max(0, this.trailN - 2);
+    this.trail.geometry.setDrawRange(0, this.trailN); this.trail.geometry.attributes.position.needsUpdate = true;
+    (this.trail.material as THREE.LineBasicMaterial).color.set(({ power: '#ffffff', finesse: '#35e0ff', chip: '#c6ff3d', driven: '#ff5a3d', knuckle: '#ffcf5a', trivela: '#ff4fd8' } as Record<string, string>)[m.ball.style] ?? '#ffffff');
     // Record a replay frame
     this.recT += dt;
     if (this.recT >= 1 / FRAME_HZ && (m.phase === 'play' || m.phase === 'goal' || m.phase === 'dead' || m.phase === 'pk' || m.phase === 'setpiece')) { this.recT = 0; this.record(); }

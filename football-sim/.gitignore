@@ -3,3 +3,4 @@ dist
 tests/shots
 *.tsbuildinfo
 single
+server-data.json

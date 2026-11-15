@@ -35,7 +35,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .pad-focus { ou
 .menu .btn { justify-content: space-between; font-size: clamp(20px, 3.2vh, 28px); padding: clamp(8px, 1.5vh, 14px) 22px; text-align: left; animation: itemIn 0.5s both; }
 .menu .btn small { font-size: 0.55em; color: var(--dim); letter-spacing: 0.08em; font-weight: 500; }
 .menu .btn:nth-child(1) { animation-delay: 0.05s; } .menu .btn:nth-child(2) { animation-delay: 0.1s; } .menu .btn:nth-child(3) { animation-delay: 0.15s; } .menu .btn:nth-child(4) { animation-delay: 0.2s; }
-.menu .btn:nth-child(5) { animation-delay: 0.25s; } .menu .btn:nth-child(6) { animation-delay: 0.3s; } .menu .btn:nth-child(7) { animation-delay: 0.35s; } .menu .btn:nth-child(8) { animation-delay: 0.4s; }
+.menu .btn:nth-child(5) { animation-delay: 0.25s; } .menu .btn:nth-child(6) { animation-delay: 0.3s; } .menu .btn:nth-child(7) { animation-delay: 0.35s; } .menu .btn:nth-child(8) { animation-delay: 0.4s; } .menu .btn:nth-child(9) { animation-delay: 0.45s; }
 @keyframes itemIn { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
 .tagline { color: var(--dim); position: absolute; right: clamp(16px, 4vw, 60px); bottom: clamp(14px, 3vh, 34px); text-align: right; font-size: 15px; line-height: 1.5; }
 
@@ -177,3 +177,33 @@ select option { background: #101626; }
   .btn { padding: 8px 14px; }
 }
 @media (orientation: portrait) and (pointer: coarse) { body::after { content: 'Rotate your phone to landscape to play'; position: fixed; inset: 0; z-index: 99; display: grid; place-items: center; background: #05070d; color: #fff; font-size: 22px; font-weight: 700; text-align: center; padding: 30px; } }
+.pinfo .ks { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; color: var(--accent2); }
+.kflash { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: clamp(20px, 4vh, 34px); font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; text-shadow: 0 0 18px var(--accent), 0 4px 14px rgba(0, 0, 0, 0.7); animation: kflash 1.3s both; }
+@keyframes kflash { 0% { opacity: 0; transform: translateX(-50%) scale(1.6) skewX(-8deg); } 15% { opacity: 1; transform: translateX(-50%) scale(1) skewX(-8deg); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-18px) skewX(-8deg); } }
+.b-style { right: 164px; bottom: 166px; width: 54px; height: 54px; font-size: 10px; border-color: #ff4fd8; }
+.menu { display: grid; grid-template-columns: 1fr 1fr; width: min(700px, 94vw); }
+.menu .btn:nth-child(10) { animation-delay: 0.5s; }
+/* ---------- photo player cards ---------- */
+.pcard, .pcard.gold, .pcard.silver, .pcard.bronze { background: linear-gradient(160deg, #f6efd9, #e4d7ae 55%, #cdb97a); color: #2a2412; border: 2px solid #b79a4a; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 6px 16px rgba(0, 0, 0, 0.45); }
+.pcard.gold { background: linear-gradient(160deg, #fff3c4, #ecd27a 55%, #c9a13a); border-color: #a8842a; }
+.pcard.silver { background: linear-gradient(160deg, #f4f1e6, #ddd6bf 55%, #b9b094); }
+.pcard.bronze { background: linear-gradient(160deg, #f1e2cf, #dcc09c 55%, #b98f62); border-color: #96703f; }
+.pcard .face { right: 8px; top: 8px; width: 84px; height: 62px; border-radius: 6px; border: 0; background-size: 600% 300%; background-repeat: no-repeat; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
+.pcard .nat { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; opacity: 0.75; }
+.pcard .nm { text-align: center; border-top: 1px solid rgba(90, 70, 20, 0.35); border-bottom: 1px solid rgba(90, 70, 20, 0.35); padding: 3px 0; margin-top: 6px; }
+.pcard .at { text-align: center; }
+/* ---------- picture finishing ---------- */
+#game { filter: saturate(1.14) contrast(1.05); }
+.vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.38) 100%); }
+.b-cam { right: max(62px, calc(env(safe-area-inset-right) + 52px)); top: 10px; width: 46px; height: 42px; border-radius: 10px; font-size: 11px; }
+@media (pointer: coarse) { .pinfo.p1 { right: 118px; } }
+.squad { position: relative; flex: none; height: clamp(430px, 78vh, 640px); background: radial-gradient(ellipse at 50% 40%, #1f6a3a, #0c3a20 70%, #072414); border: 2px solid #b79a4a; overflow: hidden; }
+.squad::before { content: ''; position: absolute; inset: 6% 8%; border: 2px solid rgba(255, 255, 255, 0.14); } .squad::after { content: ''; position: absolute; left: 8%; right: 8%; top: 50%; border-top: 2px solid rgba(255, 255, 255, 0.14); }
+.squad-title { position: absolute; left: 0; right: 0; top: 6px; text-align: center; font-weight: 900; letter-spacing: 0.2em; color: #f1e3b0; z-index: 2; }
+.squad .slot { position: absolute; transform: translate(-50%, -50%) scale(0.62); transform-origin: center; z-index: 1; }
+.squad .slot:hover { z-index: 3; transform: translate(-50%, -50%) scale(0.8); }
+.squad .slot { transform: translate(-50%, -50%) scale(0.5); } .squad .slot:hover { transform: translate(-50%, -50%) scale(0.75); }
+.squad .pcard .tr { display: none; } .squad .pcard { padding-bottom: 20px; }
+/* Panels never overlap: on small screens they wrap and the body scrolls. */
+.screen-body > .panel, .screen-body > .col { overflow: auto; scrollbar-width: thin; }
+@media (max-width: 980px), (max-height: 520px) { .screen-body { flex-wrap: wrap; overflow: auto; align-content: flex-start; } .screen-body > * { flex: 1 1 300px; min-width: 0; } .chooser { flex-wrap: wrap; } .squad { height: 420px; } }

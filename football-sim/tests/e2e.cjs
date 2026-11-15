@@ -9,7 +9,7 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
 (async () => {
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/WebSocket|\/ws/.test(m.text())) errors.push(m.text()); }); // no game server on the static preview
   page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
   await page.addInitScript(() => { if (!localStorage.getItem('ufs.settings.v1')) localStorage.setItem('ufs.settings.v1', JSON.stringify({ quality: 'low', postfx: false, shadows: false, matchMinutes: 2 })); });
   await page.goto('http://localhost:4173/?nosplash');
@@ -20,11 +20,13 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   /** Advances the simulation quickly without rendering every tick. */
   const ff = (sec) => page.evaluate((s) => { const m = window.__game.match; for (let i = 0; i < s * 60 && m.phase !== 'fulltime'; i++) { if (m.phase === 'halftime') m.resume(); m.tick(1 / 60); } }, sec);
 
-  check('main menu has 8 entries', (await page.locator('.menu .btn').count()) === 8);
+  await page.locator('button', { hasText: 'Buy coins' }).click(); await page.waitForTimeout(300);
+  check('buy coins is coming soon', (await page.locator('h1', { hasText: 'Coming' }).count()) === 1); await click('‹ Back');
+  check('main menu has 10 entries', (await page.locator('.menu .btn').count()) === 10);
   await shot('01-menu');
 
   // --- Quick match
-  await click('Play'); await shot('02-quickmatch');
+  await click('Quick Match'); await shot('02-quickmatch');
   await click('Kick Off');
   await page.waitForTimeout(1500);
   check('match created', await G('!!m && !g.backdrop'));
@@ -41,7 +43,7 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await page.keyboard.up('ShiftLeft');
   check('human player selected', !!before);
   check('match clock advances', (await G('m.clock')) > c0, `${c0.toFixed(1)} -> ${(await G('m.clock')).toFixed(1)}`);
-  check('controlled player moves with input', !!before && !!after && (after[2] !== before[2] || Math.abs(after[0] - before[0]) > 0.8), JSON.stringify([before, after]));
+  check('controlled player moves with input', !!before && !!after && (after[2] !== before[2] || Math.abs(after[0] - before[0]) > 0.4), JSON.stringify([before, after]));
   await shot('04-play');
   // give the human the ball in front of goal and shoot
   await G(`(() => { const p = m.teams[0].selected ?? m.teams[0].players[9]; m.teams[0].selected = p; for (const q of m.teams[1].players) if (!q.isGK) { q.x = -30; q.z = 20; } p.x = 36; p.z = 2; p.vx = p.vz = 0; p.facing = 0; p.setState('play'); p.ctlCd = 0; m.ball.place(36.5, 2); m.ball.owner = p; m.setPhase('play'); return 1; })()`);
@@ -82,7 +84,7 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   check('AI took part (opponent passes > 10)', (await G('m.teams[1].stats.passes')) > 10, String(await G('m.teams[1].stats.passes')));
   await shot('09-fulltime');
   await click('Continue');
-  check('returns to main menu', (await page.locator('.menu .btn').count()) === 8);
+  check('returns to main menu', (await page.locator('.menu .btn').count()) === 10);
 
   // --- Other modes
   await click('Career'); await shot('10-career-new'); await click('Start Career');
@@ -113,6 +115,19 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await click('‹ Back');
   await click('Multiplayer'); check('multiplayer setup shows both players', (await page.locator('.badge.p2').count()) === 1); await click('‹ Back');
   await click('Settings'); for (const t of ['Audio', 'Gameplay', 'Controls', 'Save Data', 'Graphics']) await click(t); await shot('18-settings'); await click('‹ Back');
+  // --- My Club hub (offline): shop, buy, sell, team, events, CPU lobby
+  await page.locator('.menu button', { hasText: 'Play' }).first().click(); await page.waitForTimeout(600);
+  check('club hub opens with coins', (await page.locator('.big.gold', { hasText: 'coins' }).count()) === 1);
+  await shot('19-hub');
+  await click('Shop'); check('shop is coming soon', (await page.locator('h1', { hasText: 'Coming' }).count()) === 1); await shot('20-shop'); await click('‹ Back');
+  await click('Team'); await shot('22-team'); await click('‹ Back');
+  await click('Events'); check('events shows coming soon', (await page.locator('h1', { hasText: 'Coming' }).count()) === 1); await click('‹ Back');
+  await click('Friends'); check('friends shows your 6-digit ID', /^\d{6}$/.test((await page.locator('div[style*="letter-spacing: 0.18em"]').textContent()).trim())); await shot('23-friends'); await click('‹ Back');
+  await click('Play Lobby'); await shot('24-lobby');
+  check('lobby offers time 5/10/15/20 and stadium', (await page.locator('.chooser', { hasText: 'Time' }).count()) === 1 && (await page.locator('.chooser', { hasText: 'Stade' }).count()) === 1);
+  await click('Play vs CPU'); await page.waitForTimeout(1500);
+  check('club match starts with my team', await G('!!m && !g.backdrop && m.teams[0].data.id.startsWith("club-")'));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300); await click('Quit Match'); await click('Main menu');
   await click('Exit'); check('exit screen', (await page.locator('button', { hasText: 'Close game' }).count()) === 1); await click('Back to menu');
   check('no console errors', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close();

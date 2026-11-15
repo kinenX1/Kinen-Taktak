@@ -3,7 +3,7 @@ import { Action, ACTIONS, Settings } from './settings';
 
 export interface PadState { x: number; z: number }
 const PAD_BUTTONS: Partial<Record<Action, number[]>> = {
-  pass: [0], shoot: [1], cross: [2], through: [3], switch: [4], modifier: [5], skill: [6, 10], sprint: [7],
+  pass: [0], shoot: [1], cross: [2], through: [3], switch: [4], modifier: [5], skill: [6, 10], sprint: [7], style: [11],
 };
 
 export class PlayerInput {
@@ -27,6 +27,11 @@ export class Input {
   /** Touch controls feed Player 1. */
   touchX = 0; touchZ = 0; touchDown = new Set<Action>(); touchTap = new Set<Action>();
   requestPause() { this.pauseLatch = true; }
+  /** Camera switch (C key or the touch CAM button). */
+  camPressed = false; private camLatch = false;
+  requestCam() { this.camLatch = true; }
+  /** Online: the remote player's input, applied to Player 2 on the host. */
+  remote: { x: number; z: number; bits: number } | null = null;
   pausePressed = false;
   /** Menu navigation from a gamepad (edge-triggered with repeat) plus confirm/back edges (Enter / A, Backspace / B). */
   navX = 0; navY = 0; confirm = false; back = false; anyAction = false;
@@ -44,6 +49,7 @@ export class Input {
       if (this.capture) { e.preventDefault(); const c = this.capture; this.capture = null; c(e.code); return; }
       if (e.code === 'Escape' || e.code === 'KeyP') { if (!e.repeat) this.pauseLatch = true; }
       if (e.code === 'Enter' && !e.repeat) this.enterLatch = true;
+      if (e.code === 'KeyC' && !e.repeat) this.camLatch = true;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       this.keys.add(e.code); if (!e.repeat) this.tapped.add(e.code);
@@ -87,6 +93,7 @@ export class Input {
         if (pad.buttons[9]?.pressed) padPause = true;
       }
       if (i === 0) { mx += this.touchX; mz += this.touchZ; }
+      if (i === 1 && this.remote) { mx = this.remote.x; mz = this.remote.z; }
       const l = Math.hypot(mx, mz);
       if (l > 1) { mx /= l; mz /= l; }
       pi.moveX = mx; pi.moveZ = mz;
@@ -95,6 +102,7 @@ export class Input {
         let d = this.keys.has(b[a]) || this.tapped.has(b[a]);
         if (pad && PAD_BUTTONS[a]) for (const bi of PAD_BUTTONS[a]!) if (pad.buttons[bi]?.pressed) d = true;
         if (i === 0 && (this.touchDown.has(a) || this.touchTap.has(a))) d = true;
+        if (i === 1 && this.remote) d = !!(this.remote.bits & (1 << ACTIONS.indexOf(a)));
         pi.down[a] = d;
         if (d) pi.hold[a] += dt;
         else { if (pi.prev[a]) pi.releasedHold[a] = pi.hold[a]; pi.hold[a] = 0; }
@@ -115,6 +123,7 @@ export class Input {
     this.confirm = (c && !this.cPrev) || this.enterLatch; this.back = bk && !this.bPrev; this.cPrev = c; this.bPrev = bk; this.enterLatch = false;
     this.anyAction = this.confirm || this.players.some((p) => p.pressed('pass') || p.pressed('shoot') || p.pressed('switch'));
     this.tapped.clear(); this.touchTap.clear();
+    this.camPressed = this.camLatch; this.camLatch = false;
     this.pausePressed = this.pauseLatch || (padPause && !this.padPausePrev);
     this.padPausePrev = padPause;
     this.pauseLatch = false;

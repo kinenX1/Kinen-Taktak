@@ -7,7 +7,10 @@ import type { Vector3 } from 'three';
 
 export type PState = 'play' | 'idle' | 'kick' | 'tackle' | 'slide' | 'down' | 'getup' | 'stun' | 'skill' | 'jump' | 'dive' | 'celebrate' | 'throw';
 export type KickType = 'pass' | 'through' | 'loft' | 'cross' | 'shot' | 'finesse' | 'clear' | 'header' | 'volley' | 'throw' | 'gkthrow' | 'penalty' | 'freekick';
-export interface KickPlan { type: KickType; vel: Vector3; spin: Vector3; target: Player | null; at: number; power: number }
+export type ShotStyle = 'power' | 'finesse' | 'chip' | 'driven' | 'knuckle' | 'trivela';
+export const SHOT_STYLES: ShotStyle[] = ['power', 'finesse', 'chip', 'driven', 'knuckle', 'trivela'];
+export const SHOT_STYLE_NAME: Record<ShotStyle, string> = { power: 'Power Shot', finesse: 'Finesse Curler', chip: 'Chip Shot', driven: 'Low Driven', knuckle: 'Knuckleball', trivela: 'Trivela' };
+export interface KickPlan { type: KickType; vel: Vector3; spin: Vector3; target: Player | null; at: number; power: number; style?: ShotStyle }
 export interface PlayerStats { goals: number; assists: number; shots: number; passes: number; passesOk: number; tackles: number; saves: number; fouls: number; dist: number; touches: number; keyPasses: number; lost: number }
 
 export class Player {

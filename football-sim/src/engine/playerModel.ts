@@ -96,7 +96,7 @@ export class PlayerModel {
   material: THREE.MeshStandardMaterial;
   height: number;
   constructor(public data: PlayerData, kit: Kit, gk: boolean) {
-    this.material = new THREE.MeshStandardMaterial({ map: playerAtlas(data, kit, gk), roughness: 0.78, metalness: 0 });
+    this.material = new THREE.MeshStandardMaterial({ map: playerAtlas(data, kit, gk), roughness: 0.62, metalness: 0.02 });
     this.mesh = new THREE.SkinnedMesh(bodyGeometry(data.look.hair), this.material);
     for (let i = 0; i < BONES.length; i++) {
       const b = new THREE.Bone(); b.position.set(BONES[i][1], BONES[i][2], BONES[i][3]);

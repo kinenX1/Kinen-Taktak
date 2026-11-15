@@ -3,7 +3,7 @@ import { Vector3 } from 'three';
 import { BALL_R, GOAL_HW, HL, HW, clamp, dist } from '../core/math';
 import { groundPassSpeed, lobVelocity, strikeVelocity } from './ball';
 import type { MatchManager } from './match';
-import type { KickPlan, KickType, Player } from './player';
+import type { KickPlan, KickType, Player, ShotStyle } from './player';
 
 const V = () => new Vector3();
 const plan = (type: KickType, vel: Vector3, spin: Vector3, target: Player | null, at: number, power: number): KickPlan => ({ type, vel, spin, target, at, power });
@@ -60,7 +60,8 @@ export function planLobTo(m: MatchManager, tx: number, tz: number, T: number, ty
 }
 
 /** Plans a shot. aimZ in -1..1 picks a side of the goal (null = automatic), power 0..1 sets speed and height. */
-export function planShot(m: MatchManager, p: Player, aimZ: number | null, power: number, finesse: boolean, err = 1, type: KickType = finesse ? 'finesse' : 'shot'): KickPlan {
+export function planShot(m: MatchManager, p: Player, aimZ: number | null, power: number, finesse: boolean, err = 1, type: KickType = finesse ? 'finesse' : 'shot', style: ShotStyle = finesse ? 'finesse' : 'power'): KickPlan {
+  finesse = style === 'finesse' || style === 'trivela';
   const b = m.ball.pos, rng = m.rng;
   const gx = p.team.goalX;
   const gk = m.teams[1 - p.team.idx].gk;
@@ -76,9 +77,22 @@ export function planShot(m: MatchManager, p: Player, aimZ: number | null, power:
   const sigma = (0.022 + (1 - p.a.sho / 100) * 0.11) * err * (finesse ? 0.6 : 1) * (1 + p.speed / 15) * press * (0.75 + power * 0.5) * (b.y > 0.5 ? 1.5 : 1);
   tz += rng.gauss(0, sigma) * d;
   ty = Math.max(0.15, ty + rng.gauss(0, sigma) * d * 0.55);
-  const speed = (15 + 17 * power) * (0.86 + 0.14 * p.a.sho / 100) * (finesse ? 0.84 : 1);
+  let speed = (15 + 17 * power) * (0.86 + 0.14 * p.a.sho / 100) * (finesse ? 0.84 : 1);
   const vel = V(), spin = V();
-  if (finesse) {
+  if (style === 'chip') {
+    // Dinked over the goalkeeper: slow, high and dropping under the bar.
+    lobVelocity(b.x, b.y, b.z, gx - p.team.dir * 0.2, clamp(1.1 + power * 0.9 + rng.gauss(0, sigma) * d * 0.4, 0.3, 3.2), tz * 0.75, clamp(d / 12.5, 0.95, 2.2), vel);
+    spin.set(-vel.z * 0.6, 0, vel.x * 0.6);
+    return { ...plan(type, vel, spin, null, 0.2, power), style };
+  }
+  if (style === 'driven') { ty = Math.min(ty, 0.4); speed *= 1.09; }
+  if (style === 'knuckle') speed *= 1.06;
+  if (style === 'trivela') {
+    // Outside of the boot: starts inside the post and swerves away from the keeper.
+    const out = Math.sign(tz || 1), bend = clamp(d * 0.06, 0.4, 1.8);
+    strikeVelocity(b.x, b.y, b.z, gx, ty, tz - out * bend, speed, vel);
+    spin.set(0, -out * Math.sign(vel.x) * (34 + p.a.sho * 0.14), 0);
+  } else if (finesse) {
     // Aim outside the target and curl it back in.
     const out = Math.sign(tz || 1);
     const bend = clamp(d * 0.045, 0.3, 1.4);
@@ -86,9 +100,9 @@ export function planShot(m: MatchManager, p: Player, aimZ: number | null, power:
     spin.set(0, out * Math.sign(vel.x) * (26 + p.a.sho * 0.12), 0);
   } else {
     strikeVelocity(b.x, b.y, b.z, gx, ty, tz, speed, vel);
-    spin.set(0, rng.gauss(0, 4), 0);
+    spin.set(0, style === 'knuckle' ? 0 : rng.gauss(0, 4), 0);
   }
-  return plan(type, vel, spin, null, finesse ? 0.22 : 0.19, power);
+  return { ...plan(type, vel, spin, null, finesse ? 0.22 : 0.19, power), style };
 }
 
 /** A header or volley towards goal, a team-mate or simply away from danger. */
@@ -138,6 +152,7 @@ export function performKick(m: MatchManager, p: Player) {
   if (p.state === 'throw') ball.pos.y = 2.05;
   ball.owner = null;
   ball.vel.copy(k.vel); ball.spin.copy(k.spin);
+  ball.knuckle = k.style === 'knuckle' ? 1.3 : 0; ball.style = k.style ?? '';
   ball.pathValid = false;
   p.kickCd = 0.3; p.ctlCd = 0.5;
   p.facing = Math.atan2(k.vel.z, k.vel.x);

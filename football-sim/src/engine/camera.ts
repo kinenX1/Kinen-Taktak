@@ -11,6 +11,8 @@ export type Shot = { kind: 'match' } | { kind: 'orbit'; radius: number; height: 
 export class CameraManager {
   mode: CameraMode = 'broadcast';
   zoom = 1;
+  /** Height multiplier for the match cameras (user adjustable). */
+  height = 1;
   shot: Shot = { kind: 'match' };
   shotT = 0;
   /** Direction (+1/-1) the end-to-end camera looks along. */
@@ -33,19 +35,19 @@ export class CameraManager {
     const s = this.shot;
     this.basis = { rx: 1, rz: 0, ux: 0, uz: -1 };
     if (s.kind === 'match') {
-      const z = this.zoom, bx = ball.x, bz = ball.z;
+      const z = this.zoom, hk = this.height, bx = ball.x, bz = ball.z;
       const nearGoal = clamp((Math.abs(bx) - 30) / 22, 0, 1);
       switch (this.mode) {
-        case 'tele': tp.set(clamp(bx * 0.92, -44, 44), 13 * z, 50 * z + bz * 0.15); tl.set(bx, 0.5, bz * 0.72 - 1); fov = 25; break;
-        case 'tactical': tp.set(clamp(bx * 0.55, -30, 30), 66 * z, 56 * z); tl.set(bx * 0.75, 0, bz * 0.4 - 3); fov = 36; break;
+        case 'tele': tp.set(clamp(bx * 0.92, -44, 44), 13 * z * hk, 50 * z + bz * 0.15); tl.set(bx, 0.5, bz * 0.72 - 1); fov = 25; break;
+        case 'tactical': tp.set(clamp(bx * 0.55, -30, 30), 66 * z * hk, 56 * z); tl.set(bx * 0.75, 0, bz * 0.4 - 3); fov = 36; break;
         case 'endtoend': {
           const d = this.dir;
-          tp.set(clamp(bx - d * 30 * z, -HL - 26, HL + 26), 15 * z, bz * 0.55); tl.set(bx + d * 12, 0, bz * 0.85); fov = 40;
+          tp.set(clamp(bx - d * 30 * z, -HL - 26, HL + 26), 15 * z * hk, bz * 0.55); tl.set(bx + d * 12, 0, bz * 0.85); fov = 40;
           this.basis = { rx: 0, rz: d, ux: d, uz: 0 };
           break;
         }
-        case 'dynamic': tp.set(clamp(bx * 0.86, -42, 42), (24 - 7 * nearGoal) * z, (60 - 10 * nearGoal) * z + bz * 0.1); tl.set(bx, 0.3, bz * 0.62 - 2); fov = 31 - 4 * nearGoal; break;
-        default: tp.set(clamp(bx * 0.8, -40, 40), 25 * z, 62 * z + bz * 0.08); tl.set(bx, 0, bz * 0.6 - 2.5); fov = 31;
+        case 'dynamic': tp.set(clamp(bx * 0.86, -42, 42), (24 - 7 * nearGoal) * z * hk, (60 - 10 * nearGoal) * z + bz * 0.1); tl.set(bx, 0.3, bz * 0.62 - 2); fov = 31 - 4 * nearGoal; break;
+        default: tp.set(clamp(bx * 0.8, -40, 40), 25 * z * hk, 62 * z + bz * 0.08); tl.set(bx, 0, bz * 0.6 - 2.5); fov = 31;
       }
       rate = 3.2;
     } else if (s.kind === 'orbit') {

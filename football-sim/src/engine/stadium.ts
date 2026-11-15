@@ -9,7 +9,7 @@ import { PITCH_MX, PITCH_MZ, SKIN, grassBump, ledTexture, lightPanelTexture, net
 
 interface PathPt { x: number; z: number; nx: number; nz: number; s: number; side: number }
 interface ProfPt { r: number; y: number; kind: 'seat' | 'wall' | 'fascia'; rows: number }
-const CROWD_MAX: Record<Quality, number> = { low: 3500, medium: 9000, high: 18000, ultra: 30000 };
+const CROWD_MAX: Record<Quality, number> = { low: 5000, medium: 14000, high: 26000, ultra: 42000 };
 
 export class StadiumManager {
   group = new THREE.Group();

@@ -40,6 +40,8 @@ export class MatchTeam {
   offsideLine = 0;
   /** Shot/cross power being charged by the human (0..1), shown on the HUD. */
   charge = 0;
+  /** Index into SHOT_STYLES chosen by the human player. */
+  shotStyle = 0;
   bestT = 1e9; chaser: Player | null = null;
   pressing = false; // human "team press" request
   subbedOff = new Set<string>();

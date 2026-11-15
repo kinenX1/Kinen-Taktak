@@ -12,9 +12,11 @@ import { MatchView } from './engine/matchView';
 import { GameRenderer } from './engine/renderer';
 import { StadiumManager } from './engine/stadium';
 import { MatchConfig, MatchManager, Phase } from './match/match';
+import { SHOT_STYLE_NAME, ShotStyle } from './match/player';
 import { DrillKind, TrainingManager } from './modes/training';
 import { Hud } from './ui/hud';
 import { clear, div, setSfx } from './ui/dom';
+import { Msg, Online, apply, applyEvent, encode, extrapolate, forwardEvents, packInput } from './net/online';
 import { TouchControls, isTouchDevice } from './ui/touch';
 
 export interface PlayOpts { onEnd: (m: MatchManager, quit: boolean) => void; drill?: DrillKind }
@@ -34,6 +36,7 @@ export class Game {
   private rng = new RNG(Date.now() & 0xffff);
   fps = 60;
   touch: TouchControls | null = null;
+  online: Online | null = null; private netT = 0; private netFull = 0; private pendingEv: Msg[] = [];
 
   constructor(canvas: HTMLCanvasElement, public uiRoot: HTMLElement, public hudRoot: HTMLElement) {
     this.R = new GameRenderer(canvas);
@@ -45,7 +48,7 @@ export class Game {
       this.touch = new TouchControls(this.input, document.body);
       // Phones default to lighter graphics the first time the game runs.
       let saved = false; try { saved = localStorage.getItem('ufs.settings.v1') !== null; } catch { /* ignore */ }
-      if (!saved) { this.settings.quality = 'medium'; this.settings.postfx = false; this.R.configure(this.settings); }
+      if (!saved) { this.settings.quality = 'high'; this.settings.resolutionScale = 0.75; this.R.configure(this.settings); }
     }
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -53,7 +56,15 @@ export class Game {
   // ---------- UI plumbing ----------
   screen(node: Node | null) { clear(this.uiRoot); if (node) this.uiRoot.appendChild(node); }
   toast(msg: string) { const t = div('toast', msg); this.uiRoot.appendChild(t); setTimeout(() => t.remove(), 2700); }
-  saveSettings() { saveSettings(this.settings); this.audio.applyVolumes(); this.cam.mode = this.settings.camera; this.cam.zoom = this.settings.cameraZoom; }
+  saveSettings() { saveSettings(this.settings); this.audio.applyVolumes(); this.cam.mode = this.settings.camera; this.cam.zoom = this.settings.cameraZoom; this.cam.height = this.settings.cameraHeight; }
+  /** Switches to the next match camera (C key / CAM button). */
+  cycleCamera() {
+    const modes = ['broadcast', 'tele', 'dynamic', 'tactical', 'endtoend'] as const;
+    let i = (modes.indexOf(this.settings.camera) + 1) % modes.length;
+    if (modes[i] === 'endtoend' && (this.input.twoPlayers || this.online)) i = 0;
+    this.settings.camera = modes[i]; this.saveSettings();
+    this.hud?.flash(({ broadcast: 'Broadcast cam', tele: 'Tele cam', dynamic: 'Dynamic cam', tactical: 'Tactical cam', endtoend: 'End-to-end cam' })[modes[i]]);
+  }
   applyGraphics() {
     this.R.configure(this.settings);
     if (this.match && this.stadium) {
@@ -104,12 +115,42 @@ export class Game {
     this.screen(null);
     this.input.twoPlayers = cfg.control.includes('p1') && cfg.control.includes('p2');
     m.useReplays = this.settings.replays && !opts.drill;
-    this.cam.mode = this.input.twoPlayers && this.settings.camera === 'endtoend' ? 'broadcast' : this.settings.camera; this.cam.zoom = this.settings.cameraZoom;
+    this.cam.mode = this.input.twoPlayers && this.settings.camera === 'endtoend' ? 'broadcast' : this.settings.camera; this.cam.zoom = this.settings.cameraZoom; this.cam.height = this.settings.cameraHeight;
     if (opts.drill) { this.training = new TrainingManager(m, opts.drill); this.cam.setShot({ kind: 'match' }); this.introDone = true; this.buildCones(); }
     else this.cam.setShot({ kind: 'intro' });
     this.hud = new Hud(this, m, this.hudRoot);
     this.audio.setMatch(true, cfg.weather === 'rainy');
     this.wire(m);
+  }
+  /** Starts an online match. The host simulates; the guest mirrors the host's snapshots and sends its input. */
+  playOnline(net: Online, cfg: MatchConfig, onEnd: (m: MatchManager, quit: boolean) => void) {
+    this.online = net;
+    const guest = net.role === 'guest';
+    cfg.control = guest ? ['ai', 'p1'] : ['p1', 'p2'];
+    this.play(cfg, { onEnd: (mm, quit) => { this.online = null; this.input.remote = null; net.onMsg = () => {}; net.send({ t: 'leave' }); onEnd(mm, quit); } });
+    const m = this.match!;
+    this.input.twoPlayers = false;
+    if (this.cam.mode === 'endtoend') this.cam.mode = 'broadcast';
+    if (guest) { m.remote = true; }
+    else { this.input.remote = { x: 0, z: 0, bits: 0 }; forwardEvents(m, (e) => net.send(e)); }
+    net.onMsg = (d) => {
+      if (d.t === 'left') { if (this.match === m && m.phase !== 'fulltime' && m.phase !== 'done') { this.toast('Your opponent disconnected'); this.paused = false; this.finish(true); } return; }
+      if (this.match !== m) return;
+      if (guest) {
+        if (d.t === 's') { apply(m, d); for (const e of this.pendingEv.splice(0)) applyEvent(m, e); }
+        else if (d.t === 'e') { if (d.n === 'setpiece' || d.n === 'goal') this.pendingEv.push(d); else applyEvent(m, d); }
+      } else if (d.t === 'i' && this.input.remote) { this.input.remote.x = +d.x || 0; this.input.remote.z = +d.z || 0; this.input.remote.bits = d.b | 0; if (d.act) this.remoteAct = true; }
+      else if (d.t === 'cmd' && d.c === 'resume') m.resume();
+    };
+  }
+  private remoteAct = false;
+  /** Half-time "continue": the host resumes; a guest asks the host to. */
+  resumeMatch() { const m = this.match; if (!m) return; if (m.remote) this.online?.send({ t: 'cmd', c: 'resume' }); else m.resume(); }
+  private netTick(dt: number) {
+    const m = this.match, net = this.online; if (!m || !net) return;
+    this.netT += dt;
+    if (m.remote) { extrapolate(m, dt); if (this.netT >= 1 / 30) { this.netT = 0; net.send(packInput(this.input)); } }
+    else if (this.netT >= 1 / 20) { this.netT = 0; this.netFull++; net.send(encode(m, this.netFull % 10 === 0 || m.phase === 'halftime' || m.phase === 'fulltime')); }
   }
   private buildCones() {
     const t = this.training; if (!t) return;
@@ -121,7 +162,7 @@ export class Game {
 
   private wire(m: MatchManager) {
     const a = this.audio, st = this.stadium!, e = m.events;
-    e.on('kick', (k) => { a.kick(k.power); });
+    e.on('kick', (k) => { a.kick(k.power); if (k.style && k.player.team.human) this.hud?.flash(SHOT_STYLE_NAME[k.style as ShotStyle]); });
     e.on('bounce', (b) => a.bounce(b.speed));
     e.on('post', (p) => { a.post(p.speed); a.crowd('ooh'); st.cheer(0.6); this.cam.kick(0.5); });
     e.on('net', () => { a.net(); st.netHit(Math.sign(m.ball.pos.x)); });
@@ -187,17 +228,21 @@ export class Game {
     if (m && v) {
       if (!this.backdrop) {
         if (this.input.pausePressed) this.togglePause();
+        if (this.input.camPressed && !this.paused) this.cycleCamera();
         m.inputs[0] = this.input.players[0]; m.inputs[1] = this.input.players[1];
         m.basis = this.cam.basis;
         const hum = m.teams.find((t) => t.human); if (hum) this.cam.dir = hum.dir;
-        if (m.phase === 'intro' && !this.introDone && (this.cam.shotT > 8 || (this.cam.shotT > 1.2 && this.input.anyAction))) { this.introDone = true; m.begin(); this.cam.setShot({ kind: 'match' }); }
+        if (this.remoteAct) { this.input.anyAction = true; this.remoteAct = false; }
+        if (m.remote && m.phase !== 'intro' && !this.introDone) { this.introDone = true; this.cam.setShot({ kind: 'match' }); }
+        if (m.phase === 'intro' && !m.remote && !this.introDone && (this.cam.shotT > 8 || (this.cam.shotT > 1.2 && this.input.anyAction))) { this.introDone = true; m.begin(); this.cam.setShot({ kind: 'match' }); }
         if (m.phase === 'goal' && !this.goalCam && m.phaseT > 0.9 && m.celebrant) {
           this.goalCam = true; const c = m.celebrant;
           this.cam.setShot({ kind: 'follow', target: () => new THREE.Vector3(c.x, 0, c.z), facing: () => c.facing, dist: 6.5, height: 1.9, fov: 30 });
         }
         if (v.replaying && ((this.input.anyAction && v.replayProgress > 0.12) || m.phase !== 'replay')) v.stopReplay();
       } else if (m.phase === 'fulltime' && m.phaseT > 6) { this.showBackdrop(); return; }
-      if (!this.paused) {
+      if (this.online) this.netTick(dt);
+      if (!this.paused || this.online) {
         m.update(dt);
         v.update(dt, this.time);
         if (m.phase === 'play' && Math.abs(m.ball.pos.x) > 34 && m.ball.owner) this.stadium!.cheer(0.22);

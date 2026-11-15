@@ -134,6 +134,10 @@ export class Ball {
   /** Second to last toucher (for assists). */
   prevTouch: Player | null = null;
   wet = 0;
+  /** Seconds of knuckleball wobble left. */
+  knuckle = 0;
+  /** Style of the last struck shot (drives the ball trail). */
+  style = '';
   /** Predicted trajectory: PREDICT_N points of (x,y,z) at PREDICT_DT spacing. */
   path = new Float32Array(PREDICT_N * 3);
   pathValid = false;

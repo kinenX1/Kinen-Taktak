@@ -21,3 +21,6 @@ if (!new URLSearchParams(location.search).has('nosplash')) {
   splash.addEventListener('click', close); splash.addEventListener('touchend', close); window.addEventListener('keydown', close);
   splash.querySelector('.press')!.textContent = 'ontouchstart' in window ? 'TAP TO START' : 'PRESS ANY KEY';
 }
+
+// Installable app (Add to Home Screen) with offline support, where the host allows service workers.
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => { /* not available here */ });

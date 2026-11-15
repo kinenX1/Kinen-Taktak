@@ -9,8 +9,8 @@ import type { Quality, Settings } from '../core/settings';
 
 export const QUALITY: Record<Quality, { pr: number; shadow: number; bloom: boolean; ao: boolean; rain: number; msaa: number }> = {
   low: { pr: 0.75, shadow: 0, bloom: false, ao: false, rain: 700, msaa: 0 },
-  medium: { pr: 1, shadow: 1024, bloom: false, ao: false, rain: 1500, msaa: 0 },
-  high: { pr: 1.5, shadow: 2048, bloom: true, ao: false, rain: 2600, msaa: 4 },
+  medium: { pr: 1, shadow: 2048, bloom: false, ao: false, rain: 1500, msaa: 0 },
+  high: { pr: 1.5, shadow: 4096, bloom: true, ao: false, rain: 2600, msaa: 4 },
   ultra: { pr: 2, shadow: 4096, bloom: true, ao: true, rain: 4000, msaa: 4 },
 };
 
@@ -44,7 +44,7 @@ export class GameRenderer {
       const c = new EffectComposer(this.renderer, rt);
       c.addPass(new RenderPass(this.scene, this.camera));
       if (q.ao) { const ao = new GTAOPass(this.scene, this.camera, size.x, size.y); ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1, scale: 1.1 }); c.addPass(ao); }
-      if (q.bloom) { this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.28, 0.6, 0.92); c.addPass(this.bloom); }
+      if (q.bloom) { this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.34, 0.7, 0.9); c.addPass(this.bloom); }
       c.addPass(new OutputPass());
       this.composer = c;
     }

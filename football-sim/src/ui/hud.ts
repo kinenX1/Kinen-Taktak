@@ -5,9 +5,10 @@ import { ACTIONS, ACTION_LABEL, CameraMode, keyLabel } from '../core/settings';
 import { FORMATION_NAMES, MENTALITY_NAMES } from '../data/formations';
 import type { Game } from '../game';
 import type { MatchManager } from '../match/match';
-import type { Player } from '../match/player';
+import { Player, SHOT_STYLES, SHOT_STYLE_NAME } from '../match/player';
 import type { MatchTeam } from '../match/team';
 import { btn, chooser, clear, div, h, table } from './dom';
+import { CAM_STEPS } from './screens';
 
 const pct = (a: number, b: number) => (a + b > 0 ? Math.round((a / (a + b)) * 100) : 50);
 
@@ -16,7 +17,7 @@ export class Hud {
   private scoreEls: HTMLElement[] = []; private clock = h('div', { class: 'clock' }); private half = h('span', { class: 'half' });
   private ticker = div('ticker'); private tickerT = 0;
   private radar = h('canvas', { class: 'radar', width: 210, height: 136 });
-  private pinfo: { root: HTMLElement; n: HTMLElement; m: HTMLElement; st: HTMLElement; pw: HTMLElement }[] = [];
+  private pinfo: { root: HTMLElement; n: HTMLElement; m: HTMLElement; st: HTMLElement; pw: HTMLElement; ks: HTMLElement }[] = [];
   private tags: HTMLElement[] = [];
   private bannerEl: HTMLElement | null = null; private bannerT = 0;
   private fade = div('fade'); private overlay: HTMLElement | null = null; private overlayKind = '';
@@ -31,11 +32,11 @@ export class Hud {
     const sa = side(a), sb = side(b);
     (sa[0] as HTMLElement).style.background = a.kit.primary; (sb[0] as HTMLElement).style.background = b.kit.primary;
     const score = div('score', sa[0], sa[1], sa[2], sb[2], sb[1], sb[0], this.clock, div('', this.half));
-    this.root.append(score, this.ticker, this.radar, this.fade, this.replay, this.hint, this.so, this.drill);
+    this.root.append(div('vignette'), score, this.ticker, this.radar, this.fade, this.replay, this.hint, this.so, this.drill);
     for (let i = 0; i < 2; i++) {
-      const n = div('n'), mm = div('m'), st = h('i'), pw = h('i');
-      const r = div(`pinfo p${i + 1}`, n, mm, div('lbl', 'STAMINA'), div('bar', st), div('lbl', 'POWER'), div('bar pw', pw));
-      this.pinfo.push({ root: r, n, m: mm, st, pw }); this.root.appendChild(r);
+      const n = div('n'), mm = div('m'), st = h('i'), pw = h('i'), ks = div('ks');
+      const r = div(`pinfo p${i + 1}`, n, mm, ks, div('lbl', 'STAMINA'), div('bar', st), div('lbl', 'POWER'), div('bar pw', pw));
+      this.pinfo.push({ root: r, n, m: mm, st, pw, ks }); this.root.appendChild(r);
       const tag = div(`tag p${i + 1}`); this.tags.push(tag); this.root.appendChild(tag);
     }
     this.ticker.style.opacity = '0'; this.replay.style.display = 'none'; this.hint.style.display = 'none'; this.so.style.display = 'none'; this.drill.style.display = 'none';
@@ -49,6 +50,8 @@ export class Hud {
     this.bannerEl = div('banner', div(`t ${cls}`, title), sub ? div('s', sub) : null);
     this.root.appendChild(this.bannerEl); this.bannerT = dur;
   }
+  /** Small call-out naming the style of a struck shot. */
+  flash(text: string) { const f = div('kflash', text); this.root.appendChild(f); setTimeout(() => f.remove(), 1300); }
   /** Quick dip to black that hides players being repositioned for a restart. */
   blink() { this.fade.style.opacity = '0.85'; setTimeout(() => (this.fade.style.opacity = '0'), 170); }
 
@@ -79,7 +82,7 @@ export class Hud {
       const show = !!t && !!p && live && !replaying && p.active;
       pi.root.style.display = show ? '' : 'none'; tag.style.display = show ? '' : 'none';
       if (!show || !p || !t) continue;
-      pi.n.textContent = `${p.data.number} ${p.data.short}`; pi.m.textContent = `${p.role} · ${t.data.short} · ${p.data.style}`;
+      pi.n.textContent = `${p.data.number} ${p.data.short}`; pi.m.textContent = `${p.role} · ${t.data.short} · ${p.data.style}`; pi.ks.textContent = `KICK: ${SHOT_STYLE_NAME[SHOT_STYLES[t.shotStyle]].toUpperCase()}`;
       pi.st.style.width = `${Math.round(p.stamina * 100)}%`; pi.pw.style.width = `${Math.round(t.charge * 100)}%`;
       this.v.set(p.x, 2.45 + p.y, p.z).project(cam);
       tag.style.left = `${(this.v.x * 0.5 + 0.5) * W}px`; tag.style.top = `${(-this.v.y * 0.5 + 0.5) * H}px`;
@@ -110,7 +113,7 @@ export class Hud {
     // Phase overlays
     if (g.paused) return;
     if (m.phase === 'intro') this.setOverlay('intro', () => this.lineups());
-    else if (m.phase === 'halftime') this.setOverlay('ht', () => this.sheet('Half-Time', 'Second Half', () => m.resume()));
+    else if (m.phase === 'halftime') this.setOverlay('ht', () => this.sheet('Half-Time', 'Second Half', () => g.resumeMatch()));
     else if (m.phase === 'fulltime') {
       if (tr) this.setOverlay('drill', () => this.drillSheet());
       else if (m.phaseT > 3.5) this.setOverlay('ft', () => this.sheet('Full-Time', 'Continue', () => g.finish(false)));
@@ -178,12 +181,14 @@ export class Hud {
         btn('Team Management', () => go('team'), '', { disabled: !team || !!g.training, title: team ? '' : 'Not available in this mode' }),
         btn('Match Stats', () => go('stats'), '', { disabled: !!g.training }), btn('Controls', () => go('controls')),
         chooser<CameraMode>('Camera', [{ value: 'broadcast', label: 'Broadcast' }, { value: 'tele', label: 'Tele Broadcast' }, { value: 'dynamic', label: 'Dynamic' }, { value: 'tactical', label: 'Tactical' }, { value: 'endtoend', label: 'End to End' }], g.settings.camera, (v) => { g.settings.camera = v; g.saveSettings(); }),
+        chooser('Camera distance', CAM_STEPS.map((v) => ({ value: v, label: `${Math.round(v * 100)}%` })), g.settings.cameraZoom, (v) => { g.settings.cameraZoom = v; g.saveSettings(); }),
+        chooser('Camera height', CAM_STEPS.map((v) => ({ value: v, label: `${Math.round(v * 100)}%` })), g.settings.cameraHeight, (v) => { g.settings.cameraHeight = v; g.saveSettings(); }),
         btn(g.training ? 'Quit Training' : 'Quit Match', () => { g.paused = false; g.finish(true); }, 'danger'));
     } else if (page === 'stats') body = div('col', h('h2', null, `${m.teams[0].data.short} ${m.teams[0].score} - ${m.teams[1].score} ${m.teams[1].data.short}`), this.statsBody(), back());
     else if (page === 'controls') {
       const b = g.settings.bindings;
       body = div('col', h('h2', null, 'Controls'), table(['Action', 'Player 1', 'Player 2', 'Gamepad'], ACTIONS.map((a) => [ACTION_LABEL[a], h('span', { class: 'keycap' }, keyLabel(b[0][a])), h('span', { class: 'keycap' }, keyLabel(b[1][a])),
-        ({ up: 'Left stick', down: 'Left stick', left: 'Left stick', right: 'Left stick', sprint: 'RT', pass: 'A / Cross', shoot: 'B / Circle', through: 'Y / Triangle', cross: 'X / Square', switch: 'LB', skill: 'LT', modifier: 'RB' } as Record<string, string>)[a]])),
+        ({ up: 'Left stick', down: 'Left stick', left: 'Left stick', right: 'Left stick', sprint: 'RT', pass: 'A / Cross', shoot: 'B / Circle', through: 'Y / Triangle', cross: 'X / Square', switch: 'LB', skill: 'LT', modifier: 'RB', style: 'R3' } as Record<string, string>)[a]])),
         div('muted', 'Without the ball: Pass = standing tackle, Shoot = slide tackle, Through = team-mate press, Modifier = jockey.'), back());
     } else {
       const t = m.teams.find((x) => x.human && !x.locked)!;

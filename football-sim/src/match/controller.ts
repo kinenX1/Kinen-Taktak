@@ -4,7 +4,7 @@ import type { PlayerInput } from '../core/input';
 import { chase, intercept } from './ai';
 import { planLobTo, planPass, planShot, startKick, startSkill, startTackle } from './actions';
 import type { MatchManager, SetPiece } from './match';
-import type { Player } from './player';
+import { Player, SHOT_STYLES } from './player';
 import type { MatchTeam } from './team';
 
 /** Chooses the team-mate best aligned with the stick direction. */
@@ -52,6 +52,7 @@ export function updateHuman(m: MatchManager, t: MatchTeam, inp: PlayerInput, dt:
   const p = t.selected;
   if (!p) return;
   t.charge = 0;
+  if (inp.pressed('style')) t.shotStyle = (t.shotStyle + 1) % SHOT_STYLES.length;
   const w = world(m, inp);
   t.pressing = false;
   if (!(p.free || p.state === 'kick')) return;
@@ -97,7 +98,7 @@ export function updateHuman(m: MatchManager, t: MatchTeam, inp: PlayerInput, dt:
     } else if (inp.released('shoot') || inp.hold.shoot > 1.1) {
       const pw = power(inp.hold.shoot > 1.1 ? inp.hold.shoot : inp.releasedHold.shoot, 0.25);
       const aim = Math.abs(w.z) > 0.35 ? clamp(w.z * 1.2, -1, 1) : null;
-      startKick(m, p, planShot(m, p, aim, pw, inp.down.modifier, err));
+      startKick(m, p, planShot(m, p, aim, pw, false, err, 'shot', inp.down.modifier ? 'finesse' : SHOT_STYLES[t.shotStyle]));
       inp.hold.shoot = 0;
     } else if (inp.pressed('skill')) startSkill(m, p, w.x, w.z);
     return;
@@ -108,7 +109,7 @@ export function updateHuman(m: MatchManager, t: MatchTeam, inp: PlayerInput, dt:
     const ours = m.passTarget === p || m.lastPoss === t.idx || (m.passer && m.passer.team === t);
     const near = p.distTo(ball.pos.x, ball.pos.z) < 12;
     if (ours && near) {
-      if (inp.pressed('shoot')) p.intent = { kind: 'shot', t: 0.9, make: () => planShot(m, p, Math.abs(w.z) > 0.35 ? clamp(w.z * 1.2, -1, 1) : null, 0.55, inp.down.modifier, 1.25) };
+      if (inp.pressed('shoot')) p.intent = { kind: 'shot', t: 0.9, make: () => planShot(m, p, Math.abs(w.z) > 0.35 ? clamp(w.z * 1.2, -1, 1) : null, 0.55, false, 1.25, 'shot', inp.down.modifier ? 'finesse' : SHOT_STYLES[t.shotStyle] === 'chip' ? 'power' : SHOT_STYLES[t.shotStyle]) };
       else if (inp.pressed('pass')) { const q = pickTarget(m, p, w.x, w.z); p.intent = { kind: 'pass', t: 0.9, target: q, make: () => (q ? planPass(m, p, q, 'pass', 1.2) : null) }; }
       else if (inp.pressed('through')) { const q = pickTarget(m, p, w.x, w.z, 0.35); p.intent = { kind: 'pass', t: 0.9, target: q, make: () => (q ? planPass(m, p, q, 'through', 1.2) : null) }; }
     } else {
@@ -134,6 +135,7 @@ export function humanSetPiece(m: MatchManager, sp: SetPiece, inp: PlayerInput, d
   const p = sp.taker, t = sp.team;
   const w = world(m, inp);
   const fire = (k: ReturnType<typeof planPass> | null, at = 0.28) => { if (!k) return; k.at = at; sp.kicked = true; startKick(m, p, k); };
+  if (inp.pressed('style')) t.shotStyle = (t.shotStyle + 1) % SHOT_STYLES.length;
   sp.power = inp.down.shoot ? power(inp.hold.shoot, 0.2) : inp.down.cross ? power(inp.hold.cross, 0.2) : 0;
   t.charge = sp.power;
   if (sp.t < 0.35) return;
@@ -141,7 +143,8 @@ export function humanSetPiece(m: MatchManager, sp: SetPiece, inp: PlayerInput, d
     sp.aim = clamp(sp.aim + w.z * dt * 2.2, -1, 1);
     if (inp.released('shoot') || inp.hold.shoot > 1.1) {
       const pw = power(inp.hold.shoot > 1.1 ? 1.1 : inp.releasedHold.shoot, 0.2);
-      fire(planShot(m, p, sp.aim * 0.95, 0.3 + pw * 0.62, false, 0.75, 'penalty'), 0.3);
+      const ps = SHOT_STYLES[t.shotStyle];
+      fire(planShot(m, p, sp.aim * (ps === 'chip' ? 0.2 : 0.95), 0.3 + pw * 0.62, false, 0.75, 'penalty', ps === 'finesse' || ps === 'trivela' ? 'power' : ps), 0.3);
     }
     return;
   }
@@ -149,7 +152,8 @@ export function humanSetPiece(m: MatchManager, sp: SetPiece, inp: PlayerInput, d
     sp.aim = clamp(sp.aim + w.z * dt * 1.6, -1.25, 1.25);
     if (inp.released('shoot') || inp.hold.shoot > 1.1) {
       const pw = power(inp.hold.shoot > 1.1 ? 1.1 : inp.releasedHold.shoot, 0.2);
-      fire(planShot(m, p, sp.aim, 0.45 + pw * 0.45, !inp.down.modifier, 0.9, 'freekick'), 0.3);
+      const fs = SHOT_STYLES[t.shotStyle];
+      fire(planShot(m, p, sp.aim, 0.45 + pw * 0.45, false, 0.9, 'freekick', fs === 'power' || fs === 'chip' ? 'finesse' : fs), 0.3);
       return;
     }
   }
