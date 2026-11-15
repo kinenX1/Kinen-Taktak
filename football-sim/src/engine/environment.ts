@@ -32,7 +32,7 @@ const PRESETS: Record<Weather, Preset> = {
   sunny: { top: '#2f6fd0', horizon: '#b9d6f2', sun: [-0.45, 0.78, 0.5], sunPower: 1, clouds: 0.15, stars: 0, sunI: 3.4, sunC: '#fff1d6', hemiI: 0.95, hemiSky: '#bcd8ff', hemiGround: '#4a6a3a', fillI: 0.25, fog: '#bcd4ec', fogD: 0.0016, exposure: 1.0, env: 0.55, wet: 0, night: 0 },
   cloudy: { top: '#7f8c9c', horizon: '#c5ccd4', sun: [-0.3, 0.9, 0.3], sunPower: 0.1, clouds: 0.95, stars: 0, sunI: 1.25, sunC: '#f1f3f6', hemiI: 1.7, hemiSky: '#dfe6ee', hemiGround: '#566a4c', fillI: 0.5, fog: '#bfc6cf', fogD: 0.0026, exposure: 0.95, env: 0.7, wet: 0, night: 0 },
   rainy: { top: '#48525f', horizon: '#8b949e', sun: [-0.2, 0.9, 0.35], sunPower: 0, clouds: 1, stars: 0, sunI: 0.9, sunC: '#e3e9f2', hemiI: 1.35, hemiSky: '#c3ccd8', hemiGround: '#445541', fillI: 0.5, fog: '#8f98a3', fogD: 0.0042, exposure: 0.92, env: 0.9, wet: 1, night: 0.35 },
-  night: { top: '#03050c', horizon: '#141c33', sun: [0.25, 0.9, 0.55], sunPower: 0, clouds: 0.25, stars: 1, sunI: 2.5, sunC: '#f3f7ff', hemiI: 0.42, hemiSky: '#5a6fa8', hemiGround: '#1c2a20', fillI: 1.45, fog: '#0a0f1c', fogD: 0.0022, exposure: 1.05, env: 0.25, wet: 0, night: 1 },
+  night: { top: '#03050c', horizon: '#141c33', sun: [0.25, 0.9, 0.55], sunPower: 0, clouds: 0.25, stars: 1, sunI: 3.0, sunC: '#f3f7ff', hemiI: 0.75, hemiSky: '#5a6fa8', hemiGround: '#1c2a20', fillI: 1.9, fog: '#0a0f1c', fogD: 0.0016, exposure: 1.15, env: 0.25, wet: 0, night: 1 },
 };
 
 export class Environment {

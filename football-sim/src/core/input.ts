@@ -21,8 +21,13 @@ export class PlayerInput {
 
 export class Input {
   keys = new Set<string>();
+  /** Keys pressed since the last frame, so quick taps are never missed at low frame rates. */
+  private tapped = new Set<string>();
   players = [new PlayerInput(), new PlayerInput()];
   pausePressed = false;
+  /** Menu navigation from a gamepad (edge-triggered with repeat) plus confirm/back edges (Enter / A, Backspace / B). */
+  navX = 0; navY = 0; confirm = false; back = false; anyAction = false;
+  private navT = 0; private navPrev = false; private cPrev = false; private bPrev = false; private enterLatch = false; private backLatch = false;
   private pauseLatch = false;
   private padPausePrev = false;
   /** When set, the next key press is captured (used by the rebinding UI). */
@@ -35,9 +40,10 @@ export class Input {
     window.addEventListener('keydown', (e) => {
       if (this.capture) { e.preventDefault(); const c = this.capture; this.capture = null; c(e.code); return; }
       if (e.code === 'Escape' || e.code === 'KeyP') { if (!e.repeat) this.pauseLatch = true; }
+      if (e.code === 'Enter' && !e.repeat) this.enterLatch = true;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      this.keys.add(e.code);
+      this.keys.add(e.code); if (!e.repeat) this.tapped.add(e.code);
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -82,13 +88,28 @@ export class Input {
       pi.moveX = mx; pi.moveZ = mz;
       for (const a of ACTIONS) {
         pi.prev[a] = pi.down[a];
-        let d = this.keys.has(b[a]);
+        let d = this.keys.has(b[a]) || this.tapped.has(b[a]);
         if (pad && PAD_BUTTONS[a]) for (const bi of PAD_BUTTONS[a]!) if (pad.buttons[bi]?.pressed) d = true;
         pi.down[a] = d;
         if (d) pi.hold[a] += dt;
         else { if (pi.prev[a]) pi.releasedHold[a] = pi.hold[a]; pi.hold[a] = 0; }
       }
     }
+    // Menu navigation
+    let nx = 0, ny = 0, c = false, bk = false;
+    for (const pad of pads) {
+      const ax = pad.axes[0] ?? 0, ay = pad.axes[1] ?? 0;
+      if (ax < -0.5 || pad.buttons[14]?.pressed) nx = -1; else if (ax > 0.5 || pad.buttons[15]?.pressed) nx = 1;
+      if (ay < -0.5 || pad.buttons[12]?.pressed) ny = -1; else if (ay > 0.5 || pad.buttons[13]?.pressed) ny = 1;
+      if (pad.buttons[0]?.pressed) c = true; if (pad.buttons[1]?.pressed) bk = true;
+    }
+    const held = nx !== 0 || ny !== 0;
+    this.navT -= dt; this.navX = 0; this.navY = 0;
+    if (held && (!this.navPrev || this.navT <= 0)) { this.navX = nx; this.navY = ny; this.navT = this.navPrev ? 0.14 : 0.35; }
+    this.navPrev = held;
+    this.confirm = (c && !this.cPrev) || this.enterLatch; this.back = bk && !this.bPrev; this.cPrev = c; this.bPrev = bk; this.enterLatch = false;
+    this.anyAction = this.confirm || this.players.some((p) => p.pressed('pass') || p.pressed('shoot') || p.pressed('switch'));
+    this.tapped.clear();
     this.pausePressed = this.pauseLatch || (padPause && !this.padPausePrev);
     this.padPausePrev = padPause;
     this.pauseLatch = false;
