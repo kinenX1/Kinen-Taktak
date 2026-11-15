@@ -1,0 +1,70 @@
+# Packages Ultimate Football Simulator (football-sim/) as an Android APK with Capacitor
+# and publishes the APK plus a zip of the web build as a GitHub release.
+name: Football game APK
+on:
+  push:
+    branches: [main, ccr-9657a852-2clq2j]
+    paths: ['football-sim/**', '.github/workflows/football-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: football-apk
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: football-sim
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: football-sim/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build the web game
+        run: |
+          npm ci
+          npm run build
+          (cd dist && zip -qr ../ultimate-football-simulator-web.zip .)
+      - name: Create the Android project
+        run: |
+          npm install --no-save @capacitor/core@6.2.0 @capacitor/cli@6.2.0 @capacitor/android@6.2.0
+          npx cap add android
+          # Landscape, full-screen game
+          sed -i 's/android:name=".MainActivity"/android:name=".MainActivity" android:screenOrientation="sensorLandscape"/' android/app/src/main/AndroidManifest.xml
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do cp public/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher.png; cp public/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher_round.png; cp public/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher_foreground.png; done
+          npx cap sync android
+      - name: Build the APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../ultimate-football-simulator.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ultimate-football-simulator
+          path: |
+            football-sim/ultimate-football-simulator.apk
+            football-sim/ultimate-football-simulator-web.zip
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: football-latest
+          name: Ultimate Football Simulator (latest build)
+          body: |
+            Android APK and web build of Ultimate Football Simulator, built automatically.
+            - `ultimate-football-simulator.apk`: install on Android (allow "install unknown apps" when asked).
+            - `ultimate-football-simulator-web.zip`: the web game; unzip and host the folder on any web server.
+          prerelease: true
+          make_latest: false
+          files: |
+            football-sim/ultimate-football-simulator.apk
+            football-sim/ultimate-football-simulator-web.zip

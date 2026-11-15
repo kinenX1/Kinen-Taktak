@@ -4,3 +4,6 @@ tests/shots
 *.tsbuildinfo
 single
 server-data.json
+android
+*.apk
+*.zip

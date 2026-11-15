@@ -1,0 +1,6 @@
+{
+  "appId": "com.kinentaktak.footballsim",
+  "appName": "Ultimate Football Simulator",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#05070d" }
+}
