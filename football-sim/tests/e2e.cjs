@@ -70,7 +70,7 @@ const check = (name, ok, info = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  $
   await shot('07-replay');
   for (let i = 0; i < 40 && (await G('m.phase')) !== 'play' && (await G('m.phase')) !== 'setpiece'; i++) { await page.keyboard.press('KeyJ'); await page.waitForTimeout(400); }
   // pause menu
-  await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  await page.keyboard.press('Escape'); await page.waitForSelector('.overlay.dark', { timeout: 20000 }).catch(() => {});
   check('pause menu opens', (await page.locator('.overlay.dark').count()) === 1);
   await click('Team Management'); await shot('08-teammgmt');
   check('team management lists bench', (await page.locator('.overlay button', { hasText: 'Bring on' }).count()) >= 5);

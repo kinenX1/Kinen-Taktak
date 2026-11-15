@@ -38,16 +38,16 @@ export class CameraManager {
       const z = this.zoom, hk = this.height, bx = ball.x, bz = ball.z;
       const nearGoal = clamp((Math.abs(bx) - 30) / 22, 0, 1);
       switch (this.mode) {
-        case 'tele': tp.set(clamp(bx * 0.92, -44, 44), 13 * z * hk, 50 * z + bz * 0.15); tl.set(bx, 0.5, bz * 0.72 - 1); fov = 25; break;
+        case 'tele': tp.set(clamp(bx * 0.94, -46, 46), 9.5 * z * hk, 34 * z + bz * 0.3); tl.set(bx, 0.6, bz * 0.8 - 0.5); fov = 27; break;
         case 'tactical': tp.set(clamp(bx * 0.55, -30, 30), 66 * z * hk, 56 * z); tl.set(bx * 0.75, 0, bz * 0.4 - 3); fov = 36; break;
         case 'endtoend': {
           const d = this.dir;
-          tp.set(clamp(bx - d * 30 * z, -HL - 26, HL + 26), 15 * z * hk, bz * 0.55); tl.set(bx + d * 12, 0, bz * 0.85); fov = 40;
+          tp.set(clamp(bx - d * 22 * z, -HL - 20, HL + 20), 11 * z * hk, bz * 0.7); tl.set(bx + d * 10, 0, bz * 0.9); fov = 42;
           this.basis = { rx: 0, rz: d, ux: d, uz: 0 };
           break;
         }
-        case 'dynamic': tp.set(clamp(bx * 0.86, -42, 42), (24 - 7 * nearGoal) * z * hk, (60 - 10 * nearGoal) * z + bz * 0.1); tl.set(bx, 0.3, bz * 0.62 - 2); fov = 31 - 4 * nearGoal; break;
-        default: tp.set(clamp(bx * 0.8, -40, 40), 25 * z * hk, 62 * z + bz * 0.08); tl.set(bx, 0, bz * 0.6 - 2.5); fov = 31;
+        case 'dynamic': tp.set(clamp(bx * 0.86, -42, 42), (17 - 5 * nearGoal) * z * hk, (40 - 7 * nearGoal) * z + bz * 0.25); tl.set(bx, 0.3, bz * 0.75 - 1.5); fov = 30 - 3 * nearGoal; break;
+        default: tp.set(clamp(bx * 0.88, -44, 44), 18 * z * hk, 42 * z + bz * 0.28); tl.set(bx, 0, bz * 0.78 - 1.5); fov = 30;
       }
       rate = 3.2;
     } else if (s.kind === 'orbit') {

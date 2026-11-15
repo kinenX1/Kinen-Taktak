@@ -25,7 +25,7 @@ export class StadiumManager {
   lightPositions: THREE.Vector3[] = [];
   crowdCount = 0;
 
-  constructor(public cfg: StadiumConfig, quality: Quality, homeColors: [string, string], awayColor: string) {
+  constructor(public cfg: StadiumConfig, quality: Quality, homeColors: [string, string], awayColor: string, private crowdScale = 1) {
     this.buildPitch(quality);
     this.buildGoals();
     this.buildStands(quality, homeColors, awayColor);
@@ -236,14 +236,13 @@ export class StadiumManager {
     this.add(new THREE.BoxGeometry(7, 0.35, 4.2).translate(0, 3.35, hzT + 0.3), this.mat({ color: c.accent, roughness: 0.5, emissive: new THREE.Color(c.accent), emissiveIntensity: 0.25 }), true);
 
     // Crowd: two instanced meshes (bodies, heads) animated in the vertex shader.
-    const max = CROWD_MAX[q];
+    const max = Math.round(CROWD_MAX[q] * this.crowdScale);
     const keep = Math.min(1, max / Math.max(1, seats.length * c.attendance)) * c.attendance;
     const chosen = seats.filter(() => rng.next() < keep);
     this.crowdCount = chosen.length;
     const body = new THREE.BoxGeometry(0.46, 0.62, 0.3); body.translate(0, 0.42, 0);
-    const arms = new THREE.BoxGeometry(0.62, 0.14, 0.14); arms.translate(0, 0.6, 0.05);
-    const bodyGeo = this.track(mergeGeometries([body, arms])!);
-    const headGeo = this.track(new THREE.SphereGeometry(0.125, 7, 5).translate(0, 0.9, 0));
+    const bodyGeo = this.track(body);
+    const headGeo = this.track(new THREE.SphereGeometry(0.125, 5, 4).translate(0, 0.9, 0));
     const phase = new Float32Array(chosen.length);
     for (let i = 0; i < phase.length; i++) phase[i] = rng.next();
     const mk = (g: THREE.BufferGeometry) => {

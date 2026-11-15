@@ -45,6 +45,8 @@ export class MatchTeam {
   bestT = 1e9; chaser: Player | null = null;
   pressing = false; // human "team press" request
   subbedOff = new Set<string>();
+  /** Bumped whenever the players array changes. */
+  rev = 1;
 
   constructor(public data: TeamData, public idx: number, public control: Control, public params: AIParams, kitIdx: number, private uidBase: number) {
     this.kit = data.kits[kitIdx]; this.gkKit = data.gkKit;
@@ -103,7 +105,7 @@ export class MatchTeam {
     const np = new Player(onData, this, off.slot, off.uid);
     np.x = off.x; np.z = off.z; np.facing = off.facing; np.stamina = 1;
     const i = this.players.indexOf(off);
-    this.players[i] = np;
+    this.players[i] = np; this.rev++;
     if (this.selected === off) this.selected = np;
     if (this.locked === off) this.locked = np;
     off.onPitch = false;

@@ -105,7 +105,12 @@ export class MatchManager {
   }
 
   // ---------- public API ----------
-  get all(): Player[] { return [...this.teams[0].players, ...this.teams[1].players]; }
+  private allCache: Player[] = []; private allKey = -1;
+  get all(): Player[] {
+    const k = this.teams[0].rev * 1000 + this.teams[1].rev;
+    if (k !== this.allKey) { this.allKey = k; this.allCache = [...this.teams[0].players, ...this.teams[1].players]; }
+    return this.allCache;
+  }
   get minute() { return Math.min(this.half === 1 ? 45 : 90, Math.floor(this.clock / 60)) ; }
   get clockText() {
     const base = this.half === 1 ? 2700 : 5400;
@@ -414,6 +419,11 @@ export class MatchManager {
     this.passAware[t.idx] = true;
     if (t.human && !t.locked && k.target) t.selected = k.target;
     if (k.type === 'penalty') gkPenalty(this, o.gk, p);
+    if (o.human && !o.locked && k.target && this.phase === 'play') {
+      let best: Player | null = null, bd = 1e9;
+      for (const q of o.players) { if (!q.active || q.isGK) continue; const d = q.distTo(k.target.x, k.target.z); if (d < bd) { bd = d; best = q; } }
+      if (best && o.selected && best !== o.selected && o.selected.distTo(k.target.x, k.target.z) > bd + 6) o.selected = best;
+    }
   }
 
   // ---------- rules ----------

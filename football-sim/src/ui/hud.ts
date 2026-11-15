@@ -62,7 +62,31 @@ export class Hud {
   }
   setPaused(p: boolean) { if (p) { this.setOverlay('', null); this.setOverlay('pause', () => this.pauseMenu('main')); } else if (this.overlayKind === 'pause') this.setOverlay('', null); }
 
+  private slow = 0;
   update(dt: number) {
+    const m = this.m, g = this.game, [a, b] = m.teams;
+    this.slow -= dt; const tick = this.slow <= 0; if (tick) this.slow = 0.085;
+    if (tick) this.slowUpdate(dt);
+    this.fast();
+  }
+  private fast() {
+    const m = this.m, g = this.game;
+    const live = m.phase === 'play' || m.phase === 'setpiece' || m.phase === 'dead' || m.phase === 'pk' || m.phase === 'goal';
+    const replaying = !!g.view?.replaying;
+    const cam = g.R.camera, W = window.innerWidth, H = window.innerHeight;
+    for (let i = 0; i < 2; i++) {
+      const t = m.teams.find((x) => x.inputIdx === i), p = t?.selected, tag = this.tags[i];
+      const show = !!t && !!p && live && !replaying && p.active && t.human;
+      if (!show || !p) { if (tag.style.display !== 'none') tag.style.display = 'none'; continue; }
+      this.v.set(p.x, 2.45 + p.y, p.z).project(cam);
+      tag.style.transform = `translate(${(this.v.x * 0.5 + 0.5) * W}px, ${(-this.v.y * 0.5 + 0.5) * H}px) translate(-50%, -100%)`;
+      tag.style.display = this.v.z < 1 ? '' : 'none';
+      if (tag.textContent !== p.data.short) tag.textContent = p.data.short;
+      if (t) this.pinfo[i].pw.style.width = `${Math.round(t.charge * 100)}%`;
+    }
+  }
+  private slowUpdate(dtReal: number) {
+    const dt = 0.085 + dtReal * 0;
     const m = this.m, g = this.game, [a, b] = m.teams;
     this.scoreEls[0].textContent = String(a.score); this.scoreEls[1].textContent = String(b.score);
     this.clock.textContent = m.clockText;
@@ -76,17 +100,13 @@ export class Hud {
     this.radar.style.display = g.settings.radar && live && !replaying ? '' : 'none';
     if (g.settings.radar && live) this.drawRadar();
     // Player panels and name tags
-    const cam = g.R.camera, W = window.innerWidth, H = window.innerHeight;
     for (let i = 0; i < 2; i++) {
-      const t = m.teams.find((x) => x.inputIdx === i), p = t?.selected, pi = this.pinfo[i], tag = this.tags[i];
+      const t = m.teams.find((x) => x.inputIdx === i), p = t?.selected, pi = this.pinfo[i];
       const show = !!t && !!p && live && !replaying && p.active;
-      pi.root.style.display = show ? '' : 'none'; tag.style.display = show ? '' : 'none';
+      pi.root.style.display = show ? '' : 'none';
       if (!show || !p || !t) continue;
       pi.n.textContent = `${p.data.number} ${p.data.short}`; pi.m.textContent = `${p.role} · ${t.data.short} · ${p.data.style}`; pi.ks.textContent = `KICK: ${SHOT_STYLE_NAME[SHOT_STYLES[t.shotStyle]].toUpperCase()}`;
-      pi.st.style.width = `${Math.round(p.stamina * 100)}%`; pi.pw.style.width = `${Math.round(t.charge * 100)}%`;
-      this.v.set(p.x, 2.45 + p.y, p.z).project(cam);
-      tag.style.left = `${(this.v.x * 0.5 + 0.5) * W}px`; tag.style.top = `${(-this.v.y * 0.5 + 0.5) * H}px`;
-      tag.textContent = p.data.short; tag.style.display = this.v.z < 1 ? '' : 'none';
+      pi.st.style.width = `${Math.round(p.stamina * 100)}%`;
     }
     // Contextual hint for restarts
     const sp = m.sp; let hint = '';

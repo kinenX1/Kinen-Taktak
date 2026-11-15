@@ -14,7 +14,7 @@ import { btn, chooser, clear, div, h, slider, table, tabs, toggle } from './dom'
 import { careerEntry, playerCareerEntry, tournamentEntry } from './modeScreens';
 import { Hub, friends, hubHome } from './hubScreens';
 
-export const CAM_STEPS = [0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3, 1.5];
+export const CAM_STEPS = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.15, 1.3, 1.5, 1.8];
 export function frame(title: string, accent: string, sub: string, body: Node | Node[], foot: Node[] = [], solid = true) {
   return div(`screen ${solid ? 'solid' : ''}`, div('screen-head', h('h1', null, title, ' ', h('span', null, accent)), div('sub', sub)), div('screen-body', body), div('screen-foot', foot));
 }

@@ -22,6 +22,11 @@ export class GameRenderer {
   private bloom: UnrealBloomPass | null = null;
   quality: Quality = 'high';
   shadowSize = 2048; rainCount = 0;
+  /** Phones and tablets get lighter settings at every quality level. */
+  mobile = false;
+  /** Crowd size multiplier for the current device. */
+  crowdScale = 1;
+  private basePR = 1; private dyn = 1; private slowT = 0; private fastT = 0;
 
   constructor(public canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -33,12 +38,14 @@ export class GameRenderer {
 
   configure(s: Settings) {
     const q = QUALITY[s.quality]; this.quality = s.quality;
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.pr) * s.resolutionScale);
-    this.shadowSize = s.shadows && q.shadow ? q.shadow : 0;
+    this.basePR = Math.min(window.devicePixelRatio || 1, this.mobile ? Math.min(q.pr, 1.25) : q.pr) * s.resolutionScale; this.dyn = 1;
+    this.renderer.setPixelRatio(this.basePR);
+    this.shadowSize = s.shadows && q.shadow ? (this.mobile ? Math.min(q.shadow, 1024) : q.shadow) : 0;
+    this.crowdScale = this.mobile ? 0.3 : 1;
     this.renderer.shadowMap.enabled = this.shadowSize > 0;
-    this.rainCount = q.rain;
+    this.rainCount = this.mobile ? Math.round(q.rain * 0.4) : q.rain;
     this.composer?.dispose(); this.composer = null; this.bloom = null;
-    if (s.postfx && (q.bloom || q.ao)) {
+    if (s.postfx && (q.bloom || q.ao) && !this.mobile) {
       const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
       const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: q.msaa });
       const c = new EffectComposer(this.renderer, rt);
@@ -49,6 +56,14 @@ export class GameRenderer {
       this.composer = c;
     }
     this.resize();
+  }
+  /** Dynamic resolution: drops the internal resolution when the frame rate falls, and restores it when there is headroom. */
+  adapt(fps: number, dt: number) {
+    if (fps < 42) { this.slowT += dt; this.fastT = 0; } else if (fps > 56) { this.fastT += dt; this.slowT = 0; } else { this.slowT = 0; this.fastT = 0; }
+    let next = this.dyn;
+    if (this.slowT > 1.2 && this.dyn > 0.5) { next = Math.max(0.5, this.dyn - 0.12); this.slowT = 0; }
+    else if (this.fastT > 6 && this.dyn < 1) { next = Math.min(1, this.dyn + 0.08); this.fastT = 0; }
+    if (next !== this.dyn) { this.dyn = next; this.renderer.setPixelRatio(this.basePR * this.dyn); this.resize(); }
   }
   setBloom(strength: number) { if (this.bloom) this.bloom.strength = strength; }
   resize() {

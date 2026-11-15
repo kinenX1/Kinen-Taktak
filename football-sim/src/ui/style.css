@@ -127,7 +127,7 @@ select option { background: #101626; }
 .pinfo.p1 { left: 26px; } .pinfo.p2 { right: 26px; border-top-color: #ff4fd8; text-align: right; }
 .pinfo .n { font-size: 21px; font-weight: 800; text-transform: uppercase; line-height: 1.05; } .pinfo .m { font-size: 13px; color: var(--dim); letter-spacing: 0.1em; }
 .pinfo .bar { margin-top: 5px; height: 7px; } .pinfo .pw i { background: linear-gradient(90deg, #ffe14d, #ff5a3d); } .pinfo .lbl { font-size: 10px; letter-spacing: 0.16em; color: var(--dim); margin-top: 4px; }
-.tag { position: absolute; transform: translate(-50%, -100%); font-size: 14px; font-weight: 800; text-transform: uppercase; padding: 1px 7px; background: rgba(8, 12, 22, 0.8); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+.tag { position: absolute; left: 0; top: 0; will-change: transform; font-size: 14px; font-weight: 800; text-transform: uppercase; padding: 1px 7px; background: rgba(8, 12, 22, 0.8); border-bottom: 2px solid var(--accent); white-space: nowrap; }
 .tag.p2 { border-bottom-color: #ff4fd8; }
 .replay-tag { position: absolute; right: 26px; top: 22px; font-size: 26px; font-weight: 900; letter-spacing: 0.2em; color: #fff; padding: 2px 16px; background: var(--danger); animation: blink 1s steps(2) infinite; } @keyframes blink { 50% { opacity: 0.55; } }
 .hint { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); background: rgba(8, 12, 22, 0.8); padding: 5px 14px; font-size: 15px; color: var(--dim); }
@@ -193,7 +193,7 @@ select option { background: #101626; }
 .pcard .nm { text-align: center; border-top: 1px solid rgba(90, 70, 20, 0.35); border-bottom: 1px solid rgba(90, 70, 20, 0.35); padding: 3px 0; margin-top: 6px; }
 .pcard .at { text-align: center; }
 /* ---------- picture finishing ---------- */
-#game { filter: saturate(1.14) contrast(1.05); }
+
 .vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.38) 100%); }
 .b-cam { right: max(62px, calc(env(safe-area-inset-right) + 52px)); top: 10px; width: 46px; height: 42px; border-radius: 10px; font-size: 11px; }
 @media (pointer: coarse) { .pinfo.p1 { right: 118px; } }

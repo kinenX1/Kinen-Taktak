@@ -40,6 +40,7 @@ export class Game {
 
   constructor(canvas: HTMLCanvasElement, public uiRoot: HTMLElement, public hudRoot: HTMLElement) {
     this.R = new GameRenderer(canvas);
+    this.R.mobile = isTouchDevice();
     this.R.configure(this.settings);
     this.env = new Environment(this.R.scene, this.R.renderer);
     this.cam = new CameraManager(this.R.camera);
@@ -48,7 +49,7 @@ export class Game {
       this.touch = new TouchControls(this.input, document.body);
       // Phones default to lighter graphics the first time the game runs.
       let saved = false; try { saved = localStorage.getItem('ufs.settings.v1') !== null; } catch { /* ignore */ }
-      if (!saved) { this.settings.quality = 'high'; this.settings.resolutionScale = 0.75; this.R.configure(this.settings); }
+      if (!saved) { this.settings.quality = 'high'; this.settings.resolutionScale = 1; this.R.configure(this.settings); }
     }
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -85,7 +86,7 @@ export class Game {
   private build(cfg: MatchConfig) {
     this.teardown();
     const st = stadiumById(cfg.stadium);
-    this.stadium = new StadiumManager(st, this.settings.quality, [cfg.home.kits[0].primary, cfg.home.kits[0].secondary], cfg.away.kits[0].primary);
+    this.stadium = new StadiumManager(st, this.settings.quality, [cfg.home.kits[0].primary, cfg.home.kits[0].secondary], cfg.away.kits[0].primary, this.R.crowdScale);
     this.R.scene.add(this.stadium.group);
     this.env.apply(cfg.weather, this.stadium, this.R.shadowSize, this.R.rainCount);
     this.R.setBloom(cfg.weather === 'night' ? 0.5 : 0.22);
@@ -222,6 +223,7 @@ export class Game {
     const dt = Math.min(0.05, Math.max(0, raw));
     this.fps += (1 / Math.max(raw, 1e-3) - this.fps) * 0.05;
     this.time += dt;
+    if (this.time > 3) this.R.adapt(this.fps, dt);
     this.input.update(dt);
     this.padNav();
     const m = this.match, v = this.view;

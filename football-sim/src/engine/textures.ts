@@ -27,10 +27,10 @@ export function pitchTexture(big: boolean) {
   const W = big ? 4096 : 2048, H = Math.round(W * (HW + PITCH_MZ) / (HL + PITCH_MX));
   const c = canvas(W, H), g = c.getContext('2d')!;
   const sx = W / (2 * (HL + PITCH_MX)), X = (x: number) => (x + HL + PITCH_MX) * sx, Z = (z: number) => (z + HW + PITCH_MZ) * sx;
-  g.fillStyle = '#3f8a35'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#2f9a2c'; g.fillRect(0, 0, W, H);
   // Mowing pattern: alternating bands along the length, lighter cross bands across.
   const n = 20, bw = (2 * HL) / n;
-  for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? '#3a8331' : '#4a9a3d'; g.fillRect(X(-HL + i * bw), Z(-HW), bw * sx + 1, 2 * HW * sx); }
+  for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? '#2c8f2a' : '#3fae38'; g.fillRect(X(-HL + i * bw), Z(-HW), bw * sx + 1, 2 * HW * sx); }
   g.globalAlpha = 0.07; g.fillStyle = '#ffffff';
   for (let i = 0; i < 12; i += 2) g.fillRect(X(-HL), Z(-HW + (i * 2 * HW) / 12), 2 * HL * sx, ((2 * HW) / 12) * sx);
   g.globalAlpha = 1;

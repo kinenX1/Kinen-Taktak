@@ -33,7 +33,7 @@ export function updateGK(m: MatchManager, gk: Player, dt: number) {
   }
   if (gk.holding) {
     gk.holdT += dt;
-    if (human && gk.holdT < 6) return;
+    if (human && gk.holdT < 2.5) return;
     gk.moveTo(gx - side * 9, gk.z * 0.8, false, 1.5); gk.look(gx - side * 40, 0);
     if (gk.holdT > 1.5 + (gk.uid % 3) * 0.3) distribute(m, gk, false);
     return;
