@@ -55,7 +55,9 @@ export class MatchTeam {
     this.bench = data.bench.map(byId).filter(Boolean);
     this.dir = idx === 0 ? 1 : -1;
   }
-  get human() { return this.control !== 'ai'; }
+  /** Player Career: true while the user's player is still on the bench (the side is fully AI-run until he comes on). */
+  benched = false;
+  get human() { return this.control !== 'ai' && !this.benched; }
   get gk() { return this.players.find((p) => p.isGK && p.active) ?? this.players[0]; }
   get onPitch() { return this.players.filter((p) => p.active); }
   /** Team-relative depth of a world x (positive = towards the opponent goal). */

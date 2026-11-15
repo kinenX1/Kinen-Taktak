@@ -277,7 +277,7 @@ function carrierAI(m: MatchManager, p: Player, dt: number) {
   // --- clear
   const clearS = u < -HL + 26 && dn < 2.6 && passS < 0.25 ? 0.6 : -9;
   const top = Math.max(shotS, passS, dribS, clearS);
-  if (top === shotS && shotS > 0.4) {
+  if (top === shotS && shotS > 0.55) {
     const power = dGoal < 11 ? rng.range(0.38, 0.55) : clamp(0.42 + dGoal / 55 + rng.range(-0.08, 0.1), 0.4, 0.85);
     const fin = (style === 'Playmaker' || style === 'Dribbler') && dGoal > 13 && dGoal < 25 && rng.chance(0.5);
     startKick(m, p, planShot(m, p, null, power, fin, P.shotErr));

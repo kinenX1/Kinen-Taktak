@@ -91,9 +91,9 @@ export class MatchManager {
     this.stoppage = [60 * this.rng.int(1, 2), 60 * this.rng.int(2, 4)];
     if (cfg.lockPlayerId) {
       for (const t of this.teams) {
-        if (!t.human) continue;
+        if (t.control === 'ai') continue;
         const p = t.players.find((q) => q.data.id === cfg.lockPlayerId);
-        if (p) { t.locked = p; t.selected = p; } else if (t.bench.some((b) => b.id === cfg.lockPlayerId)) this.lockPending = cfg.lockPlayerId;
+        if (p) { t.locked = p; t.selected = p; } else if (t.bench.some((b) => b.id === cfg.lockPlayerId)) { this.lockPending = cfg.lockPlayerId; t.benched = true; }
       }
     }
     if (!cfg.drill) {
@@ -778,15 +778,16 @@ export class MatchManager {
   private autoSubs() {
     if (this.minute < 58) return;
     for (const t of this.teams) {
-      if (this.lockPending && t.human && this.minute >= 60) {
+      if (this.lockPending && t.benched && this.minute >= 60) {
         const on = t.bench.find((b) => b.id === this.lockPending);
         if (on) {
           const off = t.players.filter((p) => p.active && !p.isGK).sort((a, b) => fitAt(on, b.role) - fitAt(on, a.role))[0];
-          if (off && this.substitute(t, off, on)) { t.locked = t.players.find((p) => p.data === on)!; t.selected = t.locked; }
+          if (off && this.substitute(t, off, on)) { t.benched = false; t.locked = t.players.find((p) => p.data === on)!; t.selected = t.locked; }
         }
         this.lockPending = null;
       }
       if (t.human && !t.locked) continue;
+      if (t.benched && t.subsLeft <= 1) continue;
       if (t.subsLeft <= 0 || t.subsLeft < 5 - Math.floor((this.minute - 50) / 9)) continue;
       const tired = t.players.filter((p) => p.active && !p.isGK && p !== t.locked && p.fatigue > 0.2).sort((a, b) => b.fatigue - a.fatigue)[0];
       if (!tired) continue;

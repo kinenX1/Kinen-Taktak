@@ -162,7 +162,7 @@ export function gkContest(m: MatchManager): boolean {
       A.set(gk.x, gk.y + 0.4, gk.z); B.set(gk.x + (gk.actVx / l) * 0.3, gk.y + 0.75 + gk.diveH * 0.25, gk.z + Math.sign(gk.actVz) * 1.45 * k);
       C.subVectors(B, A);
       const tt = clamp(C.dot(new Vector3().subVectors(b, A)) / C.lengthSq(), 0, 1);
-      touch = A.addScaledVector(C, tt).distanceTo(b) < 0.58;
+      touch = A.addScaledVector(C, tt).distanceTo(b) < 0.66;
     } else {
       const d = dist(gk.x, gk.z, b.x, b.z);
       touch = (d < 0.8 && b.y < 2.2) || (d < 0.6 && b.y < 2.65);

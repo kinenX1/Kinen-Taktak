@@ -49,33 +49,33 @@ function bodyGeometry(hair: number): THREE.BufferGeometry {
   const pelvis = lathe([[0.02, -0.12], [0.165, -0.1], [0.172, 0.02], [0.155, 0.14], [0.02, 0.15]]); pelvis.scale(0.72, 1, 1);
   parts.push(part(pelvis, B.hips, R.shorts));
   // Torso: waist to shoulders, flattened front to back
-  const torso = lathe([[0.03, -0.02], [0.148, 0], [0.158, 0.12], [0.182, 0.3], [0.185, 0.4], [0.15, 0.47], [0.07, 0.515], [0.05, 0.53]], 20); torso.scale(0.66, 1, 1.02);
+  const torso = lathe([[0.03, -0.02], [0.158, 0], [0.166, 0.12], [0.182, 0.3], [0.185, 0.4], [0.15, 0.47], [0.07, 0.515], [0.05, 0.53]], 20); torso.scale(0.66, 1, 1.02);
   parts.push(part(torso, B.spine, R.shirt));
   // Neck and head
-  parts.push(part(limb(0.052, 0.058, 0.12, 0.1), B.head, R.skin));
-  const head = new THREE.SphereGeometry(0.108, 18, 14); head.scale(1.02, 1.2, 0.9); head.translate(0, 0.175, 0);
+  parts.push(part(limb(0.06, 0.068, 0.11, 0.085), B.head, R.skin));
+  const head = new THREE.SphereGeometry(0.108, 18, 14); head.scale(1.02, 1.2, 0.9); head.translate(0, 0.152, 0);
   parts.push(part(head, B.head, R.face));
-  for (const s of [-1, 1]) parts.push(part(ball(0.022, 0.17, 0.6, 1.3, 1).translate(0, 0, s * 0.1), B.head, R.skin));
+  for (const s of [-1, 1]) parts.push(part(ball(0.022, 0.147, 0.6, 1.3, 1).translate(0, 0, s * 0.1), B.head, R.skin));
   if (hair > 0) {
     const cfg = [0, 1.035, 1.07, 1.28, 1.08, 1.035, 1.14][hair];
     const cap = new THREE.SphereGeometry(0.108 * cfg, 16, 10, 0, Math.PI * 2, 0, hair === 3 ? 1.9 : 1.45);
-    cap.scale(1.02, hair === 6 ? 1.34 : 1.2, 0.92 * (hair === 3 ? 1.08 : 1)); cap.rotateZ(0.42); cap.translate(-0.008, 0.18, 0);
+    cap.scale(1.02, hair === 6 ? 1.34 : 1.2, 0.92 * (hair === 3 ? 1.08 : 1)); cap.rotateZ(0.42); cap.translate(-0.008, 0.157, 0);
     parts.push(part(cap, B.head, R.hair));
-    if (hair === 4) { const tail = ball(0.07, 0.1, 0.8, 1.7, 1.25); tail.translate(-0.085, 0, 0); parts.push(part(tail, B.head, R.hair)); }
-    if (hair === 5) { const ridge = new THREE.BoxGeometry(0.2, 0.06, 0.035); ridge.translate(-0.01, 0.31, 0); parts.push(part(ridge, B.head, R.hair)); }
+    if (hair === 4) { const tail = ball(0.07, 0.08, 0.8, 1.7, 1.25); tail.translate(-0.085, 0, 0); parts.push(part(tail, B.head, R.hair)); }
+    if (hair === 5) { const ridge = new THREE.BoxGeometry(0.2, 0.06, 0.035); ridge.translate(-0.01, 0.287, 0); parts.push(part(ridge, B.head, R.hair)); }
   }
   for (const [arm, fore, s] of [[B.armL, B.foreL, -1], [B.armR, B.foreR, 1]] as const) {
     parts.push(part(ball(0.06, -0.005, 1, 1, 1, 12), arm, R.sleeve));
-    parts.push(part(limb(0.058, 0.05, 0.17, 0), arm, R.sleeve));
-    parts.push(part(limb(0.046, 0.04, 0.14, -0.155), arm, R.skin));
-    parts.push(part(ball(0.042, 0), fore, R.fore));
-    parts.push(part(limb(0.04, 0.031, 0.25, 0), fore, R.fore));
+    parts.push(part(limb(0.064, 0.056, 0.17, 0), arm, R.sleeve));
+    parts.push(part(limb(0.052, 0.046, 0.14, -0.155), arm, R.skin));
+    parts.push(part(ball(0.047, 0), fore, R.fore));
+    parts.push(part(limb(0.046, 0.036, 0.25, 0), fore, R.fore));
     parts.push(part(ball(0.04, -0.285, 0.75, 1.25, 0.95), fore, R.hands));
     void s;
   }
   for (const [th, sh, ft] of [[B.thighL, B.shinL, B.footL], [B.thighR, B.shinR, B.footR]] as const) {
-    parts.push(part(limb(0.092, 0.082, 0.24, 0.02), th, R.shorts));
-    parts.push(part(limb(0.074, 0.054, 0.26, -0.19), th, R.skin));
+    parts.push(part(limb(0.098, 0.088, 0.24, 0.02), th, R.shorts));
+    parts.push(part(limb(0.08, 0.058, 0.26, -0.19), th, R.skin));
     parts.push(part(ball(0.057, 0), sh, R.skin));
     const calf = lathe([[0.05, 0], [0.062, -0.1], [0.058, -0.2], [0.042, -0.34], [0.04, -0.42]].map(([r, y]) => [r, y] as [number, number]).reverse(), 10);
     parts.push(part(calf, sh, R.socks));
