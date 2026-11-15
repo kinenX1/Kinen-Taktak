@@ -15,6 +15,7 @@ import { MatchConfig, MatchManager, Phase } from './match/match';
 import { DrillKind, TrainingManager } from './modes/training';
 import { Hud } from './ui/hud';
 import { clear, div, setSfx } from './ui/dom';
+import { TouchControls, isTouchDevice } from './ui/touch';
 
 export interface PlayOpts { onEnd: (m: MatchManager, quit: boolean) => void; drill?: DrillKind }
 
@@ -32,6 +33,7 @@ export class Game {
   private cones: THREE.Mesh[] = [];
   private rng = new RNG(Date.now() & 0xffff);
   fps = 60;
+  touch: TouchControls | null = null;
 
   constructor(canvas: HTMLCanvasElement, public uiRoot: HTMLElement, public hudRoot: HTMLElement) {
     this.R = new GameRenderer(canvas);
@@ -39,6 +41,12 @@ export class Game {
     this.env = new Environment(this.R.scene, this.R.renderer);
     this.cam = new CameraManager(this.R.camera);
     setSfx(this.audio);
+    if (isTouchDevice()) {
+      this.touch = new TouchControls(this.input, document.body);
+      // Phones default to lighter graphics the first time the game runs.
+      let saved = false; try { saved = localStorage.getItem('ufs.settings.v1') !== null; } catch { /* ignore */ }
+      if (!saved) { this.settings.quality = 'medium'; this.settings.postfx = false; this.R.configure(this.settings); }
+    }
     requestAnimationFrame((t) => this.loop(t));
   }
 
@@ -202,6 +210,7 @@ export class Game {
       this.env.update(dt, this.time, v.ballPos, this.R.camera);
       this.hud?.update(dt);
     }
+    if (this.touch) { const live = !!m && !this.backdrop && !this.paused && m.phase !== 'halftime' && m.phase !== 'fulltime' && m.phase !== 'done'; this.touch.show(live); }
     this.audio.update(dt);
     this.R.render();
   }

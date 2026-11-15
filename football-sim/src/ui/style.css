@@ -151,3 +151,29 @@ select option { background: #101626; }
 .splash { position: fixed; inset: 0; z-index: 30; background: #05070d center / cover no-repeat; display: flex; align-items: flex-end; padding: clamp(18px, 5vh, 60px) clamp(18px, 5vw, 80px); transition: opacity 0.8s; cursor: pointer; }
 .splash::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4, 6, 12, 0.85), rgba(4, 6, 12, 0.1) 60%), linear-gradient(0deg, rgba(4, 6, 12, 0.8), transparent 45%); }
 .splash > * { position: relative; } .splash .press { margin-top: 18px; letter-spacing: 0.3em; color: var(--accent2); font-weight: 700; animation: blink 1.4s steps(2) infinite; }
+/* ---------- touch controls ---------- */
+#game { touch-action: none; }
+.touch { position: fixed; inset: 0; z-index: 8; pointer-events: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.stick-zone { position: absolute; left: 0; top: 18%; bottom: 0; width: 46%; pointer-events: auto; touch-action: none; }
+.stick { position: absolute; width: 128px; height: 128px; margin: -64px 0 0 -64px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35); background: rgba(10, 14, 26, 0.35); display: grid; place-items: center; }
+.knob { width: 56px; height: 56px; border-radius: 50%; background: rgba(53, 224, 255, 0.8); box-shadow: 0 0 18px rgba(53, 224, 255, 0.6); }
+.pad { position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); width: 236px; height: 214px; pointer-events: none; }
+.tb { position: absolute; width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; color: #fff; background: rgba(12, 18, 34, 0.55); border: 2px solid rgba(255, 255, 255, 0.4); pointer-events: auto; touch-action: none; }
+.tb.on { background: var(--accent); color: #03121a; transform: scale(0.94); }
+.b-shoot { right: 0; bottom: 66px; border-color: #ff5a5f; width: 74px; height: 74px; } .b-pass { right: 78px; bottom: 0; border-color: var(--accent2); width: 74px; height: 74px; }
+.b-through { right: 80px; bottom: 82px; } .b-cross { right: 4px; bottom: 146px; } .b-sprint { right: 160px; bottom: 30px; border-color: var(--gold); }
+.b-switch { right: 160px; bottom: 104px; width: 54px; height: 54px; font-size: 10px; } .b-skill { right: 88px; bottom: 156px; width: 54px; height: 54px; font-size: 10px; } .b-mod { right: 0; bottom: 0; width: 54px; height: 54px; font-size: 10px; }
+.b-pause { right: max(10px, env(safe-area-inset-right)); top: 10px; width: 42px; height: 42px; font-size: 14px; }
+@media (pointer: coarse) { .hint { bottom: auto; top: 58px; font-size: 13px; } .pinfo.p1 { left: auto; right: 62px; top: 8px; bottom: auto; min-width: 150px; padding: 4px 10px; } .pinfo .lbl { display: none; } .pinfo .m { display: none; } .radar { bottom: auto; top: 8px; transform: translateX(-50%) scale(0.72); transform-origin: top center; } .ticker { bottom: 6px; font-size: 13px; max-width: 46vw; } .score { left: 10px; top: 8px; font-size: 17px; } .score .num { font-size: 19px; min-width: 28px; } .score .clock { min-width: 62px; } .drill { top: 58px; right: 10px; } }
+/* ---------- small landscape screens (phones) ---------- */
+@media (max-height: 520px) {
+  html, body { font-size: 14px; }
+  .screen { padding: 10px max(14px, env(safe-area-inset-left)); overflow: auto; }
+  .logo { font-size: 38px; } .menu { display: grid; grid-template-columns: 1fr 1fr; width: min(620px, 96vw); margin-top: 10px; gap: 6px; }
+  .menu .btn { font-size: 17px; padding: 8px 14px; } .tagline { display: none; }
+  .screen-head h1 { font-size: 26px; } .screen-head { margin-bottom: 6px; } .screen-head .sub { display: none; }
+  .screen-body { min-height: 260px; } .chooser-val { min-width: 120px; font-size: 16px; } .pcard { width: 132px; } .pcard .ovr { font-size: 30px; } .team-name { font-size: 22px; } .kit { width: 50px; height: 50px; }
+  .sheet .hd .sc { font-size: 40px; } .statrow { font-size: 14px; padding: 1px 0; } .lineups .pl { font-size: 14px; } .lineups .tn { font-size: 20px; } .banner .t { font-size: 34px; }
+  .btn { padding: 8px 14px; }
+}
+@media (orientation: portrait) and (pointer: coarse) { body::after { content: 'Rotate your phone to landscape to play'; position: fixed; inset: 0; z-index: 99; display: grid; place-items: center; background: #05070d; color: #fff; font-size: 22px; font-weight: 700; text-align: center; padding: 30px; } }

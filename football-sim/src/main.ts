@@ -18,5 +18,6 @@ if (!new URLSearchParams(location.search).has('nosplash')) {
   splash.style.backgroundImage = `url(${import.meta.env.BASE_URL}keyart.jpg), radial-gradient(circle at 70% 30%, #12305a, #05070d 70%)`;
   document.body.appendChild(splash);
   const close = () => { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 800); window.removeEventListener('keydown', close); };
-  splash.addEventListener('click', close); window.addEventListener('keydown', close);
+  splash.addEventListener('click', close); splash.addEventListener('touchend', close); window.addEventListener('keydown', close);
+  splash.querySelector('.press')!.textContent = 'ontouchstart' in window ? 'TAP TO START' : 'PRESS ANY KEY';
 }

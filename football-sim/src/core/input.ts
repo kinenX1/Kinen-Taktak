@@ -24,6 +24,9 @@ export class Input {
   /** Keys pressed since the last frame, so quick taps are never missed at low frame rates. */
   private tapped = new Set<string>();
   players = [new PlayerInput(), new PlayerInput()];
+  /** Touch controls feed Player 1. */
+  touchX = 0; touchZ = 0; touchDown = new Set<Action>(); touchTap = new Set<Action>();
+  requestPause() { this.pauseLatch = true; }
   pausePressed = false;
   /** Menu navigation from a gamepad (edge-triggered with repeat) plus confirm/back edges (Enter / A, Backspace / B). */
   navX = 0; navY = 0; confirm = false; back = false; anyAction = false;
@@ -83,6 +86,7 @@ export class Input {
         if (pad.buttons[13]?.pressed) mz += 1;
         if (pad.buttons[9]?.pressed) padPause = true;
       }
+      if (i === 0) { mx += this.touchX; mz += this.touchZ; }
       const l = Math.hypot(mx, mz);
       if (l > 1) { mx /= l; mz /= l; }
       pi.moveX = mx; pi.moveZ = mz;
@@ -90,6 +94,7 @@ export class Input {
         pi.prev[a] = pi.down[a];
         let d = this.keys.has(b[a]) || this.tapped.has(b[a]);
         if (pad && PAD_BUTTONS[a]) for (const bi of PAD_BUTTONS[a]!) if (pad.buttons[bi]?.pressed) d = true;
+        if (i === 0 && (this.touchDown.has(a) || this.touchTap.has(a))) d = true;
         pi.down[a] = d;
         if (d) pi.hold[a] += dt;
         else { if (pi.prev[a]) pi.releasedHold[a] = pi.hold[a]; pi.hold[a] = 0; }
@@ -109,7 +114,7 @@ export class Input {
     this.navPrev = held;
     this.confirm = (c && !this.cPrev) || this.enterLatch; this.back = bk && !this.bPrev; this.cPrev = c; this.bPrev = bk; this.enterLatch = false;
     this.anyAction = this.confirm || this.players.some((p) => p.pressed('pass') || p.pressed('shoot') || p.pressed('switch'));
-    this.tapped.clear();
+    this.tapped.clear(); this.touchTap.clear();
     this.pausePressed = this.pauseLatch || (padPause && !this.padPausePrev);
     this.padPausePrev = padPause;
     this.pauseLatch = false;

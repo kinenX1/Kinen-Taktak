@@ -9,7 +9,7 @@ import { NATION_POOL } from '../data/names';
 import type { Game } from '../game';
 import type { MatchManager } from '../match/match';
 import { CareerManager, YouthPlayer, ord } from '../modes/career';
-import { Result, Season, sortTable } from '../modes/league';
+import { Result, Save, Season, sortTable } from '../modes/league';
 import { PlayerCareerManager } from '../modes/playerCareer';
 import { ROUND_NAMES, TournamentManager } from '../modes/tournament';
 import { btn, chooser, clear, div, h, table, tabs } from './dom';
@@ -110,7 +110,7 @@ function careerHub(g: Game, c: CareerManager, tab = 'home'): HTMLElement {
   const tb = tabs([{ id: 'home', label: 'Overview', render: home }, { id: 'squad', label: 'Squad & Tactics', render: squad }, { id: 'transfers', label: 'Transfers', render: transfers }, { id: 'academy', label: 'Academy', render: academy },
     { id: 'finances', label: 'Finances', render: finances }, { id: 'table', label: 'League', render: () => div('panel', leagueTable(se, me)) }, { id: 'fixtures', label: 'Fixtures', render: () => div('panel', fixtureList(se, me)) }, { id: 'honours', label: 'Trophies', render: honours }], tab);
   return frame(t.name, 'Career', `Season ${se.s.season} · ${DB.league(se.s.leagueId).name}`, tb.root,
-    [backBtn('Main menu', () => toMenu(g)), div('spacer'), btn('Delete career', () => confirmModal(g, 'Delete career', 'This permanently removes your career save.', 'Delete', () => { localStorage.removeItem('ufs.save.career'); g.screen(mainMenu(g)); }), 'small danger')]);
+    [backBtn('Main menu', () => toMenu(g)), div('spacer'), btn('Delete career', () => confirmModal(g, 'Delete career', 'This permanently removes your career save.', 'Delete', () => { Save.remove('career'); g.screen(mainMenu(g)); }), 'small danger')]);
 }
 
 // ======================= PLAYER CAREER =======================
@@ -175,7 +175,7 @@ function pcHub(g: Game, c: PlayerCareerManager, tab = 'home'): HTMLElement {
     h('h3', null, `Career totals: ${c.s.careerApps} appearances, ${c.s.careerGoals} goals`), table(['Season', 'Club', 'Apps', 'Goals', 'Avg rating'], c.s.history.map((x) => [x.season, x.club, x.apps, x.goals, x.avg ? x.avg.toFixed(2) : '-'])));
   const tb = tabs([{ id: 'home', label: 'Overview', render: home }, { id: 'develop', label: 'Development', render: develop }, { id: 'squad', label: 'Team', render: () => div('panel', teamSummary(t)) }, { id: 'fixtures', label: 'Fixtures', render: () => div('panel', fixtureList(se, me)) }, { id: 'story', label: 'Honours', render: story }], tab);
   return frame(p.name, `· ${p.position}`, `Season ${se.s.season} · ${t.name} · Overall ${p.overall}`, tb.root,
-    [backBtn('Main menu', () => toMenu(g)), div('spacer'), btn('Retire player', () => confirmModal(g, 'Retire player', 'This permanently removes your player career save.', 'Retire', () => { localStorage.removeItem('ufs.save.pcareer'); g.screen(mainMenu(g)); }), 'small danger')]);
+    [backBtn('Main menu', () => toMenu(g)), div('spacer'), btn('Retire player', () => confirmModal(g, 'Retire player', 'This permanently removes your player career save.', 'Retire', () => { Save.remove('pcareer'); g.screen(mainMenu(g)); }), 'small danger')]);
 }
 
 // ======================= TOURNAMENTS =======================
@@ -226,6 +226,6 @@ function tHub(g: Game, t: TournamentManager): HTMLElement {
       um ? [h('b', null, `${nm(um.home)} v ${nm(um.away)}`), btn('Play match', play, 'primary'), btn('Simulate round', () => { t.advance(null); refresh(); })]
         : [h('span', { class: 'muted' }, s.user && !t.userAlive ? 'You have been eliminated.' : 'No match for you this round.'), btn('Simulate round', () => { t.advance(null); if (t.s.champion) g.audio.fanfare(); refresh(); }, 'primary')]);
   return frame(s.name, '', `${s.teams.length} teams · ${s.format === 'groups' ? 'Groups + knockout' : 'Knockout'}`, div('col grow scroll', top, groups, div('panel', h('h2', null, 'Knockout bracket'), bracket)),
-    [backBtn('Main menu', () => toMenu(g)), div('spacer'), btn('New tournament', () => confirmModal(g, 'New tournament', 'This replaces the current tournament.', 'Start new', () => { localStorage.removeItem('ufs.save.tournament'); g.screen(tNew(g)); }), 'small')]);
+    [backBtn('Main menu', () => toMenu(g)), div('spacer'), btn('New tournament', () => confirmModal(g, 'New tournament', 'This replaces the current tournament.', 'Start new', () => { Save.remove('tournament'); g.screen(tNew(g)); }), 'small')]);
 }
 export type { TeamData };
