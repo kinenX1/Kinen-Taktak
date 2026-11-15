@@ -4,8 +4,8 @@ export type Action = 'up' | 'down' | 'left' | 'right' | 'sprint' | 'pass' | 'sho
 export const ACTIONS: Action[] = ['up', 'down', 'left', 'right', 'sprint', 'pass', 'shoot', 'through', 'cross', 'switch', 'skill', 'modifier', 'style'];
 export const ACTION_LABEL: Record<Action, string> = {
   up: 'Move up', down: 'Move down', left: 'Move left', right: 'Move right', sprint: 'Sprint',
-  pass: 'Pass / Tackle', shoot: 'Shoot / Slide tackle', through: 'Through ball / Team press',
-  cross: 'Cross / Long pass', switch: 'Switch player', skill: 'Skill move', modifier: 'Modifier (finesse / shield)', style: 'Change kick style',
+  pass: 'Low pass / Switch player', shoot: 'Shoot / Slide tackle', through: 'Through ball / Team press',
+  cross: 'High pass / Cross', switch: 'Switch player', skill: 'Skill move', modifier: 'Modifier (finesse / shield)', style: 'Change kick style',
 };
 export type Bindings = Record<Action, string>;
 export type CameraMode = 'broadcast' | 'tele' | 'tactical' | 'endtoend' | 'dynamic';
@@ -37,7 +37,7 @@ export const DEFAULT_BINDINGS: [Bindings, Bindings] = [
 
 export function defaultSettings(): Settings {
   return {
-    quality: 'high', shadows: true, postfx: true, resolutionScale: 1,
+    quality: 'ultra', shadows: true, postfx: true, resolutionScale: 1,
     master: 0.8, crowd: 0.8, sfx: 0.9, ui: 0.7,
     camera: 'broadcast', cameraZoom: 1, cameraHeight: 1, matchMinutes: 6, difficulty: 2,
     radar: true, commentary: true, replays: true,

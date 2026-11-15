@@ -49,7 +49,7 @@ export class Game {
       this.touch = new TouchControls(this.input, document.body);
       // Phones default to lighter graphics the first time the game runs.
       let saved = false; try { saved = localStorage.getItem('ufs.settings.v1') !== null; } catch { /* ignore */ }
-      if (!saved) { this.settings.quality = 'high'; this.settings.resolutionScale = 1; this.R.configure(this.settings); }
+      if (!saved) { this.settings.quality = 'ultra'; this.settings.resolutionScale = 1; this.R.configure(this.settings); }
     }
     requestAnimationFrame((t) => this.loop(t));
   }

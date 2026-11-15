@@ -38,19 +38,19 @@ export class GameRenderer {
 
   configure(s: Settings) {
     const q = QUALITY[s.quality]; this.quality = s.quality;
-    this.basePR = Math.min(window.devicePixelRatio || 1, this.mobile ? Math.min(q.pr, 1.25) : q.pr) * s.resolutionScale; this.dyn = 1;
+    this.basePR = Math.min(window.devicePixelRatio || 1, this.mobile ? Math.min(q.pr, 1.6) : q.pr) * s.resolutionScale; this.dyn = 1;
     this.renderer.setPixelRatio(this.basePR);
-    this.shadowSize = s.shadows && q.shadow ? (this.mobile ? Math.min(q.shadow, 1024) : q.shadow) : 0;
-    this.crowdScale = this.mobile ? 0.3 : 1;
+    this.shadowSize = s.shadows && q.shadow ? (this.mobile ? Math.min(q.shadow, 2048) : q.shadow) : 0;
+    this.crowdScale = this.mobile ? 0.6 : 1;
     this.renderer.shadowMap.enabled = this.shadowSize > 0;
-    this.rainCount = this.mobile ? Math.round(q.rain * 0.4) : q.rain;
+    this.rainCount = this.mobile ? Math.round(q.rain * 0.7) : q.rain;
     this.composer?.dispose(); this.composer = null; this.bloom = null;
-    if (s.postfx && (q.bloom || q.ao) && !this.mobile) {
+    if (s.postfx && (q.bloom || q.ao)) {
       const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
-      const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: q.msaa });
+      const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: this.mobile ? Math.min(q.msaa, 2) : q.msaa });
       const c = new EffectComposer(this.renderer, rt);
       c.addPass(new RenderPass(this.scene, this.camera));
-      if (q.ao) { const ao = new GTAOPass(this.scene, this.camera, size.x, size.y); ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1, scale: 1.1 }); c.addPass(ao); }
+      if (q.ao && !this.mobile) { const ao = new GTAOPass(this.scene, this.camera, size.x, size.y); ao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1, scale: 1.1 }); c.addPass(ao); }
       if (q.bloom) { this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.34, 0.7, 0.9); c.addPass(this.bloom); }
       c.addPass(new OutputPass());
       this.composer = c;

@@ -4,8 +4,8 @@ import type { Action } from '../core/settings';
 import { div, h } from './dom';
 
 const BUTTONS: { a: Action; label: string; cls: string }[] = [
-  { a: 'shoot', label: 'SHOOT', cls: 'b-shoot' }, { a: 'pass', label: 'PASS', cls: 'b-pass' }, { a: 'through', label: 'THRU', cls: 'b-through' }, { a: 'cross', label: 'CROSS', cls: 'b-cross' },
-  { a: 'sprint', label: 'SPRINT', cls: 'b-sprint' }, { a: 'switch', label: 'SWITCH', cls: 'b-switch' }, { a: 'skill', label: 'SKILL', cls: 'b-skill' }, { a: 'modifier', label: 'MOD', cls: 'b-mod' }, { a: 'style', label: 'STYLE', cls: 'b-style' },
+  { a: 'shoot', label: 'SHOOT', cls: 'b-shoot' }, { a: 'pass', label: 'LOW PASS', cls: 'b-pass' }, { a: 'cross', label: 'HIGH PASS', cls: 'b-cross' },
+  { a: 'sprint', label: 'SPRINT', cls: 'b-sprint' }, { a: 'skill', label: 'SKILL', cls: 'b-skill' },
 ];
 export const isTouchDevice = () => typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0) && window.matchMedia('(pointer: coarse)').matches;
 

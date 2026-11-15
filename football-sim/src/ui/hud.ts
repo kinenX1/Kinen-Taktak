@@ -209,7 +209,7 @@ export class Hud {
       const b = g.settings.bindings;
       body = div('col', h('h2', null, 'Controls'), table(['Action', 'Player 1', 'Player 2', 'Gamepad'], ACTIONS.map((a) => [ACTION_LABEL[a], h('span', { class: 'keycap' }, keyLabel(b[0][a])), h('span', { class: 'keycap' }, keyLabel(b[1][a])),
         ({ up: 'Left stick', down: 'Left stick', left: 'Left stick', right: 'Left stick', sprint: 'RT', pass: 'A / Cross', shoot: 'B / Circle', through: 'Y / Triangle', cross: 'X / Square', switch: 'LB', skill: 'LT', modifier: 'RB', style: 'R3' } as Record<string, string>)[a]])),
-        div('muted', 'Without the ball: Pass = standing tackle, Shoot = slide tackle, Through = team-mate press, Modifier = jockey.'), back());
+        div('muted', 'Without the ball: Pass = switch player, Shoot = slide tackle, run into the ball carrier to tackle, Through = team-mate press, Modifier = jockey.'), back());
     } else {
       const t = m.teams.find((x) => x.human && !x.locked)!;
       let pick: Player | null = null;

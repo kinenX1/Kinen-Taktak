@@ -114,15 +114,21 @@ export function updateHuman(m: MatchManager, t: MatchTeam, inp: PlayerInput, dt:
       else if (inp.pressed('through')) { const q = pickTarget(m, p, w.x, w.z, 0.35); p.intent = { kind: 'pass', t: 0.9, target: q, make: () => (q ? planPass(m, p, q, 'through', 1.2) : null) }; }
     } else {
       if (inp.pressed('shoot')) startTackle(m, p, true);
-      else if (inp.pressed('pass') && near) startTackle(m, p, false);
+      else if (inp.pressed('pass') && !t.locked) { const n = select(m, t, p); if (n) t.selected = n; }
     }
     // Pass assistance: with no stick input the receiver moves onto the ball automatically.
     if (!inp.moving && (m.passTarget === p || t.chaser === p)) chase(m, p);
     return;
   }
   if (o.team !== t) {
-    if (inp.pressed('pass')) startTackle(m, p, false);
+    // Pass switches to the best-placed defender; getting tight to the carrier makes a standing tackle automatically.
+    if (inp.pressed('pass')) { if (t.locked) startTackle(m, p, false); else { const n = select(m, t, p); if (n) t.selected = n; } }
     else if (inp.pressed('shoot')) startTackle(m, p, true);
+    else if (p.tackleCd <= 0 && !o.holding && p.distTo(ball.pos.x, ball.pos.z) < 1.3) {
+      const ax = o.x - p.x, az = o.z - p.z, al = Math.hypot(ax, az) || 1;
+      const behind = (ax / al) * o.dirX + (az / al) * o.dirZ > 0.5 && o.speed > 2;
+      if (!behind) startTackle(m, p, false);
+    }
     if (inp.down.through) t.pressing = true;
     if (inp.down.modifier) { p.jockey = true; p.look(o.x, o.z); }
   } else if (o !== p) {
