@@ -148,7 +148,7 @@ export class MatchManager {
       case 'halftime': case 'fulltime':
         if (this.cfg.auto && this.phaseT > 5) { if (this.phase === 'halftime') this.resume(); }
         this.idlePlayers(dt); break;
-      case 'replay': if (!this.useReplays || this.phaseT > 12) this.endReplay(); this.idlePlayers(dt); break;
+      case 'replay': if (!this.useReplays || this.phaseT > 30) this.endReplay(); this.idlePlayers(dt); break;
       case 'intro': if (this.cfg.auto && this.phaseT > 1) this.begin(); this.idlePlayers(dt); break;
       default: this.idlePlayers(dt);
     }
